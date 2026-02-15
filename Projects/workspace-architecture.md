@@ -75,10 +75,7 @@ Layer 1のローカルフォルダ内に2本のジャンクションを作成し
 │           │   ├── AGENTS.md              (Master AI Instruction) [BOX Sync]
 │           │   └── ...
 │           ├── AGENTS.md                  (Master AI Instruction - Copy from shared)
-│           ├── CLAUDE.md                  (Claude CLI Alias - Copy from shared)
-│           └── scripts\                   (Automation Scripts)
-│               ├── setup_junctions.ps1    (初回/PC-B Setup)
-│               └── check_symlinks.ps1     (Health Check)
+│           └── CLAUDE.md                  (Claude CLI Alias - Copy from shared)
 │
 └── Box\
     ├── Obsidian-Vault\                    [Layer 2: Knowledge - BOX Sync]
@@ -237,7 +234,7 @@ New-Item -Path $docRoot -ItemType Directory -Force
 
 # ローカル専用フォルダ作成
 @("_ai-context", "_temp", "development\source", "development\config",
-  "development\scripts", "scripts", "scripts\config") | ForEach-Object {
+  "development\scripts") | ForEach-Object {
     New-Item -Path "$docRoot\$_" -ItemType Directory -Force
 }
 
@@ -264,8 +261,7 @@ $boxShared = "$env:USERPROFILE\Box\Projects\ProjectA"
 # ローカル専用フォルダ作成
 $localFolders = @(
     "_ai-context", "_temp",
-    "development\source", "development\config", "development\scripts",
-    "scripts", "scripts\config"
+    "development\source", "development\config", "development\scripts"
 )
 foreach ($folder in $localFolders) {
     $path = "$docRoot\$folder"
@@ -985,11 +981,8 @@ Documents/Projects/_mini/{ProjectName}/
 │
 ├── development/                      # 開発関連 [Local]
 │   ├── source/                       # ソースコード (Git管理)
-│   ├── config/                       # 設定ファイル
-│   └── scripts/                      # 開発スクリプト
-│
-├── scripts/                          # プロジェクト管理スクリプト [Local]
-│   └── config.json                   # プロジェクト設定 (tier 情報を含む)
+│   ├── config.json                   # Project configuration
+│   └── config/                       # Additional config files
 │
 ├── shared/                           ← Junction → Box/Projects/_mini/{ProjectName}
 │
