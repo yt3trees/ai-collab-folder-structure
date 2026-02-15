@@ -1,0 +1,12 @@
+{
+  "project": {
+    "name": "{{PROJECT_NAME}}",
+    "structure": "new",
+    "created": "{{DATE}}"
+  },
+  "paths": {
+    "docRoot": "{{DOC_ROOT}}",
+    "boxShared": "{{BOX_SHARED}}",
+    "obsidian": "{{OBSIDIAN_PATH}}"
+  }
+}

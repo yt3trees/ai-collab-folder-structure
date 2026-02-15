@@ -26,8 +26,8 @@ A three-layer workspace structure for organizing multiple projects and optimizin
 
 ### Built-in AI Collaboration Design
 
-- `.claude/context/` - Aggregates context for AI reference
-- `CLAUDE.md` - Project-specific AI instructions (physical file on BOX side, symlinked locally)
+- `.claude/context/` - (Legacy) Context aggregation (Use `_ai-context` instead)
+- `CLAUDE.md` - Project-specific AI instructions (Copy from shared folder)
 - Knowledge base linkage via junction points
 
 ### Two Project Tiers
@@ -50,7 +50,7 @@ For full tier, you can choose between two document structures on the BOX side (L
 
 - **BOX sync**: Obsidian Vault, deliverables via shared/
 - **Git sync**: Source code (development/source/)
-- **Local independent**: .claude/, _ai-workspace/
+- **Local independent**: _ai-workspace/
 
 ## Overall Workspace Structure
 
@@ -87,19 +87,16 @@ Documents/Projects/
 
 ```
 Documents/Projects/{ProjectName}/
-├── .claude/                    # AI dedicated area [Local]
-│   └── context/
-│       └── obsidian_notes/     # Junction → Box/Obsidian-Vault/Projects/{ProjectName}
+├── _ai-context/                # AI Context & Obsidian Junction [Local]
+│   └── obsidian_notes/         # Junction → Box/Obsidian-Vault/Projects/{ProjectName}
 ├── _ai-workspace/              # AI analysis and experimentation [Local]
 ├── development/                # Development related [Local - Git managed]
 │   ├── source/                 # Source code
 │   ├── config/                 # Configuration files
 │   └── scripts/                # Development scripts
-├── scripts/                    # Project management scripts [Local]
-│   ├── config.json             # Project configuration
-│   └── config/                 # Additional config files
 ├── shared/                     # Junction → Box/Projects/{ProjectName}
-└── CLAUDE.md                   # Symlink → Box/Projects/{ProjectName}/CLAUDE.md
+├── AGENTS.md                   # Copy from shared/AGENTS.md
+└── CLAUDE.md                   # Copy from shared/AGENTS.md
 
 Box/Projects/{ProjectName}/         (new structure)
 ├── CLAUDE.md                   # AI instructions (physical file)
@@ -123,17 +120,15 @@ Box/Projects/{ProjectName}/         (new structure)
 
 ```
 Documents/Projects/_mini/{ProjectName}/
-├── .claude/                    # AI dedicated area [Local]
-│   └── context/
-│       └── obsidian_notes/     # Junction → Box/Obsidian-Vault/Projects/_mini/{ProjectName}
+├── _ai-context/                # AI Context & Obsidian Junction [Local]
+│   └── obsidian_notes/         # Junction → Box/Obsidian-Vault/Projects/_mini/{ProjectName}
 ├── development/                # Development related [Local]
 │   ├── source/                 # Source code (Git managed)
 │   ├── config/                 # Configuration files
 │   └── scripts/                # Development scripts
-├── scripts/                    # Project management scripts [Local]
-│   └── config.json             # Project configuration (includes tier info)
 ├── shared/                     # Junction → Box/Projects/_mini/{ProjectName}
-└── CLAUDE.md                   # Symlink → Box/Projects/_mini/{ProjectName}/CLAUDE.md
+├── AGENTS.md                   # Copy from shared/AGENTS.md
+└── CLAUDE.md                   # Copy from shared/AGENTS.md
 
 Box/Projects/_mini/{ProjectName}/
 ├── CLAUDE.md                   # AI instructions (physical file)
@@ -146,8 +141,7 @@ Box/Projects/_mini/{ProjectName}/
 | Type | Local Side | Link Destination (BOX Side) | Admin Rights |
 |------|-----------|----------------------------|-------------|
 | Junction | shared/ | Box/Projects/{ProjectName}/ | Not required |
-| Junction | .claude/context/obsidian_notes/ | Box/Obsidian-Vault/Projects/{ProjectName}/ | Not required |
-| Symlink | CLAUDE.md | Box/Projects/{ProjectName}/CLAUDE.md | Required (Developer Mode) |
+| Junction | _ai-context/obsidian_notes/ | Box/Obsidian-Vault/Projects/{ProjectName}/ | Not required |
 
 ## Quick Start
 
@@ -164,10 +158,6 @@ Create `Documents/Projects/_config/paths.json`:
 ```
 
 Each value is a relative path from `%USERPROFILE%`.
-
-To create symbolic links for CLAUDE.md, Developer Mode must be enabled:
-- Windows Settings → System → For developers → Developer Mode ON (recommended)
-- Or run scripts with administrator privileges
 
 ### 2. Using GUI Launcher (Recommended)
 
@@ -229,8 +219,7 @@ After BOX sync is complete, simply run the same script to create junctions and s
 .\_projectTemplate\scripts\setup_project.ps1 -ProjectName "NewProject"
 ```
 
-- `_config/paths.json` must be created individually on each PC (not BOX synced)
-- CLAUDE.md is already BOX synced, so only the symbolic link is created
+- CLAUDE.md/AGENTS.md copies are created automatically by the script.
 
 ## Script List
 
@@ -264,7 +253,6 @@ After BOX sync is complete, simply run the same script to create junctions and s
 - BOX Drive required (Layer 2/3 sync)
 - Junctions only work within the same volume
 - .ps1 scripts are written in Shift_JIS (cp932), output is UTF-8
-- Creating symlinks for CLAUDE.md requires Developer Mode or administrator privileges
 - Obsidian Vault should not be opened on two PCs simultaneously (to prevent data overwrite)
 
 ## License

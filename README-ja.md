@@ -24,8 +24,8 @@ AI(Claude Code)との協働を前提とした、プロジェクトフォルダ�
 
 ### AIとの協働を設計に組み込み
 
-- `.claude/context/` - AIが参照するコンテキストを集約
-- `CLAUDE.md` - プロジェクト固有のAI指示書(実体はBOX側、ローカルにSymlink)
+- `.claude/context/` - (Legacy) Context aggregation (Use `_ai-context` instead)
+- `CLAUDE.md` - プロジェクト固有のAI指示書(Sharedフォルダからのコピー)
 - ジャンクションによる知識ベース連携
 
 ### 2種類のプロジェクト Tier
@@ -48,7 +48,7 @@ full tier では、BOX側(Layer 3)のドキュメント構造を2種類から選
 
 - BOX同期: Obsidian Vault、shared/ 経由の成果物
 - Git同期: ソースコード(development/source/)
-- ローカル独立: .claude/、_ai-workspace/
+- ローカル独立: _ai-workspace/
 
 ## ワークスペース全体の構成
 
@@ -85,19 +85,16 @@ Documents/Projects/
 
 ```
 Documents/Projects/{ProjectName}/
-├── .claude/                    # AI専用領域 [Local]
-│   └── context/
-│       └── obsidian_notes/     # Junction → Box/Obsidian-Vault/Projects/{ProjectName}
+├── _ai-context/                # AI Context & Obsidian Junction [Local]
+│   └── obsidian_notes/         # Junction → Box/Obsidian-Vault/Projects/{ProjectName}
 ├── _ai-workspace/              # AI分析・実験用 [Local]
 ├── development/                # 開発関連 [Local - Git管理]
 │   ├── source/                 # ソースコード
 │   ├── config/                 # 設定ファイル
 │   └── scripts/                # 開発スクリプト
-├── scripts/                    # プロジェクト管理スクリプト [Local]
-│   ├── config.json             # プロジェクト設定
-│   └── config/                 # 追加設定ファイル
 ├── shared/                     # Junction → Box/Projects/{ProjectName}
-└── CLAUDE.md                   # Symlink → Box/Projects/{ProjectName}/CLAUDE.md
+├── AGENTS.md                   # Copy from shared/AGENTS.md
+└── CLAUDE.md                   # Copy from shared/AGENTS.md
 
 Box/Projects/{ProjectName}/         (new 構造)
 ├── CLAUDE.md                   # AI指示書 (実体)
@@ -121,17 +118,15 @@ Box/Projects/{ProjectName}/         (new 構造)
 
 ```
 Documents/Projects/_mini/{ProjectName}/
-├── .claude/                    # AI専用領域 [Local]
-│   └── context/
-│       └── obsidian_notes/     # Junction → Box/Obsidian-Vault/Projects/_mini/{ProjectName}
+├── _ai-context/                # AI Context & Obsidian Junction [Local]
+│   └── obsidian_notes/         # Junction → Box/Obsidian-Vault/Projects/_mini/{ProjectName}
 ├── development/                # 開発関連 [Local]
 │   ├── source/                 # ソースコード (Git管理)
 │   ├── config/                 # 設定ファイル
 │   └── scripts/                # 開発スクリプト
-├── scripts/                    # プロジェクト管理スクリプト [Local]
-│   └── config.json             # プロジェクト設定 (tier 情報を含む)
 ├── shared/                     # Junction → Box/Projects/_mini/{ProjectName}
-└── CLAUDE.md                   # Symlink → Box/Projects/_mini/{ProjectName}/CLAUDE.md
+├── AGENTS.md                   # Copy from shared/AGENTS.md
+└── CLAUDE.md                   # Copy from shared/AGENTS.md
 
 Box/Projects/_mini/{ProjectName}/
 ├── CLAUDE.md                   # AI指示書 (実体)
@@ -144,8 +139,7 @@ Box/Projects/_mini/{ProjectName}/
 | 種類 | ローカル側 | リンク先 (BOX側) | 管理者権限 |
 |------|-----------|-----------------|-----------|
 | Junction | shared/ | Box/Projects/{ProjectName}/ | 不要 |
-| Junction | .claude/context/obsidian_notes/ | Box/Obsidian-Vault/Projects/{ProjectName}/ | 不要 |
-| Symlink | CLAUDE.md | Box/Projects/{ProjectName}/CLAUDE.md | 必要 (開発者モード) |
+| Junction | _ai-context/obsidian_notes/ | Box/Obsidian-Vault/Projects/{ProjectName}/ | 不要 |
 
 ## クイックスタート
 
@@ -162,10 +156,6 @@ Box/Projects/_mini/{ProjectName}/
 ```
 
 各値は `%USERPROFILE%` からの相対パスです。
-
-CLAUDE.md のシンボリックリンク作成には、開発者モードの有効化が必要です:
-- Windows設定 → システム → 開発者向け → 開発者モード ON (推奨)
-- または、管理者権限でスクリプトを実行
 
 ### 2. GUIランチャーで操作 (推奨)
 
@@ -228,7 +218,7 @@ BOX同期完了後、同じスクリプトを実行するだけでジャンク�
 ```
 
 - `_config/paths.json` は各PCで個別に作成が必要(BOX非同期)
-- CLAUDE.md はBOX同期済みなのでシンボリックリンクのみ作成される
+- CLAUDE.md/AGENTS.md はスクリプトにより自動的にコピーされます。
 
 ## スクリプト一覧
 
@@ -262,7 +252,6 @@ BOX同期完了後、同じスクリプトを実行するだけでジャンク�
 - BOX Driveが必要(Layer 2/3の同期)
 - 同一ボリューム内でのみジャンクションが有効
 - .ps1 スクリプトは Shift_JIS (cp932) で記述、出力は UTF-8
-- CLAUDE.md の Symlink 作成には開発者モードまたは管理者権限が必要
 - Obsidian Vault は2台のPCで同時に開かない(データ上書き防止)
 
 ## License

@@ -1,0 +1,5 @@
+{
+  "asana_token": "your_asana_personal_access_token_here",
+  "workspace_gid": "your_workspace_gid_here",
+  "output_file": "C:/Users/yourname/Box/Obsidian-Vault/asana-tasks-view.md"
+}
