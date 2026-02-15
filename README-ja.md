@@ -1,5 +1,7 @@
 # ai-collab-folder-structure
 
+![Workspace Architecture](_asset/ai-collab-folder-structure.drawio.svg)
+
 AI(Claude Code)との協働を前提とした、プロジェクトフォルダ管理フレームワークです。
 
 ## 概要

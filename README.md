@@ -1,5 +1,7 @@
 # ai-collab-folder-structure
 
+![Workspace Architecture](_asset/ai-collab-folder-structure.drawio.svg)
+
 > 🌐 [日本語版はこちら / Japanese version available here](README-ja.md)
 
 A project folder management framework designed for collaboration with AI (Claude Code).
