@@ -33,7 +33,7 @@ AI(Claude Code)との協働を前提とした、プロジェクトフォルダ�
 | Tier | 配置先 | 用途 | 構成 |
 |------|--------|------|------|
 | full | `Projects/{案件}/` | メイン案件 | 全機能(_ai-workspace、構造化フォルダ) |
-| light | `Projects/_support/{案件}/` | お手伝い系 | 軽量構成(最小限のフォルダ) |
+| mini | `Projects/_mini/{案件}/` | お手伝い系 | 軽量構成(最小限のフォルダ) |
 
 ### full tier の Structure オプション
 
@@ -70,8 +70,8 @@ Documents/Projects/
 │   ├── sync_from_asana.py      # Asana → Markdown同期
 │   └── config.json.example     # Asana同期の設定例
 ├── _archive/                   # アーカイブ済みプロジェクト
-│   └── _support/               # アーカイブ済み light tier プロジェクト
-├── _support/                   # light tier プロジェクト群
+│   └── _mini/               # アーカイブ済み mini tier プロジェクト
+├── _mini/                   # mini tier プロジェクト群
 ├── _ai-workspace/              # ワークスペース全体のAI分析・実験用
 ├── CLAUDE.md                   # ワークスペース全体のAI指示書
 ├── README.md                   # 本ファイル
@@ -117,23 +117,23 @@ Box/Projects/{ProjectName}/         (new 構造)
 └── _work/                      # 日付ベースの作業フォルダ
 ```
 
-### light tier
+### mini tier
 
 ```
-Documents/Projects/_support/{ProjectName}/
+Documents/Projects/_mini/{ProjectName}/
 ├── .claude/                    # AI専用領域 [Local]
 │   └── context/
-│       └── obsidian_notes/     # Junction → Box/Obsidian-Vault/Projects/_support/{ProjectName}
+│       └── obsidian_notes/     # Junction → Box/Obsidian-Vault/Projects/_mini/{ProjectName}
 ├── development/                # 開発関連 [Local]
 │   ├── source/                 # ソースコード (Git管理)
 │   ├── config/                 # 設定ファイル
 │   └── scripts/                # 開発スクリプト
 ├── scripts/                    # プロジェクト管理スクリプト [Local]
 │   └── config.json             # プロジェクト設定 (tier 情報を含む)
-├── shared/                     # Junction → Box/Projects/_support/{ProjectName}
-└── CLAUDE.md                   # Symlink → Box/Projects/_support/{ProjectName}/CLAUDE.md
+├── shared/                     # Junction → Box/Projects/_mini/{ProjectName}
+└── CLAUDE.md                   # Symlink → Box/Projects/_mini/{ProjectName}/CLAUDE.md
 
-Box/Projects/_support/{ProjectName}/
+Box/Projects/_mini/{ProjectName}/
 ├── CLAUDE.md                   # AI指示書 (実体)
 ├── docs/                       # ドキュメント (flat - サブフォルダなし)
 └── _work/                      # 作業フォルダ
@@ -190,8 +190,8 @@ powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_proj
 # メイン案件 (full tier, legacy 構造)
 .\_projectTemplate\scripts\setup_project.ps1 -ProjectName "NewProject" -Structure legacy
 
-# お手伝い系 (light tier)
-.\_projectTemplate\scripts\setup_project.ps1 -ProjectName "SupportProject" -Tier light
+# お手伝い系 (mini tier)
+.\_projectTemplate\scripts\setup_project.ps1 -ProjectName "SupportProject" -Tier mini
 ```
 
 ### 4. 健全性チェック
@@ -201,7 +201,7 @@ powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_proj
 .\_projectTemplate\scripts\check_project.ps1 -ProjectName "NewProject"
 
 # お手伝い系
-.\_projectTemplate\scripts\check_project.ps1 -ProjectName "SupportProject" -Support
+.\_projectTemplate\scripts\check_project.ps1 -ProjectName "SupportProject" -Mini
 ```
 
 ### 5. プロジェクトのアーカイブ
@@ -214,10 +214,10 @@ powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_proj
 .\_projectTemplate\scripts\archive_project.ps1 -ProjectName "MyProject"
 
 # お手伝い系
-.\_projectTemplate\scripts\archive_project.ps1 -ProjectName "SupportProject" -Support -DryRun
+.\_projectTemplate\scripts\archive_project.ps1 -ProjectName "SupportProject" -Mini -DryRun
 ```
 
-アーカイブは3層すべてを `_archive/` に移動します。light tier は `_archive/_support/` 配下に移動されます。
+アーカイブは3層すべてを `_archive/` に移動します。mini tier は `_archive/_mini/` 配下に移動されます。
 
 ### 6. PC-B でのセットアップ
 

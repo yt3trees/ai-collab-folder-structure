@@ -35,7 +35,7 @@ A three-layer workspace structure for organizing multiple projects and optimizin
 | Tier | Location | Purpose | Structure |
 |------|----------|---------|-----------|
 | full | `Projects/{Project}/` | Main projects | Full features (_ai-workspace, structured folders) |
-| light | `Projects/_support/{Project}/` | Support tasks | Lightweight (minimal folders) |
+| mini | `Projects/_mini/{Project}/` | Support tasks | Minimal (mini folders) |
 
 ### Structure Options for Full Tier
 
@@ -72,8 +72,8 @@ Documents/Projects/
 │   ├── sync_from_asana.py      # Asana → Markdown sync
 │   └── config.json.example     # Asana sync config example
 ├── _archive/                   # Archived projects
-│   └── _support/               # Archived light tier projects
-├── _support/                   # Light tier projects
+│   └── _mini/               # Archived mini tier projects
+├── _mini/                   # Mini tier projects
 ├── _ai-workspace/              # AI analysis and experimentation for entire workspace
 ├── CLAUDE.md                   # AI instructions for entire workspace
 ├── README.md                   # This file
@@ -119,23 +119,23 @@ Box/Projects/{ProjectName}/         (new structure)
 └── _work/                      # Date-based working folders
 ```
 
-### Light Tier
+### Mini Tier
 
 ```
-Documents/Projects/_support/{ProjectName}/
+Documents/Projects/_mini/{ProjectName}/
 ├── .claude/                    # AI dedicated area [Local]
 │   └── context/
-│       └── obsidian_notes/     # Junction → Box/Obsidian-Vault/Projects/_support/{ProjectName}
+│       └── obsidian_notes/     # Junction → Box/Obsidian-Vault/Projects/_mini/{ProjectName}
 ├── development/                # Development related [Local]
 │   ├── source/                 # Source code (Git managed)
 │   ├── config/                 # Configuration files
 │   └── scripts/                # Development scripts
 ├── scripts/                    # Project management scripts [Local]
 │   └── config.json             # Project configuration (includes tier info)
-├── shared/                     # Junction → Box/Projects/_support/{ProjectName}
-└── CLAUDE.md                   # Symlink → Box/Projects/_support/{ProjectName}/CLAUDE.md
+├── shared/                     # Junction → Box/Projects/_mini/{ProjectName}
+└── CLAUDE.md                   # Symlink → Box/Projects/_mini/{ProjectName}/CLAUDE.md
 
-Box/Projects/_support/{ProjectName}/
+Box/Projects/_mini/{ProjectName}/
 ├── CLAUDE.md                   # AI instructions (physical file)
 ├── docs/                       # Documents (flat - no subfolders)
 └── _work/                      # Working folder
@@ -192,8 +192,8 @@ Features:
 # Main project (full tier, legacy structure)
 .\_projectTemplate\scripts\setup_project.ps1 -ProjectName "NewProject" -Structure legacy
 
-# Support task (light tier)
-.\_projectTemplate\scripts\setup_project.ps1 -ProjectName "SupportProject" -Tier light
+# Support task (mini tier)
+.\_projectTemplate\scripts\setup_project.ps1 -ProjectName "SupportProject" -Tier mini
 ```
 
 ### 4. Health Check
@@ -203,7 +203,7 @@ Features:
 .\_projectTemplate\scripts\check_project.ps1 -ProjectName "NewProject"
 
 # Support task
-.\_projectTemplate\scripts\check_project.ps1 -ProjectName "SupportProject" -Support
+.\_projectTemplate\scripts\check_project.ps1 -ProjectName "SupportProject" -Mini
 ```
 
 ### 5. Archiving Projects
@@ -216,10 +216,10 @@ Features:
 .\_projectTemplate\scripts\archive_project.ps1 -ProjectName "MyProject"
 
 # Support task
-.\_projectTemplate\scripts\archive_project.ps1 -ProjectName "SupportProject" -Support -DryRun
+.\_projectTemplate\scripts\archive_project.ps1 -ProjectName "SupportProject" -Mini -DryRun
 ```
 
-Archiving moves all three layers to `_archive/`. Light tier projects are moved under `_archive/_support/`.
+Archiving moves all three layers to `_archive/`. Mini tier projects are moved under `_archive/_mini/`.
 
 ### 6. Setup on PC-B
 
