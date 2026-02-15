@@ -60,8 +60,6 @@ if ($Tier -eq "mini") {
     $localFolders = @(
         '_ai-context',
         '_ai-workspace',
-        '_ai-context',
-        '_ai-workspace',
         'development\source',
         'development\config',
         'development\scripts'
