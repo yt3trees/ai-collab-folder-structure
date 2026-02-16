@@ -248,89 +248,20 @@ $obsidianTarget = "$env:USERPROFILE\Box\Obsidian-Vault\Projects\ProjectA"
 New-Item -ItemType Junction -Path $obsidianNotesDir -Target $obsidianTarget
 ```
 
-#### 1.3 セットアップスクリプト (setup_junctions.ps1)
+#### 1.3 プロジェクトセットアップ (Project Setup)
 
-初回セットアップおよびPC-Bでの環境構築に使用。
-`Documents/Projects/ProjectA/scripts/setup_junctions.ps1` として保存。
+新規プロジェクトの作成やPC-Bでの環境構築には、`_ProjectTemplate` のスクリプトを使用する。
+個別のセットアップスクリプト (`setup_junctions.ps1`) は廃止され、汎用スクリプトに統合された。
 
 ```powershell
-# ProjectA セットアップスクリプト (初回 / PC-B 共通)
-$docRoot = "$env:USERPROFILE\Documents\Projects\ProjectA"
-$boxShared = "$env:USERPROFILE\Box\Projects\ProjectA"
+# _ProjectTemplate のスクリプトを使用
+cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
-# ローカル専用フォルダ作成
-$localFolders = @(
-    "_ai-context", "_temp",
-    "development\source", "development\config", "development\scripts"
-)
-foreach ($folder in $localFolders) {
-    $path = "$docRoot\$folder"
-    if (-not (Test-Path $path)) {
-        New-Item -Path $path -ItemType Directory -Force | Out-Null
-        Write-Host "ローカルフォルダ作成: $folder" -ForegroundColor Green
-    }
-}
-
-# BOX共有フォルダ作成 (存在しない場合)
-$sharedSubs = @(
-    "docs\planning", "docs\design", "docs\testing", "docs\release",
-    "reference\vendor", "reference\standards", "reference\external",
-    "records\minutes", "records\reports", "records\reviews",
-    "_work"
-)
-foreach ($sub in $sharedSubs) {
-    $path = "$boxShared\$sub"
-    if (-not (Test-Path $path)) {
-        New-Item -Path $path -ItemType Directory -Force | Out-Null
-        Write-Host "BOX共有フォルダ作成: $sub" -ForegroundColor Cyan
-    }
-}
-
-# ジャンクション作成 (2本)
-
-# 1. shared/ -> Box/Projects/ProjectA (Layer 3: Artifact)
-$link = "$docRoot\shared"
-if (Test-Path $link) {
-    $item = Get-Item $link -Force
-    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-        Write-Host "ジャンクション既存: shared/ -> $boxShared" -ForegroundColor Yellow
-    } else {
-        Write-Warning "shared/ が通常フォルダとして存在します。確認してください: $link"
-    }
-} elseif (Test-Path $boxShared) {
-    New-Item -ItemType Junction -Path $link -Target $boxShared | Out-Null
-    Write-Host "ジャンクション作成完了: shared/ -> $boxShared" -ForegroundColor Green
-} else {
-    Write-Warning "BOX共有フォルダが見つかりません: $boxShared"
-    Write-Warning "Box同期が完了しているか確認してください。"
-}
-
-# 2. obsidian_notes/ -> Box/Obsidian-Vault/Projects/ProjectA (Layer 2: Knowledge)
-$obsidianNotesDir = "$docRoot\_ai-context\obsidian_notes"
-$obsidianTarget = "$env:USERPROFILE\Box\Obsidian-Vault\Projects\ProjectA"
-
-if (-not (Test-Path "$docRoot\_ai-context")) {
-    New-Item -Path "$docRoot\_ai-context" -ItemType Directory -Force | Out-Null
-}
-
-$obsidianLink = $obsidianNotesDir
-if (Test-Path $obsidianLink) {
-    $item = Get-Item $obsidianLink -Force
-    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-        Write-Host "ジャンクション既存: obsidian_notes/ -> $obsidianTarget" -ForegroundColor Yellow
-    } else {
-        Write-Warning "obsidian_notes/ が通常フォルダとして存在します。確認してください: $obsidianLink"
-    }
-} elseif (Test-Path $obsidianTarget) {
-    New-Item -ItemType Junction -Path $obsidianLink -Target $obsidianTarget | Out-Null
-    Write-Host "ジャンクション作成完了: obsidian_notes/ -> $obsidianTarget" -ForegroundColor Green
-} else {
-    Write-Warning "Obsidian Vaultフォルダが見つかりません: $obsidianTarget"
-    Write-Warning "Box同期が完了しているか確認してください。"
-}
-
-Write-Host "`nセットアップ完了" -ForegroundColor Green
+# セットアップ実行
+.\setup_project.ps1 -ProjectName "ProjectA"
 ```
+
+これにより、ローカルフォルダ、BOX共有フォルダ、および必要なジャンクションが自動的に構成される。
 
 #### 1.4 ローカル専用フォルダの保持
 
@@ -339,82 +270,19 @@ Write-Host "`nセットアップ完了" -ForegroundColor Green
 - %USERPROFILE%\Documents\Projects\ProjectA\_temp
 - %USERPROFILE%\Documents\Projects\ProjectA\development
 
-#### 1.5 設定ファイルテンプレート作成
 
-`Documents/Projects/ProjectA/scripts/config/.env.example`:
+#### 1.5 設定ファイル
 
-```bash
-# Asana API設定
-ASANA_TOKEN=your_personal_access_token_here
-ASANA_WORKSPACE_GID=your_workspace_gid_here
-ASANA_PROJECT_GID=your_project_gid_here
+環境変数や設定ファイルは `development/config/` 配下で管理する。
+`setup_project.ps1` 実行時に `development/config/` ディレクトリが自動作成される。
 
-# 出力設定
-ASANA_OUTPUT_FILE=../asana-tasks-view.md
-```
+#### 1.6 健全性チェック
 
-`Documents/Projects/ProjectA/scripts/config/config.template.json`:
-
-```json
-{
-  "asana": {
-    "token": "your_personal_access_token_here",
-    "workspace_gid": "your_workspace_gid_here",
-    "project_gid": "your_project_gid_here"
-  },
-  "output": {
-    "file": "../asana-tasks-view.md",
-    "format": "markdown"
-  }
-}
-```
-
-#### 1.6 健全性チェックスクリプト
-
-`Documents/Projects/ProjectA/scripts/check_symlinks.ps1` を作成し、ジャンクション確認と.lnkリンク切れを検知する。
+`_ProjectTemplate` の `check_project.ps1` を使用して、ジャンクションやリンクの検証を行う。
 
 ```powershell
-# ProjectA 健全性チェックスクリプト
-$docRoot = "$env:USERPROFILE\Documents\Projects\ProjectA"
-$boxShared = "$env:USERPROFILE\Box\Projects\ProjectA"
-
-Write-Host "=== ProjectA Health Check ===" -ForegroundColor Cyan
-
-# ジャンクション確認
-Write-Host "`n[Junction]" -ForegroundColor Yellow
-$link = "$docRoot\shared"
-if (Test-Path $link) {
-    $item = Get-Item $link -Force
-    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-        Write-Host "OK: shared/ -> $boxShared" -ForegroundColor Green
-    } else {
-        Write-Warning "shared/ はジャンクションではなく通常フォルダです"
-    }
-} else {
-    Write-Warning "shared/ が存在しません。setup_junctions.ps1 を実行してください"
-}
-
-# シンボリックリンク確認 (手動作成分、BOX非同期)
-Write-Host "`n[Symlinks (.lnk) - PC固有、BOX非同期]" -ForegroundColor Yellow
-$shell = New-Object -ComObject WScript.Shell
-$lnkFiles = Get-ChildItem -Path $boxShared -Recurse -Filter "*.lnk" -ErrorAction SilentlyContinue
-
-if ($lnkFiles) {
-    Write-Host "※ シンボリックリンクはBOX同期されません。各PCで個別に作成してください。" -ForegroundColor DarkYellow
-    foreach ($lnk in $lnkFiles) {
-        $shortcut = $shell.CreateShortcut($lnk.FullName)
-        $target = $shortcut.TargetPath
-        if (-not (Test-Path $target)) {
-            Write-Warning "リンク切れ: $($lnk.FullName) -> $target"
-        } else {
-            Write-Host "OK: $($lnk.Name)" -ForegroundColor Green
-        }
-    }
-} else {
-    Write-Host "(.lnk ファイルなし)" -ForegroundColor Gray
-}
-
-Write-Host "`nチェック完了" -ForegroundColor Cyan
+cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
+.\check_project.ps1 -ProjectName "ProjectA"
 ```
 
 #### 1.7 新規プロジェクトの作成 (テンプレート活用)
@@ -438,10 +306,10 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
 | 項目 | ProjectA (本ドキュメント) | 新規プロジェクト (_projectTemplate) |
 |------|---------------------------|-------------------------------------|
-| スクリプト | 専用スクリプト (setup_junctions.ps1等) | 汎用スクリプト (setup_project.ps1) |
+| スクリプト | _ProjectTemplate (setup_project.ps1 等) | _ProjectTemplate (setup_project.ps1 等) |
 | 構造 | new構造のみ | new/legacy 両対応 |
-| Obsidian連携 | 手動で記述 | 自動でジャンクション作成 |
-| 設定ファイル | .env.example, config.template.json | config.json (自動生成) |
+| Obsidian連携 | 自動でジャンクション作成 | 自動でジャンクション作成 |
+| 設定ファイル | development/config/ | creation of development/config/ |
 
 **テンプレートの利点:**
 - プロジェクト名を指定するだけで、フォルダ構造とジャンクションが自動作成される
@@ -857,7 +725,7 @@ python-frontmatter>=1.1.0
 注意点:
 - ジャンクションは同一ボリューム内のみ
 - リンク先のフォルダを移動・削除するとジャンクション無効化
-- PC-Bでは setup_junctions.ps1 でジャンクション再作成が必要
+- PC-Bでは `setup_project.ps1` でジャンクション再作成が必要
 - ジャンクションは2本:
   - `shared/` → Box/Projects/ProjectA (成果物)
   - `_ai-context/obsidian_notes/` → Box/Obsidian-Vault/Projects/ProjectA (知識ベース)
@@ -877,7 +745,7 @@ python-frontmatter>=1.1.0
 - BOXはシンボリックリンク (.lnk) を同期しない。
 - Shared配下のシンボリックリンクは手動作成・PC固有である。
 - 2PC間で同じリンクが必要な場合は各PCで個別に作成する。
-- リンク切れの確認は `check_symlinks.ps1` で実施する。
+- リンク切れの確認は `check_project.ps1` で実施する。
 
 ---
 
@@ -981,8 +849,8 @@ Documents/Projects/_mini/{ProjectName}/
 │
 ├── development/                      # 開発関連 [Local]
 │   ├── source/                       # ソースコード (Git管理)
-│   ├── config.json                   # Project configuration
-│   └── config/                       # Additional config files
+│   ├── config/                       # Additional config files
+│   └── scripts/                      # 開発スクリプト
 │
 ├── shared/                           ← Junction → Box/Projects/_mini/{ProjectName}
 │
@@ -1042,14 +910,13 @@ Box/Obsidian-Vault/Projects/_archive/_mini/{ProjectName}/
 3. %USERPROFILE%\Box\Obsidian-Vault\Projects\_inHouse\00_inHouse-Index.md
 4. %USERPROFILE%\Box\Obsidian-Vault\_templates\project-daily-note.md
 5. %USERPROFILE%\Box\Obsidian-Vault\_templates\inhouse-daily-note.md
-6. %USERPROFILE%\Documents\Projects\ProjectA\scripts\setup_junctions.ps1
-7. %USERPROFILE%\Documents\Projects\ProjectA\scripts\check_symlinks.ps1
-8. %USERPROFILE%\Documents\Projects\_globalScripts\sync_from_asana.py
-9. %USERPROFILE%\Documents\Projects\ProjectA\development\source\.gitignore
-11. %USERPROFILE%\Documents\Projects\ProjectA\AGENTS.md (via Symlink from shared/)
-12. %USERPROFILE%\Documents\Projects\ProjectA\scripts\config\.env.example
-13. %USERPROFILE%\Documents\Projects\ProjectA\scripts\config\config.template.json
-14. %USERPROFILE%\Box\Obsidian-Vault\.claude\skills\weekly-summary\SKILL.md
+6. %USERPROFILE%\Documents\Projects\_projectTemplate\scripts\setup_project.ps1
+7. %USERPROFILE%\Documents\Projects\_projectTemplate\scripts\check_project.ps1
+8. %USERPROFILE%\Documents\Projects\_projectTemplate\scripts\archive_project.ps1
+9. %USERPROFILE%\Documents\Projects\_globalScripts\sync_from_asana.py
+10. %USERPROFILE%\Documents\Projects\ProjectA\development\source\.gitignore
+11. %USERPROFILE%\Documents\Projects\ProjectA\AGENTS.md (via Copy from shared/)
+12. %USERPROFILE%\Box\Obsidian-Vault\.claude\skills\weekly-summary\SKILL.md
 
 ### 既存ファイルの活用
 
