@@ -60,13 +60,15 @@ Layer 1のローカルフォルダ内に2本のジャンクションを作成し
 %USERPROFILE%\
 ├── Documents\
 │   └── Projects\
+│       ├── _config\                       (ワークスペース設定) [Local]
+│       │   └── paths.json                 (パス設定 - スクリプト共通)
 │       ├── _globalScripts\                (プロジェクト横断共通スクリプト) [Local]
 │       │   └── sync_from_asana.py         (Asana同期スクリプト)
 │       │
 │       └── ProjectA\                      [Layer 1: Execution]
 │           ├── _ai-context\               (Common AI Context) [Local]
 │           │   └── obsidian_notes\        ← Junction → Box/Obsidian-Vault/Projects/ProjectA
-│           ├── _temp\                     (一時ファイル・作業中) [Local]
+│           ├── _ai-workspace\             (AI作業領域) [Local]
 │           ├── development\               (Source Code - Git Managed) [Local]
 │           │   ├── source\                (.git 含む、BOX非同期)
 │           │   ├── config\
@@ -137,10 +139,11 @@ Layer 1のローカルフォルダ内に2本のジャンクションを作成し
 #### Layer 1: Execution (作業場)
 - 場所: ローカル (`Documents/Projects/ProjectA`)
 - 役割: 日々の作業、コーディング。`shared/` ジャンクション経由でLayer 3にアクセス。
+- ワークスペース設定: `Projects/_config/paths.json` にパス情報を保持。全スクリプトがこの設定を参照する。
 - ローカル専用フォルダ:
     - `_ai-context`: 全AI共通のコンテキスト情報 (Obsidianジャンクション含む)。
+    - `_ai-workspace`: AI作業領域。
     - `AGENTS.md` / `CLAUDE.md`: shared配下のマスターファイルからのコピー (BOX同期外)。
-    - `_temp`: 一時ファイル・作業中の作業用。
     - `development/source`: Git管理。BOX同期しない(容量・競合回避)。
 - `shared/`: BOX共有フォルダ全体をジャンクションでマウント。
 
@@ -219,109 +222,72 @@ foreach ($sub in $sharedSubs) {
 }
 ```
 
-#### 1.2 ローカルProjectフォルダ作成とジャンクション
+#### 1.2 プロジェクトセットアップ
 
-ローカル `Documents/Projects/ProjectA/` に、以下の2本のジャンクションを作成する:
-1. `shared/` → Box/Projects/ProjectA (Layer 3)
-2. `_ai-context/obsidian_notes/` → Box/Obsidian-Vault/Projects/ProjectA (Layer 2)
+新規プロジェクトの作成やPC-Bでの環境構築には、`_projectTemplate` のスクリプトを使用する。
 
-さらに、AI指示書 (`AGENTS.md`) のシンボリックリンクを作成する。
+全スクリプトは `_config/paths.json` からパス情報を取得するため、環境ごとの差異を吸収できる。
 
 ```powershell
-$docRoot = "$env:USERPROFILE\Documents\Projects\ProjectA"
-$boxShared = "$env:USERPROFILE\Box\Projects\ProjectA"
-New-Item -Path $docRoot -ItemType Directory -Force
-
-# ローカル専用フォルダ作成
-@("_ai-context", "_temp", "development\source", "development\config",
-  "development\scripts") | ForEach-Object {
-    New-Item -Path "$docRoot\$_" -ItemType Directory -Force
-}
-
-# ジャンクション作成 (2本)
-# 1. shared/ -> Box/Projects/ProjectA (Layer 3: Artifact)
-New-Item -ItemType Junction -Path "$docRoot\shared" -Target $boxShared
-
-# 2. obsidian_notes/ -> Box/Obsidian-Vault/Projects/ProjectA (Layer 2: Knowledge)
-$obsidianNotesDir = "$docRoot\_ai-context\obsidian_notes"
-$obsidianTarget = "$env:USERPROFILE\Box\Obsidian-Vault\Projects\ProjectA"
-New-Item -ItemType Junction -Path $obsidianNotesDir -Target $obsidianTarget
-```
-
-#### 1.3 プロジェクトセットアップ (Project Setup)
-
-新規プロジェクトの作成やPC-Bでの環境構築には、`_ProjectTemplate` のスクリプトを使用する。
-個別のセットアップスクリプト (`setup_junctions.ps1`) は廃止され、汎用スクリプトに統合された。
-
-```powershell
-# _ProjectTemplate のスクリプトを使用
+# _projectTemplate のスクリプトを使用
 cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
-# セットアップ実行
+# 既存プロジェクトのセットアップ / PC-Bへの同期
 .\setup_project.ps1 -ProjectName "ProjectA"
+
+# 新規プロジェクトを作成 (new構造 - デフォルト)
+.\setup_project.ps1 -ProjectName "MyNewProject"
+
+# legacy構造を使用する場合
+.\setup_project.ps1 -ProjectName "MyNewProject" -Structure legacy
 ```
 
-これにより、ローカルフォルダ、BOX共有フォルダ、および必要なジャンクションが自動的に構成される。
+`setup_project.ps1` が自動的にローカルフォルダ、BOX共有フォルダ、ジャンクション、およびAI指示書のコピーを構成する。
 
-#### 1.4 ローカル専用フォルダの保持
+スクリプトが作成するジャンクション (2本):
+1. `shared/` → Box/Projects/ProjectA (Layer 3: Artifact)
+2. `_ai-context/obsidian_notes/` → Box/Obsidian-Vault/Projects/ProjectA (Layer 2: Knowledge)
+
+テンプレートの利点:
+- プロジェクト名を指定するだけで、フォルダ構造とジャンクションが自動作成される
+- new/legacy の2種類の構造から選択可能
+- Obsidian Vault との連携も自動設定 (Indexファイル自動作成含む)
+- 健全性チェック・アーカイブスクリプトも同梱
+- テンプレートの場所: `%USERPROFILE%\Documents\Projects\_projectTemplate\`
+- 詳細は `_projectTemplate\README.md` を参照
+
+#### 1.3 ローカル専用フォルダの保持
 
 以下はローカルに残す (ジャンクションではなく実フォルダ):
 - %USERPROFILE%\Documents\Projects\ProjectA\_ai-context
-- %USERPROFILE%\Documents\Projects\ProjectA\_temp
+- %USERPROFILE%\Documents\Projects\ProjectA\_ai-workspace
 - %USERPROFILE%\Documents\Projects\ProjectA\development
 
+#### 1.4 設定ファイル
 
-#### 1.5 設定ファイル
+プロジェクト固有の設定は `scripts/config.json` で管理する (`check_project.ps1` が参照)。
+`setup_project.ps1` 実行時に `development/config/` および `development/scripts/` ディレクトリが自動作成される。
 
-環境変数や設定ファイルは `development/config/` 配下で管理する。
-`setup_project.ps1` 実行時に `development/config/` ディレクトリが自動作成される。
+#### 1.5 健全性チェック
 
-#### 1.6 健全性チェック
-
-`_ProjectTemplate` の `check_project.ps1` を使用して、ジャンクションやリンクの検証を行う。
+`_projectTemplate` の `check_project.ps1` を使用して、ジャンクションやリンクの検証を行う。
 
 ```powershell
 cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 .\check_project.ps1 -ProjectName "ProjectA"
 ```
 
-#### 1.7 新規プロジェクトの作成 (テンプレート活用)
+#### 1.6 GUIランチャー
 
-新規プロジェクトを作成する場合は、`_projectTemplate` を使用して標準的な構造を自動生成できます。
-
-**使用例:**
+`project_launcher.ps1` を使用すると、GUI画面からセットアップ・健全性チェック・アーカイブを実行できる。
 
 ```powershell
-# テンプレートディレクトリに移動
 cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
-
-# 新規プロジェクトを作成 (new構造)
-.\setup_project.ps1 -ProjectName "MyNewProject"
-
-# または、legacy構造を使用する場合
-.\setup_project.ps1 -ProjectName "MyNewProject" -Structure legacy
+.\project_launcher.ps1
 ```
 
-**ProjectA と新規プロジェクトの違い:**
+### Phase 2: Multi-CLI 対応
 
-| 項目 | ProjectA (本ドキュメント) | 新規プロジェクト (_projectTemplate) |
-|------|---------------------------|-------------------------------------|
-| スクリプト | _ProjectTemplate (setup_project.ps1 等) | _ProjectTemplate (setup_project.ps1 等) |
-| 構造 | new構造のみ | new/legacy 両対応 |
-| Obsidian連携 | 自動でジャンクション作成 | 自動でジャンクション作成 |
-| 設定ファイル | development/config/ | creation of development/config/ |
-
-**テンプレートの利点:**
-- プロジェクト名を指定するだけで、フォルダ構造とジャンクションが自動作成される
-- 新規/旧来の2種類の構造から選択可能
-- Obsidian Vault との連携も自動設定 (Indexファイル自動作成含む)
-- 健全性チェックスクリプトも同梱
-
-**テンプレートの場所:**
-- `%USERPROFILE%\Documents\Projects\_projectTemplate\`
-- 詳細は `_projectTemplate\README.md` を参照
-
-### Phase 1.5: Multi-CLI 対応
 
 本アーキテクチャでは、単一の指示書 (`AGENTS.md`) で複数のAI CLIツールに対応します。
 
@@ -342,7 +308,7 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
    - `ProjectA/CLAUDE.md` (Copy from shared)
 3. **Context**: `_ai-context/` フォルダに必要な情報を集約し、`AGENTS.md` 内で「このフォルダを参照せよ」と指示する。
 
-### Phase 2: Obsidian Vault の設定
+### Phase 3: Obsidian Vault の設定
 
 #### 2.1 Obsidian初期設定
 
@@ -473,7 +439,7 @@ tags: #daily #inhouse
 - Dataview (データクエリ)
 - Templater (高度なテンプレート)
 
-### Phase 3: Git リポジトリの設定
+### Phase 4: Git リポジトリの設定
 
 #### 3.1 Gitリポジトリ初期化
 
@@ -532,12 +498,12 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 git push -u origin main
 ```
 
-### Phase 4: Asana 統合 (One-way Sync)
+### Phase 5: Asana 統合と運用
 
 方針: Asana(正) -> Obsidian(Markdown View) の一方通行同期。
 メモ的なサブタスクのみMarkdownで管理し、タスク自体の追加・ステータス変更はAsanaで行う。
 
-### Phase 4.5: 週次サマリー生成 (Weekly Summary)
+#### 5.0 週次サマリー生成 (Weekly Summary)
 
 週次サマリーは weekly-summary Skill を使用して自動生成する。
 
@@ -560,7 +526,7 @@ Box/Obsidian-Vault/Projects/ProjectA/weekly/
 └── ...
 ```
 
-#### 4.1 Asana ワークスペース セットアップ
+#### 5.1 Asana ワークスペース セットアップ
 
 1. Asanaで新規プロジェクト作成:
    - プロジェクト名: "ProjectA - システム導入案件"
@@ -580,13 +546,13 @@ Box/Obsidian-Vault/Projects/ProjectA/weekly/
    - MD_Path (テキスト): ローカルMarkdownファイルのパス
    - Sync_Status (ドロップダウン): Pending, Synced, Conflict
 
-#### 4.2 Asana API トークン取得
+#### 5.2 Asana API トークン取得
 
 1. Asana → Settings → Apps → Developer apps
 2. "Create new personal access token"
 3. トークンをコピー
 
-#### 4.3 同期スクリプト (sync_from_asana.py)
+#### 5.3 同期スクリプト (sync_from_asana.py)
 
 必要パッケージ (`requirements.txt`):
 
@@ -603,9 +569,9 @@ python-frontmatter>=1.1.0
 
 **週次実行**: 毎週金曜夕方、上記コマンドを直接実行してください。
 
-### Phase 5: 動作確認
+### Phase 6: 動作確認
 
-#### 5.1 Obsidian動作確認
+#### 6.1 Obsidian動作確認
 
 - [ ] Obsidian VaultをBOXフォルダで開く
 - [ ] ProjectA/daily/ に新規日次ノート作成 (テンプレートA適用)
@@ -614,20 +580,20 @@ python-frontmatter>=1.1.0
 - [ ] グラフビューで案件関連表示確認
 - [ ] PC-B (2台目) でBOX同期後、Obsidian起動確認
 
-#### 5.2 BOX同期確認
+#### 6.2 BOX同期確認
 
 - [ ] ProjectA/ にテストファイル作成
 - [ ] PC-Aで編集 → PC-Bで同期確認
 - [ ] ジャンクション経由で Documents\ProjectA\shared\docs\planning アクセス確認
 
-#### 5.3 Git動作確認
+#### 6.3 Git動作確認
 
 - [ ] テストファイル作成・コミット
 - [ ] リモートリポジトリへプッシュ
 - [ ] PC-Bでクローン or プル
 - [ ] .gitignore 動作確認
 
-#### 5.4 Asana同期確認
+#### 6.4 Asana同期確認
 
 - [ ] Asanaでテストタスク作成
 - [ ] sync_from_asana.py 実行
@@ -831,8 +797,8 @@ mini tier のプロジェクトは `_mini/` 配下に配置され、フル機能
 |------|----------------------|----------------------|
 | 配置先 | `Projects/{案件}/` | `Projects/_mini/{案件}/` |
 | 用途 | メイン案件 (長期、複雑) | お手伝い系 (短期、シンプル) |
+| Layer 1 (_ai-context/) | あり | あり |
 | Layer 1 (_ai-workspace/) | あり | なし |
-| Layer 1 (scripts/config/) | あり | なし |
 | Layer 2 (Obsidian) | daily, meetings, specs, notes, weekly | notes のみ |
 | Layer 3 (BOX docs/) | 構造化 (planning, design, testing, release) | flat (サブフォルダなし) |
 | Layer 3 (reference/) | あり | なし |
@@ -844,13 +810,12 @@ mini tier のプロジェクトは `_mini/` 配下に配置され、フル機能
 
 ```
 Documents/Projects/_mini/{ProjectName}/
-├── _ai-context/                      # Commmon Context [Local]
+├── _ai-context/                      # Common Context [Local]
 │   └── obsidian_notes/               ← Junction → Box/Obsidian-Vault/Projects/_mini/{ProjectName}
 │
 ├── development/                      # 開発関連 [Local]
 │   ├── source/                       # ソースコード (Git管理)
-│   ├── config/                       # Additional config files
-│   └── scripts/                      # 開発スクリプト
+│   └── config/                       # Additional config files
 │
 ├── shared/                           ← Junction → Box/Projects/_mini/{ProjectName}
 │
@@ -880,8 +845,8 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
 1. ドキュメント配置: `shared/docs/` に flat 配置 (サブフォルダなし)
 2. Obsidian ノート: `notes/` フォルダのみ使用 (daily, weekly 不要)
-3. 健全性チェック: `check_project.ps1 -ProjectName "SupportProject" -Support`
-4. アーカイブ: `archive_project.ps1 -ProjectName "SupportProject" -Support`
+3. 健全性チェック: `check_project.ps1 -ProjectName "SupportProject" -Mini`
+4. アーカイブ: `archive_project.ps1 -ProjectName "SupportProject" -Mini`
 
 ### Obsidian での扱い
 
@@ -931,10 +896,12 @@ Box/Obsidian-Vault/Projects/_archive/_mini/{ProjectName}/
 | ファイル | 用途 |
 |---------|------|
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\README.md` | テンプレートの使用方法 |
-| `%USERPROFILE%\Documents\Projects\_projectTemplate\CLAUDE.md` | 新規プロジェクト用AGENTS.mdテンプレート |
+| `%USERPROFILE%\Documents\Projects\_projectTemplate\AGENTS.md` | 新規プロジェクト用AI指示書テンプレート |
+| `%USERPROFILE%\Documents\Projects\_projectTemplate\CLAUDE.md` | AGENTS.mdのコピー (Claude CLI用) |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\setup_project.ps1` | プロジェクトセットアップスクリプト |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\check_project.ps1` | 健全性チェックスクリプト |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\archive_project.ps1` | プロジェクトアーカイブスクリプト |
+| `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_launcher.ps1` | GUIランチャー |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\config.template.json` | 設定ファイルテンプレート |
 
 **注意:** `_projectTemplate` 自体を編集しないでください。新規プロジェクト作成時にこのテンプレートからコピーして使用してください。

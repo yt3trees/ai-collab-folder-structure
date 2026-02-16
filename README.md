@@ -66,7 +66,8 @@ Documents/Projects/
 │   │   ├── archive_project.ps1     # Archive completed projects
 │   │   ├── config.template.json    # Config file template
 │   │   └── _exec_project_launcher.cmd  # GUI launcher batch
-│   ├── CLAUDE.md               # CLAUDE.md template for new projects
+│   ├── AGENTS.md               # AI instructions template for new projects
+│   ├── CLAUDE.md               # AGENTS.md copy (for Claude CLI)
 │   └── README.md               # Template detailed documentation
 ├── _globalScripts/             # Cross-project scripts
 │   ├── sync_from_asana.py      # Asana → Markdown sync
@@ -124,8 +125,7 @@ Documents/Projects/_mini/{ProjectName}/
 │   └── obsidian_notes/         # Junction → Box/Obsidian-Vault/Projects/_mini/{ProjectName}
 ├── development/                # Development related [Local]
 │   ├── source/                 # Source code (Git managed)
-│   ├── config/                 # Configuration files
-│   └── scripts/                # Development scripts
+│   └── config/                 # Configuration files
 ├── shared/                     # Junction → Box/Projects/_mini/{ProjectName}
 ├── AGENTS.md                   # Copy from shared/AGENTS.md
 └── CLAUDE.md                   # Copy from shared/AGENTS.md

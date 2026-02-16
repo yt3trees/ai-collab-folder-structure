@@ -3,14 +3,14 @@
 # Usage: .\setup_project.ps1 -ProjectName "NewProject" [-Structure new|legacy] [-Tier full|mini]
 
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [string]$ProjectName,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet("new", "legacy")]
     [string]$Structure = "new",
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet("full", "mini")]
     [string]$Tier = "full"
 )
@@ -32,7 +32,8 @@ $obsidianVaultRoot = Join-Path $env:USERPROFILE $pathsConfig.obsidianVaultRoot
 # Determine project subpath based on Tier
 if ($Tier -eq "mini") {
     $projectSubPath = "_mini\$ProjectName"
-} else {
+}
+else {
     $projectSubPath = $ProjectName
 }
 
@@ -51,11 +52,13 @@ Write-Host "[Local Folders]" -ForegroundColor Yellow
 if ($Tier -eq "mini") {
     # Mini tier: minimal folders (no _ai-workspace, no scripts\config)
     $localFolders = @(
+        '_ai-context',
         'development\source',
         'development\config',
         'development\scripts'
     )
-} else {
+}
+else {
     # Full tier: all folders
     $localFolders = @(
         '_ai-context',
@@ -70,7 +73,8 @@ foreach ($folder in $localFolders) {
     if (-not (Test-Path $path)) {
         New-Item -Path $path -ItemType Directory -Force | Out-Null
         Write-Host "  Created: $folder" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "  Exists: $folder" -ForegroundColor Gray
     }
 }
@@ -94,11 +98,13 @@ if ($Tier -eq "mini") {
         if (-not (Test-Path $path)) {
             New-Item -Path $path -ItemType Directory -Force | Out-Null
             Write-Host "  Created: $folder" -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host "  Exists: $folder" -ForegroundColor Gray
         }
     }
-} else {
+}
+else {
     # Full tier: structured folders based on Structure parameter
     if ($Structure -eq 'legacy') {
         $legacyFolders = @(
@@ -119,11 +125,13 @@ if ($Tier -eq "mini") {
             if (-not (Test-Path $path)) {
                 New-Item -Path $path -ItemType Directory -Force | Out-Null
                 Write-Host "  Created: $folder" -ForegroundColor Green
-            } else {
+            }
+            else {
                 Write-Host "  Exists: $folder" -ForegroundColor Gray
             }
         }
-    } else {
+    }
+    else {
         # new structure (default)
         $newFolders = @(
             'docs\planning',
@@ -143,7 +151,8 @@ if ($Tier -eq "mini") {
             if (-not (Test-Path $path)) {
                 New-Item -Path $path -ItemType Directory -Force | Out-Null
                 Write-Host "  Created: $folder" -ForegroundColor Green
-            } else {
+            }
+            else {
                 Write-Host "  Exists: $folder" -ForegroundColor Gray
             }
         }
@@ -158,7 +167,8 @@ if ($Tier -eq "mini") {
     $obsidianFolders = @(
         "notes"
     )
-} else {
+}
+else {
     # Full tier: all folders
     $obsidianFolders = @(
         "daily",
@@ -173,7 +183,8 @@ foreach ($folder in $obsidianFolders) {
     if (-not (Test-Path $path)) {
         New-Item -Path $path -ItemType Directory -Force | Out-Null
         Write-Host "  Created: Projects/$ProjectName/$folder" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "  Exists: Projects/$ProjectName/$folder" -ForegroundColor Gray
     }
 }
@@ -187,7 +198,8 @@ if (-not (Test-Path $indexFile)) {
     }
     Set-Content -Path $indexFile -Value $indexContent -Encoding UTF8
     Write-Host "  Created: 00_$ProjectName-Index.md" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "  Exists: 00_$ProjectName-Index.md" -ForegroundColor Gray
 }
 
@@ -203,14 +215,17 @@ if (Test-Path $link) {
         $existingTarget = $item.Target
         if ($existingTarget -eq $boxShared) {
             Write-Host "  OK: shared/ -> $boxShared" -ForegroundColor Gray
-        } else {
+        }
+        else {
             Write-Warning "  shared/ points to different target: $existingTarget"
         }
-    } else {
+    }
+    else {
         Write-Warning "  shared/ exists but is not a junction (regular folder)"
         Write-Host "    Please backup and remove, then rerun this script" -ForegroundColor DarkYellow
     }
-} else {
+}
+else {
     New-Item -ItemType Junction -Path $link -Target $boxShared | Out-Null
     Write-Host "  Created: shared/ -> $boxShared" -ForegroundColor Green
 }
@@ -223,17 +238,21 @@ if (Test-Path $obsLink) {
         $existingTarget = $item.Target
         if ($existingTarget -eq $obsidianProject) {
             Write-Host "  OK: obsidian_notes/ -> $obsidianProject" -ForegroundColor Gray
-        } else {
+        }
+        else {
             Write-Warning "  obsidian_notes/ points to different target: $existingTarget"
         }
-    } else {
+    }
+    else {
         Write-Warning "  obsidian_notes/ exists but is not a junction (regular folder)"
         Write-Host "    Please backup and remove, then rerun this script" -ForegroundColor DarkYellow
     }
-} elseif (Test-Path $obsidianProject) {
+}
+elseif (Test-Path $obsidianProject) {
     New-Item -ItemType Junction -Path $obsLink -Target $obsidianProject | Out-Null
     Write-Host "  Created: obsidian_notes/ -> $obsidianProject" -ForegroundColor Green
-} else {
+}
+else {
     Write-Warning "  Obsidian folder not found: $obsidianProject"
     Write-Host "    Please check Box sync status or create manually" -ForegroundColor DarkYellow
 }
@@ -251,7 +270,8 @@ if (-not (Test-Path $boxAgents)) {
     $defaultContent = "# Project: $ProjectName`n`nSee _ProjectTemplate/AGENTS.md for full template."
     New-Item -Path $boxAgents -ItemType File -Value $defaultContent -Force | Out-Null
     Write-Host "  Created: $boxAgents" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "  Found master: $boxAgents" -ForegroundColor Gray
 }
 
@@ -260,7 +280,8 @@ $boxClaude = "$boxShared\CLAUDE.md"
 if (-not (Test-Path $boxClaude)) {
     Copy-Item -Path $boxAgents -Destination $boxClaude -Force
     Write-Host "  Created: $boxClaude (Copy of AGENTS.md)" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "  Exists: $boxClaude" -ForegroundColor Gray
 }
 
@@ -287,7 +308,8 @@ Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
 if ($Tier -eq "mini") {
     Write-Host "  1. Run .\check_project.ps1 -ProjectName $ProjectName -Mini"
-} else {
+}
+else {
     Write-Host "  1. Run .\check_project.ps1 -ProjectName $ProjectName"
 }
 Write-Host "  2. Create Obsidian notes for the project"

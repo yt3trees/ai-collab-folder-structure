@@ -64,7 +64,8 @@ Documents/Projects/
 │   │   ├── archive_project.ps1     # 完了プロジェクトのアーカイブ
 │   │   ├── config.template.json    # 設定ファイルテンプレート
 │   │   └── _exec_project_launcher.cmd  # GUIランチャー起動用バッチ
-│   ├── CLAUDE.md               # 新規プロジェクト用CLAUDE.mdテンプレート
+│   ├── AGENTS.md               # 新規プロジェクト用AI指示書テンプレート
+│   ├── CLAUDE.md               # AGENTS.mdのコピー (Claude CLI用)
 │   └── README.md               # テンプレート詳細ドキュメント
 ├── _globalScripts/             # プロジェクト横断スクリプト
 │   ├── sync_from_asana.py      # Asana → Markdown同期
@@ -122,8 +123,7 @@ Documents/Projects/_mini/{ProjectName}/
 │   └── obsidian_notes/         # Junction → Box/Obsidian-Vault/Projects/_mini/{ProjectName}
 ├── development/                # 開発関連 [Local]
 │   ├── source/                 # ソースコード (Git管理)
-│   ├── config/                 # 設定ファイル
-│   └── scripts/                # 開発スクリプト
+│   └── config/                 # 設定ファイル
 ├── shared/                     # Junction → Box/Projects/_mini/{ProjectName}
 ├── AGENTS.md                   # Copy from shared/AGENTS.md
 └── CLAUDE.md                   # Copy from shared/AGENTS.md
