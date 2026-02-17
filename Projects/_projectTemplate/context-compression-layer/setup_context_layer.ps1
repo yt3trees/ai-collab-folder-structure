@@ -29,10 +29,13 @@ if (-not (Test-Path $configPath)) {
 
 $config = Get-Content $configPath -Raw | ConvertFrom-Json
 $projectsRoot = Join-Path $env:USERPROFILE $config.localProjectsRoot
+$boxProjectsRoot = Join-Path $env:USERPROFILE $config.boxProjectsRoot
 
 if (-not $TemplateDir) {
     $TemplateDir = Join-Path $PSScriptRoot "templates"
 }
+
+$SkillsDir = Join-Path $PSScriptRoot "skills"
 
 function Copy-IfNotExists {
     param([string]$Src, [string]$Dst)
@@ -63,6 +66,8 @@ function Setup-Workspace {
     Copy-IfNotExists (Join-Path $TemplateDir "active_projects.md") (Join-Path $ctx "active_projects.md")
 }
 
+
+
 # --- Per-project setup ---
 function Setup-Project {
     param([string]$Name, [switch]$IsMini)
@@ -91,6 +96,64 @@ function Setup-Project {
 
     Write-Host "`n  [TODO] Add Context Compression Layer instructions to CLAUDE.md" -ForegroundColor Cyan
     Write-Host "         -> See templates/CLAUDE_MD_SNIPPET.md" -ForegroundColor White
+
+    # --- Skills setup (Per-Project) ---
+    if (Test-Path $SkillsDir) {
+        $skillFolders = Get-ChildItem -Path $SkillsDir -Directory
+        if ($skillFolders.Count -gt 0) {
+            # Determine BOX project path
+            if ($IsMini) {
+                $boxProjDir = Join-Path $boxProjectsRoot "_mini\$Name"
+            }
+            else {
+                $boxProjDir = Join-Path $boxProjectsRoot $Name
+            }
+
+            # 1. Deploy skills to BOX
+            Write-Host "`n  [Skills (BOX)]" -ForegroundColor Cyan
+            Ensure-Dir $boxProjDir
+            foreach ($cli in @(".claude", ".codex", ".gemini")) {
+                $dstSkillsDir = Join-Path $boxProjDir "$cli\skills"
+                Ensure-Dir $dstSkillsDir
+                foreach ($skill in $skillFolders) {
+                    $dstSkill = Join-Path $dstSkillsDir $skill.Name
+                    if (-not (Test-Path $dstSkill)) {
+                        Copy-Item -Path $skill.FullName -Destination $dstSkill -Recurse
+                        Write-Host "    [CREATE] $cli/skills/$($skill.Name)" -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "    [SKIP]   $cli/skills/$($skill.Name) (already exists)" -ForegroundColor Yellow
+                    }
+                }
+            }
+
+            # 2. Create Junctions in Local Project Folder
+            Write-Host "`n  [Skills (Local Junctions)]" -ForegroundColor Cyan
+            foreach ($cli in @(".claude", ".codex", ".gemini")) {
+                $localPath = Join-Path $dir $cli
+                $boxPath = Join-Path $boxProjDir $cli
+
+                if (Test-Path $localPath) {
+                    $item = Get-Item $localPath -Force
+                    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+                        Write-Host "    [SKIP]   $cli (junction)" -ForegroundColor Yellow
+                    }
+                    else {
+                        Write-Host "    [WARN]   $cli exists as regular folder, skipping junction" -ForegroundColor Yellow
+                    }
+                }
+                else {
+                    if (Test-Path $boxPath) {
+                        cmd /c mklink /J "$localPath" "$boxPath" | Out-Null
+                        Write-Host "    [CREATE] $cli -> $boxPath (junction)" -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "    [WARN]   $cli source not found in BOX: $boxPath" -ForegroundColor Red
+                    }
+                }
+            }
+        }
+    }
 }
 
 # --- Execute ---
