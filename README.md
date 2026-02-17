@@ -66,6 +66,13 @@ Documents/Projects/
 │   │   ├── archive_project.ps1     # Archive completed projects
 │   │   ├── config.template.json    # Config file template
 │   │   └── _exec_project_launcher.cmd  # GUI launcher batch
+│   ├── context-compression-layer/  # AI Context Compression Layer setup
+│   │   ├── setup_context_layer.ps1 # Context layer setup script
+│   │   ├── templates/              # Context file templates
+│   │   ├── examples/               # Usage examples
+│   │   ├── skills/                 # Agent skills for context management
+│   │   ├── README.md               # English documentation
+│   │   └── README-ja.md            # Japanese documentation
 │   ├── AGENTS.md               # AI instructions template for new projects
 │   ├── CLAUDE.md               # AGENTS.md copy (for Claude CLI)
 │   └── README.md               # Template detailed documentation
@@ -171,7 +178,9 @@ Features:
 - Setup tab: Select project name, Structure, and Tier for setup
 - Check tab: Health check for existing projects
 - Archive tab: Archive with DryRun preview
+- AI Context Setup tab: Set up Context Compression Layer for projects
 - Real-time display of script output
+- Custom dark-themed title bar (Catppuccin Mocha)
 
 ### 3. Command Line Operation
 
@@ -233,6 +242,15 @@ After BOX sync is complete, simply run the same script to create junctions and s
 | `archive_project.ps1` | Archive completed projects |
 | `config.template.json` | Config file template |
 | `_exec_project_launcher.cmd` | GUI launcher batch file |
+
+### context-compression-layer/
+
+| File | Purpose |
+|------|---------|
+| `setup_context_layer.ps1` | Set up Context Compression Layer for a project |
+| `templates/` | Template files for AI context (current_focus, project_summary, etc.) |
+| `examples/` | Example files showing usage patterns |
+| `skills/` | Agent skills for context initialization, session end, decision logging |
 
 ### _globalScripts/
 

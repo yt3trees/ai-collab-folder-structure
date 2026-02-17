@@ -64,6 +64,13 @@ Documents/Projects/
 │   │   ├── archive_project.ps1     # 完了プロジェクトのアーカイブ
 │   │   ├── config.template.json    # 設定ファイルテンプレート
 │   │   └── _exec_project_launcher.cmd  # GUIランチャー起動用バッチ
+│   ├── context-compression-layer/  # AIコンテキスト圧縮層セットアップ
+│   │   ├── setup_context_layer.ps1 # コンテキスト層セットアップスクリプト
+│   │   ├── templates/              # コンテキストファイルテンプレート
+│   │   ├── examples/               # 使用例
+│   │   ├── skills/                 # コンテキスト管理用Agentスキル
+│   │   ├── README.md               # 英語ドキュメント
+│   │   └── README-ja.md            # 日本語ドキュメント
 │   ├── AGENTS.md               # 新規プロジェクト用AI指示書テンプレート
 │   ├── CLAUDE.md               # AGENTS.mdのコピー (Claude CLI用)
 │   └── README.md               # テンプレート詳細ドキュメント
@@ -169,7 +176,9 @@ powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_proj
 - Setup タブ: プロジェクト名、Structure、Tier を選択してセットアップ
 - Check タブ: 既存プロジェクトの健全性チェック
 - Archive タブ: DryRun プレビュー付きでアーカイブ実行
+- AI Context Setup タブ: プロジェクトへのContext Compression Layerセットアップ
 - 出力エリアにスクリプトの実行結果をリアルタイム表示
+- カスタムダークテーマタイトルバー (Catppuccin Mocha)
 
 ### 3. コマンドラインで操作
 
@@ -232,6 +241,15 @@ BOX同期完了後、同じスクリプトを実行するだけでジャンク�
 | `archive_project.ps1` | 完了プロジェクトのアーカイブ |
 | `config.template.json` | 設定ファイルテンプレート |
 | `_exec_project_launcher.cmd` | GUIランチャー起動用バッチファイル |
+
+### context-compression-layer/
+
+| ファイル | 用途 |
+|---------|------|
+| `setup_context_layer.ps1` | プロジェクトへのContext Compression Layerセットアップ |
+| `templates/` | AIコンテキストファイルテンプレート (current_focus, project_summary等) |
+| `examples/` | 使用パターンの例 |
+| `skills/` | コンテキスト初期化、セッション終了、意思決定ログ用Agentスキル |
 
 ### _globalScripts/
 

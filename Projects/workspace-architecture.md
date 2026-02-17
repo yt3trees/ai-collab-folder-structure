@@ -279,7 +279,15 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
 #### 1.6 GUIランチャー
 
-`project_launcher.ps1` を使用すると、GUI画面からセットアップ・健全性チェック・アーカイブを実行できる。
+`project_launcher.ps1` を使用すると、GUI画面からセットアップ・健全性チェック・アーカイブ・コンテキスト層セットアップを実行できる。
+
+タブ構成:
+- Setup: プロジェクトの新規セットアップ
+- Check: 既存プロジェクトの健全性チェック
+- Archive: 完了プロジェクトのアーカイブ
+- AI Context Setup: Context Compression Layerのセットアップ
+
+UI: Catppuccin MochaテーマのダークUI、カスタムタイトルバー付き。
 
 ```powershell
 cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
@@ -903,5 +911,8 @@ Box/Obsidian-Vault/Projects/_archive/_mini/{ProjectName}/
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\archive_project.ps1` | プロジェクトアーカイブスクリプト |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_launcher.ps1` | GUIランチャー |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\config.template.json` | 設定ファイルテンプレート |
+| `%USERPROFILE%\Documents\Projects\_projectTemplate\context-compression-layer\setup_context_layer.ps1` | Context Compression Layerセットアップスクリプト |
+| `%USERPROFILE%\Documents\Projects\_projectTemplate\context-compression-layer\README.md` | Context Compression Layerドキュメント(英語) |
+| `%USERPROFILE%\Documents\Projects\_projectTemplate\context-compression-layer\README-ja.md` | Context Compression Layerドキュメント(日本語) |
 
 **注意:** `_projectTemplate` 自体を編集しないでください。新規プロジェクト作成時にこのテンプレートからコピーして使用してください。
