@@ -1,28 +1,28 @@
 # Project Template
 
-新規プロジェクトを作成するための標準テンプレートです。
-3層レイヤー構造(Execution/Knowledge/Artifact)に基づいたフォルダ構成と、自動化スクリプトを提供します。
+A standard template for creating new projects.
+Provides a folder structure based on the 3-layer architecture (Execution/Knowledge/Artifact) along with automation scripts.
 
-## 概要
+## Overview
 
-このテンプレートは以下を含みます:
+This template includes:
 
-- ローカル専用フォルダの作成 (_ai-workspace, development)
-- BOX共有フォルダの作成 (自動同期)
-- ジャンクションの自動設定 (shared/, obsidian_notes/)
-- **AGENTS.md**, **CLAUDE.md** のコピー作成 (BOX側がマスター)
-- **_ai-context** フォルダの作成と Obsidian Junction の設定
-- Obsidian Vault プロジェクトフォルダと **Indexファイル** の自動作成
-- 健全性チェック機能
+- Creation of local-only folders (_ai-workspace, development)
+- Creation of BOX shared folders (auto-synced)
+- Automatic junction setup (shared/, obsidian_notes/)
+- Copy creation of AGENTS.md and CLAUDE.md (BOX side is the master)
+- Creation of _ai-context folder and Obsidian Junction setup
+- Automatic creation of Obsidian Vault project folders and Index files
+- Health check functionality
 
-## 前提条件
+## Prerequisites
 
-### 1. paths.json の作成
+### 1. Create paths.json
 
-すべてのスクリプトは `_config/paths.json` からパス情報を読み込みます。
-初回のみ、以下のファイルを作成してください:
+All scripts read path information from `_config/paths.json`.
+Create the following file once during initial setup:
 
-ファイル: `Documents/Projects/_config/paths.json`
+File: `Documents/Projects/_config/paths.json`
 
 ```json
 {
@@ -32,365 +32,364 @@
 }
 ```
 
-各値は `%USERPROFILE%` からの相対パスです。PC-B でも同じ構成であればそのまま使えます。
-BOXの同期先が異なるPCでは、該当パスを変更してください。
+Each value is a relative path from `%USERPROFILE%`. If PC-B has the same directory structure, it works as-is.
+Modify the paths if the BOX sync destination differs between PCs.
 
-### 2. 開発者モードの有効化
+### 2. Enable Developer Mode
 
-**AGENTS.md / CLAUDE.md のシンボリックリンク作成**には、以下のいずれかが必要です:
-- **管理者権限** で PowerShell を実行する
-- または、Windows の **開発者モード** を有効にする (設定 > 更新とセキュリティ > 開発者向け)
+Creating symbolic links for AGENTS.md / CLAUDE.md requires one of the following:
+- Run PowerShell with administrator privileges
+- Or enable Windows Developer Mode (Settings > Update & Security > For Developers)
 
-**Obsidian Junction** について:
-- デフォルトで `_ai-context/obsidian_notes/` から BOX へのジャンクションを作成します。
+About Obsidian Junction:
+- By default, a junction is created from `_ai-context/obsidian_notes/` to BOX.
 
-## 使用方法
+## Usage
 
-### 1. paths.json の確認
+### 1. Verify paths.json
 
-`Documents/Projects/_config/paths.json` が存在するか確認します。
-なければ「前提条件」セクションを参照して作成してください。
+Check that `Documents/Projects/_config/paths.json` exists.
+If not, refer to the "Prerequisites" section to create it.
 
-### 2. GUIで操作する (推奨)
+### 2. Use the GUI (Recommended)
 
-GUIランチャーを使うと、Setup / Check / Archive の操作をグラフィカルに実行できます。
+The GUI launcher allows you to perform Setup / Check / Archive operations graphically.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_launcher.ps1"
 ```
 
-または、`_projectTemplate/scripts/` フォルダ内の `project_launcher.ps1` を右クリック → 「PowerShell で実行」でも起動できます。
+Alternatively, right-click `project_launcher.ps1` in the `_projectTemplate/scripts/` folder and select "Run with PowerShell".
 
-機能:
-- Setup タブ: プロジェクト名、Structure、Tier を選択してセットアップ
-- Check タブ: 既存プロジェクトをドロップダウンから選んで健全性チェック
-- Archive タブ: DryRun プレビュー付きでアーカイブ実行
-- 出力エリアにスクリプトの実行結果をリアルタイム表示
+Features:
+- Setup tab: Select project name, Structure, and Tier to run setup
+- Check tab: Choose an existing project from a dropdown to run health checks
+- Archive tab: Execute archiving with DryRun preview
+- Output area displays script execution results in real-time
 
-### 3. コマンドラインで操作する
+### 3. Use the Command Line
 
-PowerShellを開き、以下のコマンドを実行します:
+Open PowerShell and run the following commands:
 
 ```powershell
-# テンプレートディレクトリに移動
+# Navigate to the template directory
 cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
-# メイン案件 (full tier) のセットアップ (new構造 - 推奨)
+# Setup a main project (full tier) with new structure (recommended)
 .\setup_project.ps1 -ProjectName "MyNewProject"
 
-# または、legacy構造を使用する場合
+# Or use the legacy structure
 .\setup_project.ps1 -ProjectName "MyNewProject" -Structure legacy
 
-# お手伝い系プロジェクト (mini tier) のセットアップ
+# Setup a support project (mini tier)
 .\setup_project.ps1 -ProjectName "SupportProject" -Tier mini
 ```
 
-パラメータ:
-- `-ProjectName` (必須): プロジェクト名
-- `-Structure` (オプション): `new` (デフォルト) または `legacy` (full tierのみ有効)
-- `-Tier` (オプション): `full` (デフォルト、メイン案件) または `mini` (お手伝い系)
+Parameters:
+- `-ProjectName` (required): Project name
+- `-Structure` (optional): `new` (default) or `legacy` (only effective for full tier)
+- `-Tier` (optional): `full` (default, main projects) or `mini` (support/lightweight projects)
 
-スクリプトが実行する内容 (full tier):
-1. ローカルフォルダの作成 (_ai-context, _ai-workspace, development)
-2. BOX共有フォルダの作成 (docs, reference, records, _work)
-3. Obsidian Vault プロジェクトフォルダの作成 (daily, meetings, specs, notes, weekly) と Indexファイルの作成
-4. ジャンクション作成 (shared/, obsidian_notes/)
-5. AGENTS.md/CLAUDE.md コピー作成 (BOX側 → ローカル)
+What the script does (full tier):
+1. Create local folders (_ai-context, _ai-workspace, development)
+2. Create BOX shared folders (docs, reference, records, _work)
+3. Create Obsidian Vault project folders (daily, meetings, specs, notes, weekly) and Index files
+4. Create junctions (shared/, obsidian_notes/)
+5. Copy AGENTS.md/CLAUDE.md (BOX side -> local)
 
-スクリプトが実行する内容 (mini tier):
-1. ローカルフォルダの作成 (_ai-context, development) - _ai-workspace なし
-2. BOX共有フォルダの作成 (docs, _work) - 軽量構成
-3. Obsidian Vault プロジェクトフォルダの作成 (notes のみ) と Indexファイルの作成
-4. ジャンクション作成 (shared/, obsidian_notes/)
-5. AGENTS.md/CLAUDE.md コピー作成 (BOX側 → ローカル)
+What the script does (mini tier):
+1. Create local folders (_ai-context, development) - no _ai-workspace
+2. Create BOX shared folders (docs, _work) - lightweight configuration
+3. Create Obsidian Vault project folders (notes only) and Index files
+4. Create junctions (shared/, obsidian_notes/)
+5. Copy AGENTS.md/CLAUDE.md (BOX side -> local)
 
-### 4. AGENTS.md の自動作成
+### 4. Automatic AGENTS.md Creation
 
-`AGENTS.md` (AI指示書) がBOX側に存在しない場合、セットアップスクリプトは自動的にデフォルトファイルを作成します。
-その後、**BOX側のファイルをローカルへコピー**して `AGENTS.md` と `CLAUDE.md` を作成します。
+If `AGENTS.md` (AI instruction file) does not exist on the BOX side, the setup script automatically creates a default file.
+It then copies the BOX-side file to local to create `AGENTS.md` and `CLAUDE.md`.
 
-> **注意**: これらは独立したファイルコピーです。シンボリックリンクではありません。
-> BOX側の `AGENTS.md` を更新した場合は、手動でローカルにコピーするか、再度 `setup_project.ps1` を実行して上書きしてください。
+> Note: These are independent file copies, not symbolic links.
+> If you update `AGENTS.md` on the BOX side, manually copy it to local or re-run `setup_project.ps1` to overwrite.
 
-作成後、内容は必要に応じて編集してください:
+After creation, edit the content as needed:
 
 ```powershell
 notepad "$env:USERPROFILE\Box\Projects\MyNewProject\AGENTS.md"
 ```
 
-### 5. セットアップの確認
+### 5. Verify the Setup
 
 ```powershell
-# メイン案件の確認
+# Verify a main project
 .\check_project.ps1 -ProjectName "MyNewProject"
 
-# お手伝い系プロジェクト (mini tier) の確認
+# Verify a support project (mini tier)
 .\check_project.ps1 -ProjectName "SupportProject" -Mini
 ```
 
-このスクリプトは以下をチェックします:
-- **Junction**: `shared/` と `_ai-context/obsidian_notes/` が正しくリンクされているか
-- **Files**: `AGENTS.md` と `CLAUDE.md` (BOXからのコピー) が存在するか
-- **Shortcuts**: `.lnk` ファイルが切れていないか
+This script checks the following:
+- Junction: Whether `shared/` and `_ai-context/obsidian_notes/` are correctly linked
+- Files: Whether `AGENTS.md` and `CLAUDE.md` (copies from BOX) exist
+- Shortcuts: Whether `.lnk` files are not broken
 
-### 6. 完了プロジェクトのアーカイブ
+### 6. Archive Completed Projects
 
-プロジェクトが完了したら、以下のコマンドで3層すべてを `_archive/` に移動できます:
+When a project is completed, use the following commands to move all 3 layers to `_archive/`:
 
 ```powershell
 cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
-# メイン案件のアーカイブ
-# まず DryRun で確認 (実際には何も変更しない)
+# Archive a main project
+# First, run DryRun to verify (no actual changes made)
 .\archive_project.ps1 -ProjectName "MyProject" -DryRun
 
-# 問題なければ実行
+# If everything looks good, execute
 .\archive_project.ps1 -ProjectName "MyProject"
 
-# お手伝い系プロジェクト (mini tier) のアーカイブ
+# Archive a support project (mini tier)
 .\archive_project.ps1 -ProjectName "SupportProject" -Mini -DryRun
 .\archive_project.ps1 -ProjectName "SupportProject" -Mini
 ```
 
-パラメータ:
-- `-ProjectName` (必須): アーカイブするプロジェクト名
-- `-Mini` (オプション): mini tier プロジェクト (_mini/ 配下) の場合に指定
-- `-DryRun` (オプション): 変更内容を表示するだけで実行しない
-- `-Force` (オプション): 確認プロンプトをスキップ
+Parameters:
+- `-ProjectName` (required): Name of the project to archive
+- `-Mini` (optional): Specify for mini tier projects (under _mini/)
+- `-DryRun` (optional): Only display changes without executing
+- `-Force` (optional): Skip confirmation prompt
 
-スクリプトが実行する内容:
-1. ジャンクション (shared/, obsidian_notes/) と AIシンボリックリンク (AGENTS.md, CLAUDE.md) を安全に解除
-2. Layer 3 (BOX成果物) を `Box/Projects/_archive/{ProjectName}/` に移動
-   - お手伝い系の場合: `Box/Projects/_archive/_mini/{ProjectName}/`
-3. Layer 2 (Obsidianナレッジ) を `Box/Obsidian-Vault/Projects/_archive/{ProjectName}/` に移動
-   - お手伝い系の場合: `Box/Obsidian-Vault/Projects/_archive/_mini/{ProjectName}/`
-4. Layer 1 (ローカル) を `Documents/Projects/_archive/{ProjectName}/` に移動
-   - お手伝い系の場合: `Documents/Projects/_archive/_mini/{ProjectName}/`
-5. `00_Projects-Index.md` に参照がある場合は手動更新を案内
+What the script does:
+1. Safely remove junctions (shared/, obsidian_notes/) and AI symbolic links (AGENTS.md, CLAUDE.md)
+2. Move Layer 3 (BOX artifacts) to `Box/Projects/_archive/{ProjectName}/`
+   - For support projects: `Box/Projects/_archive/_mini/{ProjectName}/`
+3. Move Layer 2 (Obsidian knowledge) to `Box/Obsidian-Vault/Projects/_archive/{ProjectName}/`
+   - For support projects: `Box/Obsidian-Vault/Projects/_archive/_mini/{ProjectName}/`
+4. Move Layer 1 (local) to `Documents/Projects/_archive/{ProjectName}/`
+   - For support projects: `Documents/Projects/_archive/_mini/{ProjectName}/`
+5. Prompt for manual update if references exist in `00_Projects-Index.md`
 
-### 7. PC-B でのセットアップ
+### 7. Setup on PC-B
 
-PC-B ではBOX同期完了後、同じスクリプトを実行するだけで環境が構築されます:
+On PC-B, after BOX sync is complete, simply run the same script to set up the environment:
 
 ```powershell
 cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
-# paths.json は各PCで個別に作成 (BOXパスが異なる場合のみ変更)
-# ジャンクションとシンボリックリンクを作成
+# Create paths.json on each PC individually (modify only if BOX paths differ)
+# Creates junctions and symbolic links
 .\setup_project.ps1 -ProjectName "MyNewProject"
 ```
 
-- `_config/paths.json` が各PCに必要 (BOX非同期のため)
-- AGENTS.md はBOX同期済みなので、シンボリックリンクのみ作成される
-- ジャンクションもローカルのみなので、各PCで作成が必要
+- `_config/paths.json` is required on each PC (not synced via BOX)
+- AGENTS.md is already synced via BOX, so only symbolic links are created
+- Junctions are local-only, so they must be created on each PC
 
-## プロジェクト Tier
+## Project Tiers
 
-プロジェクトの規模と関与度に応じて、2種類の Tier を選択できます。
+Two tier types are available based on project scale and involvement level.
 
-| Tier | 配置先 | 用途 | 構成 |
-|------|--------|------|------|
-| full | `Projects/{案件}/` | メイン案件 (フル機能) | 全フォルダ、全機能 |
-| mini | `Projects/_mini/{案件}/` | お手伝い系 (軽量構成) | 最小限のフォルダ、シンプル |
+| Tier | Location | Purpose | Configuration |
+|------|----------|---------|---------------|
+| full | `Projects/{Project}/` | Main projects (full features) | All folders, all features |
+| mini | `Projects/_mini/{Project}/` | Support projects (lightweight) | Minimal folders, simple |
 
-### Tier 別フォルダ構成の違い
+### Folder Structure Differences by Tier
 
-| 要素 | full | mini |
-|------|------|-------|
-| Layer 1 (_ai-context/) | あり | あり |
-| Layer 1 (_ai-workspace/) | あり | なし |
-| Layer 2 (Obsidian) | daily, meetings, specs, notes, weekly | notes のみ |
-| Layer 3 (BOX docs/) | planning, design, testing, release (new) または 01-10 (legacy) | flat (サブフォルダなし) |
-| Layer 3 (reference/) | あり (vendor, standards, external) | なし |
-| Layer 3 (records/) | あり (minutes, reports, reviews) | なし |
-| Layer 3 (_work/) | あり | あり |
-| Structure パラメータ | new / legacy | 無視 (flat のみ) |
+| Element | full | mini |
+|---------|------|------|
+| Layer 1 (_ai-context/) | Yes | Yes |
+| Layer 1 (_ai-workspace/) | Yes | No |
+| Layer 2 (Obsidian) | daily, meetings, specs, notes, weekly | notes only |
+| Layer 3 (BOX docs/) | planning, design, testing, release (new) or 01-10 (legacy) | flat (no subfolders) |
+| Layer 3 (reference/) | Yes (vendor, standards, external) | No |
+| Layer 3 (records/) | Yes (minutes, reports, reviews) | No |
+| Layer 3 (_work/) | Yes | Yes |
+| Structure parameter | new / legacy | Ignored (flat only) |
 
-## フォルダ構造
+## Folder Structure
 
-### full - new 構造 (推奨)
+### full - new Structure (Recommended)
 
-用途別に分類された構造です:
+Organized by purpose:
 
 ```
 Box/Projects/{ProjectName}/
-├── AGENTS.md            # プロジェクト固有AI指示書 (実体 - Master)
-├── docs/                # 作成・編集するドキュメント
-│   ├── planning/        # 企画・要件定義・提案書
-│   ├── design/          # 設計書 (基本/詳細/データモデル/UI)
-│   ├── testing/         # テスト計画・ケース・結果
-│   └── release/         # リリース・移行手順・環境構築
+├── AGENTS.md            # Project-specific AI instruction file (master copy)
+├── docs/                # Documents to create and edit
+│   ├── planning/        # Planning, requirements, proposals
+│   ├── design/          # Design documents (basic/detailed/data model/UI)
+│   ├── testing/         # Test plans, cases, results
+│   └── release/         # Release and migration procedures, environment setup
 │
-├── reference/           # 参考資料 (読むだけ・保存用)
-│   ├── vendor/          # ベンダー提供資料・仕様書
-│   ├── standards/       # 社内規約・標準・ガイドライン
-│   └── external/        # その他外部資料・調査結果
+├── reference/           # Reference materials (read-only, archival)
+│   ├── vendor/          # Vendor-provided documents, specifications
+│   ├── standards/       # Internal standards, guidelines
+│   └── external/        # Other external materials, research results
 │
-├── records/             # 記録・履歴 (証跡として残す)
-│   ├── minutes/         # 議事録
-│   ├── reports/         # 進捗報告・ステークホルダー向け
-│   └── reviews/         # レビュー記録・承認履歴
+├── records/             # Records and history (audit trail)
+│   ├── minutes/         # Meeting minutes
+│   ├── reports/         # Progress reports, stakeholder-facing
+│   └── reviews/         # Review records, approval history
 │
-└── _work/            # 日付ベースの作業フォルダ
+└── _work/               # Date-based working folders
     └── 2026/
         └── 01/
-            └── 25_XXXの件対応/
+            └── 25_handling_XXX/
 ```
 
-### full - legacy 構造
+### full - legacy Structure
 
-フェーズ番号ベースの構造です:
+Phase-number-based structure:
 
 ```
 Box/Projects/{ProjectName}/
-├── AGENTS.md            # プロジェクト固有AI指示書 (実体 - Master)
-├── 01_planning/         # 企画・要件定義
-├── 02_design/           # 設計
-├── 03_development/      # 開発
-├── 04_testing/          # テスト
-├── 05_deployment/       # デプロイ
-├── 06_operation/        # 運用
-├── 07_communication/    # コミュニケーション
-├── 08_issues/           # 課題管理
-├── 09_training/         # 教育・トレーニング
-├── 10_reference/        # 参考資料
-└── _work/               # 作業フォルダ
+├── AGENTS.md            # Project-specific AI instruction file (master copy)
+├── 01_planning/         # Planning, requirements
+├── 02_design/           # Design
+├── 03_development/      # Development
+├── 04_testing/          # Testing
+├── 05_deployment/       # Deployment
+├── 06_operation/        # Operations
+├── 07_communication/    # Communication
+├── 08_issues/           # Issue management
+├── 09_training/         # Education, training
+├── 10_reference/        # Reference materials
+└── _work/               # Working folder
 ```
 
-### mini 構造 (お手伝い系)
+### mini Structure (Support Projects)
 
-軽量構成。`_mini/` 配下に配置されます。
+Lightweight configuration. Placed under `_mini/`.
 
 ```
 Documents/Projects/_mini/{ProjectName}/
 ├── _ai-context/                # Common Context [Local]
-│   └── obsidian_notes/         # Junction → Box/Obsidian-Vault/Projects/_mini/{ProjectName}
-├── development/                # 開発関連 [Local]
-│   ├── source/                 # ソースコード (Git管理)
-│   └── config/                 # 設定ファイル
+│   └── obsidian_notes/         # Junction -> Box/Obsidian-Vault/Projects/_mini/{ProjectName}
+├── development/                # Development-related [Local]
+│   ├── source/                 # Source code (Git managed)
+│   └── config/                 # Configuration files
 │
-├── shared/                     # Junction → Box/Projects/_mini/{ProjectName}
+├── shared/                     # Junction -> Box/Projects/_mini/{ProjectName}
 ├── AGENTS.md                   # Copy from shared/AGENTS.md
 └── CLAUDE.md                   # Copy from shared/AGENTS.md
 
 Box/Projects/_mini/{ProjectName}/
-├── AGENTS.md                   # プロジェクト固有AI指示書 (実体 - Master)
-├── docs/                       # ドキュメント (flat - サブフォルダなし)
-└── _work/                      # 作業フォルダ
+├── AGENTS.md                   # Project-specific AI instruction file (master copy)
+├── docs/                       # Documents (flat - no subfolders)
+└── _work/                      # Working folder
 
 Box/Obsidian-Vault/Projects/_mini/{ProjectName}/
-├── notes/                      # ノート
-└── 00_{ProjectName}-Index.md  # プロジェクトインデックス
+├── notes/                      # Notes
+└── 00_{ProjectName}-Index.md   # Project index
 ```
 
-## ローカルフォルダ構造 (full tier)
+## Local Folder Structure (full tier)
 
 ```
 Documents/Projects/{ProjectName}/
 ├── _ai-context/                # Shared AI Context (Read from here!)
-│   └── obsidian_notes/         # Junction → Box/Obsidian-Vault/Projects/{ProjectName}
+│   └── obsidian_notes/         # Junction -> Box/Obsidian-Vault/Projects/{ProjectName}
 │
-├── _ai-workspace/              # AI分析・実験用 [Local]
+├── _ai-workspace/              # AI analysis and experimentation [Local]
 │
-├── development/                # 開発関連 [Local]
-│   ├── source/                 # ソースコード (Git管理)
-│   ├── config/                 # 設定ファイル
-│   └── scripts/                # 開発スクリプト
+├── development/                # Development-related [Local]
+│   ├── source/                 # Source code (Git managed)
+│   ├── config/                 # Configuration files
+│   └── scripts/                # Development scripts
 │
-├── shared/                     # Junction → Box/Projects/{ProjectName}
+├── shared/                     # Junction -> Box/Projects/{ProjectName}
 ├── AGENTS.md                   # Copy from shared/AGENTS.md
 └── CLAUDE.md                   # Copy from shared/AGENTS.md
 ```
 
-## ワークスペース設定ファイル
+## Workspace Configuration Files
 
 ```
 Documents/Projects/
 ├── _config/
-│   └── paths.json              # ワークスペース共通パス定義
-├── _projectTemplate/           # このテンプレート
-├── _globalScripts/             # プロジェクト横断スクリプト
-├── ProjectA/                   # プロジェクトA
-└── ProjectB/                   # プロジェクトB
+│   └── paths.json              # Workspace-wide path definitions
+├── _projectTemplate/           # This template
+├── _globalScripts/             # Cross-project scripts
+├── ProjectA/                   # Project A
+└── ProjectB/                   # Project B
 ```
 
-## 含まれるスクリプト
+## Included Scripts
 
-| スクリプト | 用途 | 実行場所 |
-|-----------|------|---------|
-| `project_launcher.ps1` | GUI ランチャー (全スクリプトを統合) | `_projectTemplate/scripts/` |
-| `setup_project.ps1` | プロジェクトの初期セットアップ | `_projectTemplate/scripts/` |
-| `check_project.ps1` | 健全性チェック | `_projectTemplate/scripts/` |
-| `archive_project.ps1` | 完了プロジェクトのアーカイブ | `_projectTemplate/scripts/` |
-| `config.template.json` | 設定ファイルのテンプレート | コピーして使用 |
+| Script | Purpose | Location |
+|--------|---------|----------|
+| `project_launcher.ps1` | GUI launcher (integrates all scripts) | `_projectTemplate/scripts/` |
+| `setup_project.ps1` | Initial project setup | `_projectTemplate/scripts/` |
+| `check_project.ps1` | Health check | `_projectTemplate/scripts/` |
+| `archive_project.ps1` | Archive completed projects | `_projectTemplate/scripts/` |
+| `config.template.json` | Configuration file template | Copy and use |
 
-## 3層レイヤー構造との対応
+## 3-Layer Architecture Mapping
 
-| Layer | 役割 | 場所 | データの性質 |
-|------|------|------|-------------|
-| Layer 1: Execution | 作業場 | Documents/Projects/{ProjectName}/ (Local) | WIP、揮発性が高い |
-| Layer 2: Knowledge | 思考・知識 | Box/Obsidian-Vault/ (BOX Sync) | 文脈、経緯、知見 |
-| Layer 3: Artifact | 成果物・参照 | Box/Projects/{ProjectName}/ (BOX Sync) | チーム共有ドキュメント |
+| Layer | Role | Location | Data Characteristics |
+|-------|------|----------|---------------------|
+| Layer 1: Execution | Workspace | Documents/Projects/{ProjectName}/ (Local) | WIP, highly volatile |
+| Layer 2: Knowledge | Thinking/Knowledge | Box/Obsidian-Vault/ (BOX Sync) | Context, history, insights |
+| Layer 3: Artifact | Deliverables/References | Box/Projects/{ProjectName}/ (BOX Sync) | Team-shared documents |
 
-## リンク構成まとめ
+## Link Configuration Summary
 
-| 種類 | ローカル側 | → | BOX側 (実体) | BOX同期 | 管理者権限 |
-|------|-----------|---|-------------|---------|-----------|
-| Junction | shared/ | → | Box/Projects/{ProjectName}/ | - | 不要 |
-| Junction | _ai-context/obsidian_notes/ | → | Box/Obsidian-Vault/Projects/{ProjectName}/ | - | 不要 |
-| Copy | AGENTS.md | ← | Box/Projects/{ProjectName}/AGENTS.md | 実体が同期 (Master) | 不要 |
-| Copy | CLAUDE.md | ← | Box/Projects/{ProjectName}/AGENTS.md | Claude用コピー | 不要 |
+| Type | Local Side | -> | BOX Side (Source) | BOX Sync | Admin Required |
+|------|-----------|-----|-------------------|----------|----------------|
+| Junction | shared/ | -> | Box/Projects/{ProjectName}/ | - | No |
+| Junction | _ai-context/obsidian_notes/ | -> | Box/Obsidian-Vault/Projects/{ProjectName}/ | - | No |
+| Copy | AGENTS.md | <- | Box/Projects/{ProjectName}/AGENTS.md | Source is synced (Master) | No |
+| Copy | CLAUDE.md | <- | Box/Projects/{ProjectName}/AGENTS.md | Copy for Claude | No |
 
-## Obsidian Vault との連携
+## Obsidian Vault Integration
 
-セットアップ時に以下が自動作成されます:
+The following are automatically created during setup:
 
-- `shared/` → `Box/Projects/{ProjectName}/` (成果物)
-- `_ai-context/obsidian_notes/` → `Box/Obsidian-Vault/Projects/{ProjectName}/` (知識ベース)
-- Obsidian Vault 内のプロジェクトフォルダ (daily, meetings, specs, notes, weekly)
+- `shared/` -> `Box/Projects/{ProjectName}/` (deliverables)
+- `_ai-context/obsidian_notes/` -> `Box/Obsidian-Vault/Projects/{ProjectName}/` (knowledge base)
+- Project folders within Obsidian Vault (daily, meetings, specs, notes, weekly)
 - `00_{ProjectName}-Index.md`
 
-Obsidianで以下のファイルを作成してください:
+Create the following files in Obsidian:
 
-- `Projects/{ProjectName}/00_{ProjectName}-Index.md` (案件ホームページ)
-- `Projects/{ProjectName}/daily/YYYY-MM-DD.md` (デイリーノート)
+- `Projects/{ProjectName}/00_{ProjectName}-Index.md` (project home page)
+- `Projects/{ProjectName}/daily/YYYY-MM-DD.md` (daily notes)
 
-## 注意事項
+## Important Notes
 
-- このテンプレート自体を変更しないでください
-- 新規プロジェクト作成時は必ずこのテンプレートからスクリプトを実行してください
-- `shared/` フォルダはBoxへのジャンクションです。直接中身をコミットしないでください
-- Obsidian Vault は2台のPCで同時に開かないでください (データ上書き防止)
-- Gitリポジトリは `development/source/` に配置し、`.git/` はBOX同期しないでください
-- `_config/paths.json` はBOX同期されません。各PCで個別に作成が必要です
+- Do not modify this template itself
+- Always run scripts from this template when creating new projects
+- The `shared/` folder is a junction to Box. Do not commit its contents directly
+- Do not open Obsidian Vault on two PCs simultaneously (to prevent data overwrites)
+- Place Git repositories in `development/source/` and do not sync `.git/` via BOX
+- `_config/paths.json` is not synced via BOX. It must be created individually on each PC
 
-## トラブルシューティング
+## Troubleshooting
 
-### paths.json が見つからない
+### paths.json Not Found
 
-スクリプト実行時に "Paths config not found" エラーが出る場合:
+If you get a "Paths config not found" error when running scripts:
 
 ```powershell
-# _config フォルダが存在するか確認
+# Check if the _config folder exists
 Test-Path "$env:USERPROFILE\Documents\Projects\_config\paths.json"
 
-# なければ作成 (「前提条件」セクション参照)
+# If not, create it (refer to the "Prerequisites" section)
 ```
 
-### ジャンクションが作成されない
+### Junctions Not Created
 
-Box同期が完了しているか確認してください:
+Verify that Box sync is complete:
 ```powershell
 Test-Path "$env:USERPROFILE\Box\Projects\{ProjectName}"
 ```
 
-### AI指示書 (AGENTS.md / CLAUDE.md) が更新されない
+### AI Instruction Files (AGENTS.md / CLAUDE.md) Not Updated
 
-- **原因**: シンボリックリンクではなくファイルコピーを使用しているため、BOX側を変更してもローカルには反映されません。
-- **対策**: ローカルファイルを直接編集するか、BOX側を編集した後に手動でコピーしてください。
+- Cause: Since file copies (not symbolic links) are used, changes on the BOX side are not reflected locally.
+- Solution: Edit the local file directly, or manually copy from BOX after editing.
 
-
-### 手動でのシンボリックリンク作成 (参考)
+### Manual Symbolic Link Creation (Reference)
 
 ```powershell
 # AGENTS.md (Local -> Box)
@@ -400,20 +399,20 @@ cd Documents\Projects\{ProjectName}
 New-Item -ItemType SymbolicLink -Path "CLAUDE.md" -Target "AGENTS.md"
 ```
 
-### 設定ファイルが見つからない
+### Configuration File Not Found
 
-`scripts/config.json` は `check_project.ps1` が参照する設定ファイルです。手動で作成するか、`config.template.json` を参考にしてください。
+`scripts/config.json` is a configuration file referenced by `check_project.ps1`. Create it manually or refer to `config.template.json`.
 
-### Obsidian連携が動作しない
+### Obsidian Integration Not Working
 
-Obsidian Vault のパスが正しいか確認してください:
+Verify the Obsidian Vault path is correct:
 ```powershell
 Test-Path "$env:USERPROFILE\Box\Obsidian-Vault\Projects\{ProjectName}"
 ```
 
-## 関連ドキュメント
+## Related Documents
 
-- `AGENTS.md` - このテンプレートのAGENTS.mdテンプレート
-- `_config/paths.json` - ワークスペース共通パス定義
-- `workspace-architecture.md` - 詳細な設計ドキュメント
-- `_globalScripts/sync_from_asana.py` - Asana連携スクリプト
+- `AGENTS.md` - AGENTS.md template for this project template
+- `_config/paths.json` - Workspace-wide path definitions
+- `workspace-architecture.md` - Detailed design document
+- `_globalScripts/sync_from_asana.py` - Asana integration script
