@@ -14,13 +14,13 @@ function Get-ExistingProjects {
     $projects = @()
     # Regular projects
     $dirs = Get-ChildItem -Path $workspaceRoot -Directory -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -notmatch '^[_\.]' -and $_.Name -ne 'test' }
+    Where-Object { $_.Name -notmatch '^[_\.]' -and $_.Name -ne 'test' }
     foreach ($d in $dirs) { $projects += $d.Name }
     # Support projects
     $supportDir = Join-Path $workspaceRoot "_mini"
     if (Test-Path $supportDir) {
         $sDirs = Get-ChildItem -Path $supportDir -Directory -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -notmatch '^[_\.]' }
+        Where-Object { $_.Name -notmatch '^[_\.]' }
         foreach ($d in $sDirs) { $projects += "[Mini] $($d.Name)" }
     }
     return ($projects | Sort-Object)
@@ -34,7 +34,8 @@ $existingProjects = Get-ExistingProjects
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Project Template Launcher" Height="700" Width="650"
         WindowStartupLocation="CenterScreen" ResizeMode="CanResizeWithGrip"
-        Background="#1e1e2e" Foreground="#cdd6f4">
+        WindowStyle="None" AllowsTransparency="True"
+        Background="Transparent" Foreground="#cdd6f4">
     <Window.Resources>
         <!-- Dark Theme Styles -->
         <Style TargetType="TabControl">
@@ -239,13 +240,86 @@ $existingProjects = Get-ExistingProjects
         </Style>
     </Window.Resources>
 
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="200"/>
-        </Grid.RowDefinitions>
+    <Border Background="#1e1e2e" BorderBrush="#45475a" BorderThickness="1" CornerRadius="8">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="36"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Custom Title Bar -->
+            <Grid Grid.Row="0" Background="#181825" x:Name="titleBar">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="&#x25C8;" Foreground="#cba6f7" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Project Template Launcher" Foreground="#a6adc8" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button x:Name="btnMinimize" Content="&#x2500;" Width="46" Height="36"
+                            FontSize="12" Background="Transparent" Foreground="#a6adc8"
+                            BorderThickness="0" Cursor="Hand" VerticalContentAlignment="Center">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="bg" Background="Transparent" Width="46" Height="36">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bg" Property="Background" Value="#313244"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <Button x:Name="btnMaximize" Content="&#x25A1;" Width="46" Height="36"
+                            FontSize="13" Background="Transparent" Foreground="#a6adc8"
+                            BorderThickness="0" Cursor="Hand" VerticalContentAlignment="Center">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="bg" Background="Transparent" Width="46" Height="36">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bg" Property="Background" Value="#313244"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <Button x:Name="btnClose" Content="&#x2715;" Width="46" Height="36"
+                            FontSize="12" Background="Transparent" Foreground="#a6adc8"
+                            BorderThickness="0" Cursor="Hand" VerticalContentAlignment="Center">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="bg" Background="Transparent" Width="46" Height="36">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bg" Property="Background" Value="#f38ba8"/>
+                                        <Setter Property="Foreground" Value="#1e1e2e"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Main Content -->
+            <Grid Grid.Row="1" Margin="16,8,16,16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="200"/>
+                </Grid.RowDefinitions>
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,12">
@@ -308,6 +382,20 @@ $existingProjects = Get-ExistingProjects
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+
+            <!-- Context Layer Tab -->
+            <TabItem Header="AI Context Setup">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <Label Content="Project Name (optional, workspace-only if blank)"/>
+                        <ComboBox x:Name="ctxProjectCombo" IsEditable="True" />
+
+                        <CheckBox x:Name="ctxMini" Content="Mini tier project (-Mini)" Margin="0,10,0,0"/>
+
+                        <Button x:Name="btnCtxLayer" Content="Run Context Layer Setup" Style="{StaticResource RunButton}"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
         </TabControl>
 
         <!-- Output Header -->
@@ -325,7 +413,9 @@ $existingProjects = Get-ExistingProjects
                      Foreground="#a6e3a1" FontFamily="Consolas" FontSize="12"
                      BorderThickness="0" Padding="10" AcceptsReturn="True"/>
         </Border>
-    </Grid>
+            </Grid>
+        </Grid>
+    </Border>
 </Window>
 "@
 
@@ -334,28 +424,38 @@ $reader = New-Object System.Xml.XmlNodeReader $xaml
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 # --- Get Controls ---
-$setupProjectName    = $window.FindName("setupProjectName")
-$setupStructure      = $window.FindName("setupStructure")
-$setupTier           = $window.FindName("setupTier")
-$btnSetup            = $window.FindName("btnSetup")
+$titleBar = $window.FindName("titleBar")
+$btnMinimize = $window.FindName("btnMinimize")
+$btnMaximize = $window.FindName("btnMaximize")
+$btnClose = $window.FindName("btnClose")
 
-$checkProjectCombo   = $window.FindName("checkProjectCombo")
-$checkSupport        = $window.FindName("checkSupport")
-$btnCheck            = $window.FindName("btnCheck")
+$setupProjectName = $window.FindName("setupProjectName")
+$setupStructure = $window.FindName("setupStructure")
+$setupTier = $window.FindName("setupTier")
+$btnSetup = $window.FindName("btnSetup")
+
+$checkProjectCombo = $window.FindName("checkProjectCombo")
+$checkSupport = $window.FindName("checkSupport")
+$btnCheck = $window.FindName("btnCheck")
 
 $archiveProjectCombo = $window.FindName("archiveProjectCombo")
-$archiveSupport      = $window.FindName("archiveSupport")
-$archiveDryRun       = $window.FindName("archiveDryRun")
-$archiveForce        = $window.FindName("archiveForce")
-$btnArchive          = $window.FindName("btnArchive")
+$archiveSupport = $window.FindName("archiveSupport")
+$archiveDryRun = $window.FindName("archiveDryRun")
+$archiveForce = $window.FindName("archiveForce")
+$btnArchive = $window.FindName("btnArchive")
 
-$txtOutput           = $window.FindName("txtOutput")
-$btnClear            = $window.FindName("btnClear")
+$ctxProjectCombo = $window.FindName("ctxProjectCombo")
+$ctxMini = $window.FindName("ctxMini")
+$btnCtxLayer = $window.FindName("btnCtxLayer")
+
+$txtOutput = $window.FindName("txtOutput")
+$btnClear = $window.FindName("btnClear")
 
 # --- Populate project dropdowns ---
 foreach ($proj in $existingProjects) {
     $checkProjectCombo.Items.Add($proj) | Out-Null
     $archiveProjectCombo.Items.Add($proj) | Out-Null
+    $ctxProjectCombo.Items.Add($proj) | Out-Null
 }
 
 # --- Helper: Parse project name from combo selection ---
@@ -383,7 +483,7 @@ function Invoke-ScriptWithOutput {
     $txtOutput.Text += "---`r`n"
 
     # Force UI update
-    $window.Dispatcher.Invoke([Action]{}, [System.Windows.Threading.DispatcherPriority]::Background)
+    $window.Dispatcher.Invoke([Action] {}, [System.Windows.Threading.DispatcherPriority]::Background)
 
     try {
         # Run as subprocess to capture Write-Host output
@@ -416,70 +516,133 @@ function Invoke-ScriptWithOutput {
 
 # --- Event Handlers ---
 
+# Title bar: drag to move
+$titleBar.Add_MouseLeftButtonDown({
+        if ($_.ClickCount -eq 2) {
+            # Double-click to toggle maximize
+            if ($window.WindowState -eq [System.Windows.WindowState]::Maximized) {
+                $window.WindowState = [System.Windows.WindowState]::Normal
+            }
+            else {
+                $window.WindowState = [System.Windows.WindowState]::Maximized
+            }
+        }
+        else {
+            if ($window.WindowState -eq [System.Windows.WindowState]::Maximized) {
+                # Restore and reposition so cursor stays proportionally on the title bar
+                $mousePos = [System.Windows.Input.Mouse]::GetPosition($window)
+                $proportionalX = $mousePos.X / $window.ActualWidth
+
+                $window.WindowState = [System.Windows.WindowState]::Normal
+
+                # Force layout update
+                $window.Dispatcher.Invoke([Action] {}, [System.Windows.Threading.DispatcherPriority]::Render)
+
+                $window.Left = $mousePos.X - ($window.ActualWidth * $proportionalX)
+                $window.Top = 0
+            }
+            $window.DragMove()
+        }
+    })
+
+# Minimize button
+$btnMinimize.Add_Click({
+        $window.WindowState = [System.Windows.WindowState]::Minimized
+    })
+
+# Maximize / Restore button
+$btnMaximize.Add_Click({
+        if ($window.WindowState -eq [System.Windows.WindowState]::Maximized) {
+            $window.WindowState = [System.Windows.WindowState]::Normal
+        }
+        else {
+            $window.WindowState = [System.Windows.WindowState]::Maximized
+        }
+    })
+
+# Close button
+$btnClose.Add_Click({
+        $window.Close()
+    })
+
 # Setup button
 $btnSetup.Add_Click({
-    $name = $setupProjectName.Text.Trim()
-    if ([string]::IsNullOrEmpty($name)) {
-        [System.Windows.MessageBox]::Show("Project Name is required.", "Validation",
-            [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
-        return
-    }
+        $name = $setupProjectName.Text.Trim()
+        if ([string]::IsNullOrEmpty($name)) {
+            [System.Windows.MessageBox]::Show("Project Name is required.", "Validation",
+                [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
 
-    $structure = ($setupStructure.SelectedItem).Content
-    $tier = ($setupTier.SelectedItem).Content
+        $structure = ($setupStructure.SelectedItem).Content
+        $tier = ($setupTier.SelectedItem).Content
 
-    $argStr = "-ProjectName '$name' -Structure $structure -Tier $tier"
-    $scriptPath = Join-Path $scriptDir "setup_project.ps1"
-    Invoke-ScriptWithOutput -ScriptPath $scriptPath -ArgumentString $argStr
-})
+        $argStr = "-ProjectName '$name' -Structure $structure -Tier $tier"
+        $scriptPath = Join-Path $scriptDir "setup_project.ps1"
+        Invoke-ScriptWithOutput -ScriptPath $scriptPath -ArgumentString $argStr
+    })
 
 # Check button
 $btnCheck.Add_Click({
-    $params = Get-ProjectParams -ComboText $checkProjectCombo.Text -SupportChecked $checkSupport.IsChecked
-    if ([string]::IsNullOrEmpty($params.Name)) {
-        [System.Windows.MessageBox]::Show("Project Name is required.", "Validation",
-            [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
-        return
-    }
+        $params = Get-ProjectParams -ComboText $checkProjectCombo.Text -SupportChecked $checkSupport.IsChecked
+        if ([string]::IsNullOrEmpty($params.Name)) {
+            [System.Windows.MessageBox]::Show("Project Name is required.", "Validation",
+                [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
 
-    $argStr = "-ProjectName '$($params.Name)'"
-    if ($params.IsSupport) { $argStr += " -Mini" }
+        $argStr = "-ProjectName '$($params.Name)'"
+        if ($params.IsSupport) { $argStr += " -Mini" }
 
-    $scriptPath = Join-Path $scriptDir "check_project.ps1"
-    Invoke-ScriptWithOutput -ScriptPath $scriptPath -ArgumentString $argStr
-})
+        $scriptPath = Join-Path $scriptDir "check_project.ps1"
+        Invoke-ScriptWithOutput -ScriptPath $scriptPath -ArgumentString $argStr
+    })
 
 # Archive button
 $btnArchive.Add_Click({
-    $params = Get-ProjectParams -ComboText $archiveProjectCombo.Text -SupportChecked $archiveSupport.IsChecked
-    if ([string]::IsNullOrEmpty($params.Name)) {
-        [System.Windows.MessageBox]::Show("Project Name is required.", "Validation",
-            [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
-        return
-    }
+        $params = Get-ProjectParams -ComboText $archiveProjectCombo.Text -SupportChecked $archiveSupport.IsChecked
+        if ([string]::IsNullOrEmpty($params.Name)) {
+            [System.Windows.MessageBox]::Show("Project Name is required.", "Validation",
+                [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+            return
+        }
 
-    # Confirm if not DryRun
-    if (-not $archiveDryRun.IsChecked) {
-        $result = [System.Windows.MessageBox]::Show(
-            "Archive '$($params.Name)' for real (not DryRun)?`nThis will move project folders to _archive/.",
-            "Confirm Archive",
-            [System.Windows.MessageBoxButton]::YesNo,
-            [System.Windows.MessageBoxImage]::Warning)
-        if ($result -ne [System.Windows.MessageBoxResult]::Yes) { return }
-    }
+        # Confirm if not DryRun
+        if (-not $archiveDryRun.IsChecked) {
+            $result = [System.Windows.MessageBox]::Show(
+                "Archive '$($params.Name)' for real (not DryRun)?`nThis will move project folders to _archive/.",
+                "Confirm Archive",
+                [System.Windows.MessageBoxButton]::YesNo,
+                [System.Windows.MessageBoxImage]::Warning)
+            if ($result -ne [System.Windows.MessageBoxResult]::Yes) { return }
+        }
 
-    $argStr = "-ProjectName '$($params.Name)' -Force"
-    if ($params.IsSupport) { $argStr += " -Mini" }
-    if ($archiveDryRun.IsChecked) { $argStr += " -DryRun" }
+        $argStr = "-ProjectName '$($params.Name)' -Force"
+        if ($params.IsSupport) { $argStr += " -Mini" }
+        if ($archiveDryRun.IsChecked) { $argStr += " -DryRun" }
 
-    $scriptPath = Join-Path $scriptDir "archive_project.ps1"
-    Invoke-ScriptWithOutput -ScriptPath $scriptPath -ArgumentString $argStr
-})
+        $scriptPath = Join-Path $scriptDir "archive_project.ps1"
+        Invoke-ScriptWithOutput -ScriptPath $scriptPath -ArgumentString $argStr
+    })
+
+# Context Layer button
+$btnCtxLayer.Add_Click({
+        $params = Get-ProjectParams -ComboText $ctxProjectCombo.Text -SupportChecked $ctxMini.IsChecked
+
+        $argStr = ""
+        if (-not [string]::IsNullOrEmpty($params.Name)) {
+            $argStr = "-ProjectName '$($params.Name)'"
+            if ($params.IsSupport) { $argStr += " -Mini" }
+        }
+
+        $scriptPath = Join-Path (Split-Path $scriptDir) "context-compression-layer\setup_context_layer.ps1"
+        Invoke-ScriptWithOutput -ScriptPath $scriptPath -ArgumentString $argStr
+    })
 
 # Clear output
 $btnClear.Add_Click({
-    $txtOutput.Text = ""
-})
+        $txtOutput.Text = ""
+    })
 
 # --- Show Window ---
 $window.ShowDialog() | Out-Null

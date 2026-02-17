@@ -10,10 +10,9 @@
 - ローカル専用フォルダの作成 (_ai-workspace, development)
 - BOX共有フォルダの作成 (自動同期)
 - ジャンクションの自動設定 (shared/, obsidian_notes/)
-- **AGENTS.md**, **CLAUDE.md** シンボリックリンクの作成 (AGENTS.mdが実体、CLAUDE.mdはエイリアス)
+- **AGENTS.md**, **CLAUDE.md** のコピー作成 (BOX側がマスター)
 - **_ai-context** フォルダの作成と Obsidian Junction の設定
 - Obsidian Vault プロジェクトフォルダと **Indexファイル** の自動作成
-- プロジェクト設定ファイルの自動生成
 - 健全性チェック機能
 
 ## 前提条件
@@ -92,20 +91,18 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 - `-Tier` (オプション): `full` (デフォルト、メイン案件) または `mini` (お手伝い系)
 
 スクリプトが実行する内容 (full tier):
-1. ローカルフォルダの作成 (_ai-workspace, development, scripts)
+1. ローカルフォルダの作成 (_ai-context, _ai-workspace, development)
 2. BOX共有フォルダの作成 (docs, reference, records, _work)
 3. Obsidian Vault プロジェクトフォルダの作成 (daily, meetings, specs, notes, weekly) と Indexファイルの作成
 4. ジャンクション作成 (shared/, obsidian_notes/)
-5. AGENTS.md/CLAUDE.md シンボリックリンク作成 (BOX側 → ローカル)
-6. scripts/config.json の生成
+5. AGENTS.md/CLAUDE.md コピー作成 (BOX側 → ローカル)
 
 スクリプトが実行する内容 (mini tier):
-1. ローカルフォルダの作成 (development, scripts) - _ai-workspace なし
+1. ローカルフォルダの作成 (_ai-context, development) - _ai-workspace なし
 2. BOX共有フォルダの作成 (docs, _work) - 軽量構成
 3. Obsidian Vault プロジェクトフォルダの作成 (notes のみ) と Indexファイルの作成
 4. ジャンクション作成 (shared/, obsidian_notes/)
-5. AGENTS.md/CLAUDE.md ファイルコピー (BOX側 → ローカル)
-6. scripts/config.json の生成 (tier 情報を含む)
+5. AGENTS.md/CLAUDE.md コピー作成 (BOX側 → ローカル)
 
 ### 4. AGENTS.md の自動作成
 
@@ -200,8 +197,8 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
 | 要素 | full | mini |
 |------|------|-------|
+| Layer 1 (_ai-context/) | あり | あり |
 | Layer 1 (_ai-workspace/) | あり | なし |
-| Layer 1 (scripts/config/) | あり | なし |
 | Layer 2 (Obsidian) | daily, meetings, specs, notes, weekly | notes のみ |
 | Layer 3 (BOX docs/) | planning, design, testing, release (new) または 01-10 (legacy) | flat (サブフォルダなし) |
 | Layer 3 (reference/) | あり (vendor, standards, external) | なし |
@@ -266,19 +263,15 @@ Box/Projects/{ProjectName}/
 
 ```
 Documents/Projects/_mini/{ProjectName}/
-├── _ai-context/                      # Commmon Context [Local]
-│   └── obsidian_notes/               ← Junction → Box/Obsidian-Vault/Projects/_mini/{ProjectName}
-├── development/                      # 開発関連 [Local]
+├── _ai-context/                # Common Context [Local]
+│   └── obsidian_notes/         # Junction → Box/Obsidian-Vault/Projects/_mini/{ProjectName}
+├── development/                # 開発関連 [Local]
 │   ├── source/                 # ソースコード (Git管理)
-│   ├── config/                 # 設定ファイル
-│   └── scripts/                # 開発スクリプト
-│
-├── scripts/                    # プロジェクト管理スクリプト [Local]
-│   └── config.json             # プロジェクト設定
+│   └── config/                 # 設定ファイル
 │
 ├── shared/                     # Junction → Box/Projects/_mini/{ProjectName}
-├── AGENTS.md                   # Symlink → Box/Projects/_mini/{ProjectName}/AGENTS.md
-└── CLAUDE.md                   # Symlink → AGENTS.md
+├── AGENTS.md                   # Copy from shared/AGENTS.md
+└── CLAUDE.md                   # Copy from shared/AGENTS.md
 
 Box/Projects/_mini/{ProjectName}/
 ├── AGENTS.md                   # プロジェクト固有AI指示書 (実体 - Master)
@@ -304,13 +297,9 @@ Documents/Projects/{ProjectName}/
 │   ├── config/                 # 設定ファイル
 │   └── scripts/                # 開発スクリプト
 │
-├── scripts/                    # プロジェクト管理スクリプト [Local]
-│   ├── config.json             # プロジェクト設定
-│   └── config/                 # 追加設定ファイル
-│
 ├── shared/                     # Junction → Box/Projects/{ProjectName}
-├── AGENTS.md                   # Symlink → Box/Projects/{ProjectName}/AGENTS.md
-└── CLAUDE.md                   # Symlink → AGENTS.md
+├── AGENTS.md                   # Copy from shared/AGENTS.md
+└── CLAUDE.md                   # Copy from shared/AGENTS.md
 ```
 
 ## ワークスペース設定ファイル
@@ -349,8 +338,8 @@ Documents/Projects/
 |------|-----------|---|-------------|---------|-----------|
 | Junction | shared/ | → | Box/Projects/{ProjectName}/ | - | 不要 |
 | Junction | _ai-context/obsidian_notes/ | → | Box/Obsidian-Vault/Projects/{ProjectName}/ | - | 不要 |
-| Symlink | AGENTS.md | → | Box/Projects/{ProjectName}/AGENTS.md | 実体が同期 (Master) | 必須 |
-| Symlink | CLAUDE.md | → | AGENTS.md | Claude用エイリアス | 必須 |
+| Copy | AGENTS.md | ← | Box/Projects/{ProjectName}/AGENTS.md | 実体が同期 (Master) | 不要 |
+| Copy | CLAUDE.md | ← | Box/Projects/{ProjectName}/AGENTS.md | Claude用コピー | 不要 |
 
 ## Obsidian Vault との連携
 
@@ -413,7 +402,7 @@ New-Item -ItemType SymbolicLink -Path "CLAUDE.md" -Target "AGENTS.md"
 
 ### 設定ファイルが見つからない
 
-`config.json` は `setup_project.ps1` 実行時に自動作成されます。作成されていない場合は手動で作成してください。
+`scripts/config.json` は `check_project.ps1` が参照する設定ファイルです。手動で作成するか、`config.template.json` を参考にしてください。
 
 ### Obsidian連携が動作しない
 
