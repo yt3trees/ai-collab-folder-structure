@@ -1,14 +1,14 @@
 # obsidian-explorer
 
-Claude Codeから Obsidian保管庫(Vault)のメモを検索・保存・一覧表示するスキル。
+A Claude Code skill for searching, saving, and listing notes in an Obsidian vault.
 
-Windows環境でbashシェルから `powershell.exe -File` 経由でPowerShellスクリプトを呼び出す形式。
+Invokes PowerShell scripts via `powershell.exe -File` from a bash shell on Windows.
 
-## セットアップ
+## Setup
 
-### 1. config.json の設定
+### 1. Configure config.json
 
-`config.json` にObsidian保管庫のパスを設定する。UTF-8 BOM付きで保存すること。
+Set your Obsidian vault path in `config.json`. Save the file with UTF-8 BOM encoding.
 
 ```json
 {
@@ -16,121 +16,120 @@ Windows環境でbashシェルから `powershell.exe -File` 経由でPowerShell�
 }
 ```
 
-フォールバックとして環境変数 `OBSIDIAN_VAULT_PATH` も参照するが、bash経由だと日本語パスが文字化けするため config.json を推奨。
+The environment variable `OBSIDIAN_VAULT_PATH` is used as a fallback, but config.json is recommended because Japanese characters in paths get garbled when passed from bash.
 
-### 2. .ps1ファイルのエンコーディング
+### 2. .ps1 File Encoding
 
-すべての .ps1 ファイルはUTF-8 BOM付きで保存する必要がある(PowerShell 5.1が日本語を正しくパースするため)。
+All .ps1 files must be saved with UTF-8 BOM (required for PowerShell 5.1 to correctly parse Japanese text).
 
-BOM付きで再保存する方法:
+How to re-save with BOM:
 
 ```powershell
-$path = "対象ファイル.ps1"
+$path = "target-file.ps1"
 $content = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
 $utf8Bom = New-Object System.Text.UTF8Encoding($true)
 [System.IO.File]::WriteAllText($path, $content, $utf8Bom)
 ```
 
-## ファイル構成
+## File Structure
 
 ```
 ~/.claude/skills/obsidian-explorer/
-  skill.md                  - スキル定義(Claude Codeが参照)
-  config.json               - Vaultパス設定
-  Search-ObsidianNotes.ps1  - 検索スクリプト
-  Save-ObsidianNote.ps1     - メモ保存スクリプト
-  List-ObsidianNotes.ps1    - メモ一覧スクリプト
-  README.md                 - このファイル
+  skill.md                  - Skill definition (referenced by Claude Code)
+  config.json               - Vault path configuration
+  Search-ObsidianNotes.ps1  - Search script
+  Save-ObsidianNote.ps1     - Note saving script
+  List-ObsidianNotes.ps1    - Note listing script
+  README.md                 - This file
 ```
 
-## 使い方
+## Usage
 
-### 全文検索
+### Full-Text Search
 
 ```bash
-powershell.exe -ExecutionPolicy Bypass -File "$HOME/.claude/skills/obsidian-explorer/Search-ObsidianNotes.ps1" -Pattern "キーワード" -SearchType fulltext
+powershell.exe -ExecutionPolicy Bypass -File "$HOME/.claude/skills/obsidian-explorer/Search-ObsidianNotes.ps1" -Pattern "keyword" -SearchType fulltext
 ```
 
-| パラメータ | 必須 | 既定値 | 説明 |
-|-----------|------|--------|------|
-| -Pattern | Yes | - | 検索キーワード(正規表現対応) |
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| -Pattern | Yes | - | Search keyword (supports regex) |
 | -SearchType | No | fulltext | fulltext / filename / heading / tag |
-| -Folder | No | "" | 検索対象フォルダ(Vault内の相対パス) |
-| -Context | No | 1 | 前後の表示行数(fulltextのみ) |
-| -MaxResults | No | 20 | 最大結果件数 |
+| -Folder | No | "" | Target folder (relative path within vault) |
+| -Context | No | 1 | Number of surrounding lines to display (fulltext only) |
+| -MaxResults | No | 20 | Maximum number of results |
 
-検索タイプの説明:
+Search type descriptions:
 
-- fulltext: ファイル内容を正規表現で検索
-- filename: ファイル名にキーワードを含むメモを検索
-- heading: Markdown見出し(# ~ ######)にキーワードを含むメモを検索
-- tag: Obsidianタグ(#キーワード)を検索
+- fulltext: Search file contents using regex
+- filename: Search for notes whose filename contains the keyword
+- heading: Search for notes with matching Markdown headings (# through ######)
+- tag: Search for Obsidian tags (#keyword)
 
-### メモ保存
+### Save Note
 
 ```bash
-powershell.exe -ExecutionPolicy Bypass -File "$HOME/.claude/skills/obsidian-explorer/Save-ObsidianNote.ps1" -Title "タイトル" -Content "内容"
+powershell.exe -ExecutionPolicy Bypass -File "$HOME/.claude/skills/obsidian-explorer/Save-ObsidianNote.ps1" -Title "Title" -Content "Content"
 ```
 
-| パラメータ | 必須 | 既定値 | 説明 |
-|-----------|------|--------|------|
-| -Title | Yes | - | メモのタイトル |
-| -Content | Yes | - | メモの内容(Markdown) |
-| -Folder | No | "" | 保存先フォルダ(Vault内の相対パス) |
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| -Title | Yes | - | Note title |
+| -Content | Yes | - | Note content (Markdown) |
+| -Folder | No | "" | Destination folder (relative path within vault) |
 
-ファイル名は `yyyy-MM-dd-タイトル.md` の形式で自動生成される。
+The filename is auto-generated in the format `yyyy-MM-dd-Title.md`.
 
-### メモ一覧
+### List Notes
 
 ```bash
 powershell.exe -ExecutionPolicy Bypass -File "$HOME/.claude/skills/obsidian-explorer/List-ObsidianNotes.ps1" -Days 7
 ```
 
-| パラメータ | 必須 | 既定値 | 説明 |
-|-----------|------|--------|------|
-| -Days | No | 7 | 直近N日間のメモを表示 |
-| -MaxResults | No | 20 | 最大表示件数 |
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| -Days | No | 7 | Show notes from the last N days |
+| -MaxResults | No | 20 | Maximum number of results |
 
-## 実行例
+## Examples
 
 ```bash
-# GRANDITに関するメモをファイル名で検索
+# Search notes by filename for GRANDIT
 powershell.exe -ExecutionPolicy Bypass -File "$HOME/.claude/skills/obsidian-explorer/Search-ObsidianNotes.ps1" -Pattern "GRANDIT" -SearchType filename
 
-# 特定フォルダ内で全文検索、前後3行表示
-powershell.exe -ExecutionPolicy Bypass -File "$HOME/.claude/skills/obsidian-explorer/Search-ObsidianNotes.ps1" -Pattern "エラー" -Folder "_GRANDIT" -Context 3
+# Full-text search within a specific folder, showing 3 surrounding lines
+powershell.exe -ExecutionPolicy Bypass -File "$HOME/.claude/skills/obsidian-explorer/Search-ObsidianNotes.ps1" -Pattern "error" -Folder "_GRANDIT" -Context 3
 
-# 見出しに「トラブル」を含むメモを検索
-powershell.exe -ExecutionPolicy Bypass -File "$HOME/.claude/skills/obsidian-explorer/Search-ObsidianNotes.ps1" -Pattern "トラブル" -SearchType heading
+# Search for notes with "trouble" in headings
+powershell.exe -ExecutionPolicy Bypass -File "$HOME/.claude/skills/obsidian-explorer/Search-ObsidianNotes.ps1" -Pattern "trouble" -SearchType heading
 
-# 直近30日のメモを50件まで表示
+# List notes from the last 30 days, up to 50 results
 powershell.exe -ExecutionPolicy Bypass -File "$HOME/.claude/skills/obsidian-explorer/List-ObsidianNotes.ps1" -Days 30 -MaxResults 50
 
-# メモを保存(Projectsフォルダに)
-powershell.exe -ExecutionPolicy Bypass -File "$HOME/.claude/skills/obsidian-explorer/Save-ObsidianNote.ps1" -Title "調査メモ" -Content "調査内容" -Folder "Projects"
+# Save a note to the Projects folder
+powershell.exe -ExecutionPolicy Bypass -File "$HOME/.claude/skills/obsidian-explorer/Save-ObsidianNote.ps1" -Title "Research Notes" -Content "Research content" -Folder "Projects"
 ```
 
-## パフォーマンスについて
+## Performance
 
-保管庫がBox等のクラウド同期フォルダにある場合、全文検索は遅くなる可能性がある。
-対策として `[System.IO.File]::ReadAllLines` による一括読み込みでI/O回数を最小化している。
+Full-text search may be slow when the vault is located in a cloud-synced folder (e.g., Box). As a countermeasure, the script uses `[System.IO.File]::ReadAllLines` for bulk reading to minimize I/O operations.
 
-さらに高速化したい場合:
-- `-Folder` で検索範囲を限定する
-- `-MaxResults` で結果件数を制限する
-- `-SearchType filename` で内容を読まずにファイル名だけで絞り込む
+For further optimization:
+- Use `-Folder` to narrow the search scope
+- Use `-MaxResults` to limit the number of results
+- Use `-SearchType filename` to filter by filename without reading file contents
 
-## トラブルシューティング
+## Troubleshooting
 
-### スクリプト実行時に文字化けする
+### Garbled characters when running scripts
 
-.ps1ファイルがUTF-8 BOM付きで保存されているか確認する。
+Verify that .ps1 files are saved with UTF-8 BOM encoding.
 
-### Vaultパスが見つからないエラー
+### Vault path not found error
 
-config.json のパスが正しいか確認する。パス区切りは `\\` でエスケープが必要。
+Check that the path in config.json is correct. Path separators must be escaped with `\\`.
 
-### 検索結果が0件になる
+### Search returns zero results
 
-- 正規表現の特殊文字(`.*+?[](){}`)がエスケープされていない可能性がある
-- 単純な文字列検索なら `[regex]::Escape("検索文字列")` 相当のパターンを使う
+- Regex special characters (`.*+?[](){}`) may not be properly escaped
+- For simple string searches, use a pattern equivalent to `[regex]::Escape("search string")`
