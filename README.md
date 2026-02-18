@@ -60,12 +60,12 @@ Documents/Projects/
 │   └── paths.json              # Workspace common path definitions
 ├── _projectTemplate/           # Project template and management scripts
 │   ├── scripts/
-│   │   ├── project_launcher.ps1    # GUI launcher
+│   │   ├── project_manager.ps1     # GUI project manager
 │   │   ├── setup_project.ps1       # Project initial setup
 │   │   ├── check_project.ps1       # Health check
 │   │   ├── archive_project.ps1     # Archive completed projects
 │   │   ├── config.template.json    # Config file template
-│   │   └── _exec_project_launcher.cmd  # GUI launcher batch
+│   │   └── _exec_project_manager.cmd   # GUI manager batch
 │   ├── context-compression-layer/  # AI Context Compression Layer setup
 │   │   ├── setup_context_layer.ps1 # Context layer setup script
 │   │   ├── templates/              # Context file templates
@@ -168,19 +168,21 @@ Create `Documents/Projects/_config/paths.json`:
 
 Each value is a relative path from `%USERPROFILE%`.
 
-### 2. Using GUI Launcher (Recommended)
+### 2. Using GUI Manager (Recommended)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_launcher.ps1"
+powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_manager.ps1"
 ```
 
-Or double-click `_projectTemplate\scripts\_exec_project_launcher.cmd` to launch.
+Or double-click `_projectTemplate\scripts\_exec_project_manager.cmd` to launch.
 
 Features:
+- Dashboard tab: Project overview with quick actions
+- Editor tab: Built-in file viewer/editor for project files
 - Setup tab: Select project name, Structure, and Tier for setup
+- AI Context tab: Set up Context Compression Layer for projects
 - Check tab: Health check for existing projects
 - Archive tab: Archive with DryRun preview
-- AI Context Setup tab: Set up Context Compression Layer for projects
 - Real-time display of script output
 - Custom dark-themed title bar (Catppuccin Mocha)
 
@@ -238,12 +240,12 @@ After BOX sync is complete, simply run the same script to create junctions and s
 
 | Script | Purpose |
 |--------|---------|
-| `project_launcher.ps1` | GUI launcher (integrates all scripts) |
+| `project_manager.ps1` | GUI project manager (integrates all scripts) |
 | `setup_project.ps1` | Project initial setup |
 | `check_project.ps1` | Health check |
 | `archive_project.ps1` | Archive completed projects |
 | `config.template.json` | Config file template |
-| `_exec_project_launcher.cmd` | GUI launcher batch file |
+| `_exec_project_manager.cmd` | GUI manager batch file |
 
 ### context-compression-layer/
 

@@ -58,12 +58,12 @@ Documents/Projects/
 │   └── paths.json              # ワークスペース共通パス定義
 ├── _projectTemplate/           # プロジェクトテンプレート・管理スクリプト
 │   ├── scripts/
-│   │   ├── project_launcher.ps1    # GUIランチャー
+│   │   ├── project_manager.ps1     # GUIプロジェクトマネージャー
 │   │   ├── setup_project.ps1       # プロジェクト初期セットアップ
 │   │   ├── check_project.ps1       # 健全性チェック
 │   │   ├── archive_project.ps1     # 完了プロジェクトのアーカイブ
 │   │   ├── config.template.json    # 設定ファイルテンプレート
-│   │   └── _exec_project_launcher.cmd  # GUIランチャー起動用バッチ
+│   │   └── _exec_project_manager.cmd   # GUIマネージャー起動用バッチ
 │   ├── context-compression-layer/  # AIコンテキスト圧縮層セットアップ
 │   │   ├── setup_context_layer.ps1 # コンテキスト層セットアップスクリプト
 │   │   ├── templates/              # コンテキストファイルテンプレート
@@ -166,19 +166,21 @@ Box/Projects/_mini/{ProjectName}/
 
 各値は `%USERPROFILE%` からの相対パスです。
 
-### 2. GUIランチャーで操作 (推奨)
+### 2. GUIマネージャーで操作 (推奨)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_launcher.ps1"
+powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_manager.ps1"
 ```
 
-または `_projectTemplate\scripts\_exec_project_launcher.cmd` をダブルクリックでも起動できます。
+または `_projectTemplate\scripts\_exec_project_manager.cmd` をダブルクリックでも起動できます。
 
 機能:
+- Dashboard タブ: プロジェクト概要とクイックアクション
+- Editor タブ: プロジェクトファイルの閲覧・編集
 - Setup タブ: プロジェクト名、Structure、Tier を選択してセットアップ
+- AI Context タブ: プロジェクトへのContext Compression Layerセットアップ
 - Check タブ: 既存プロジェクトの健全性チェック
 - Archive タブ: DryRun プレビュー付きでアーカイブ実行
-- AI Context Setup タブ: プロジェクトへのContext Compression Layerセットアップ
 - 出力エリアにスクリプトの実行結果をリアルタイム表示
 - カスタムダークテーマタイトルバー (Catppuccin Mocha)
 
@@ -237,12 +239,12 @@ BOX同期完了後、同じスクリプトを実行するだけでジャンク�
 
 | スクリプト | 用途 |
 |-----------|------|
-| `project_launcher.ps1` | GUI ランチャー(全スクリプトを統合) |
+| `project_manager.ps1` | GUI プロジェクトマネージャー(全スクリプトを統合) |
 | `setup_project.ps1` | プロジェクト初期セットアップ |
 | `check_project.ps1` | 健全性チェック |
 | `archive_project.ps1` | 完了プロジェクトのアーカイブ |
 | `config.template.json` | 設定ファイルテンプレート |
-| `_exec_project_launcher.cmd` | GUIランチャー起動用バッチファイル |
+| `_exec_project_manager.cmd` | GUIマネージャー起動用バッチファイル |
 
 ### context-compression-layer/
 
