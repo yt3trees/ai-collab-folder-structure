@@ -279,21 +279,23 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 .\check_project.ps1 -ProjectName "ProjectA"
 ```
 
-#### 1.6 GUIランチャー
+#### 1.6 GUIプロジェクトマネージャー
 
-`project_launcher.ps1` を使用すると、GUI画面からセットアップ・健全性チェック・アーカイブ・コンテキスト層セットアップを実行できる。
+`project_manager.ps1` を使用すると、GUI画面からプロジェクトの概要確認・ファイル編集・セットアップ・健全性チェック・アーカイブ・コンテキスト層セットアップを実行できる。
 
 タブ構成:
+- Dashboard: プロジェクト概要とクイックアクション
+- Editor: プロジェクトファイルの閲覧・編集
 - Setup: プロジェクトの新規セットアップ
+- AI Context: Context Compression Layerのセットアップ
 - Check: 既存プロジェクトの健全性チェック
 - Archive: 完了プロジェクトのアーカイブ
-- AI Context Setup: Context Compression Layerのセットアップ
 
 UI: Catppuccin MochaテーマのダークUI、カスタムタイトルバー付き。
 
 ```powershell
 cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
-.\project_launcher.ps1
+.\project_manager.ps1
 ```
 
 ### Phase 2: Multi-CLI 対応
@@ -911,7 +913,7 @@ Box/Obsidian-Vault/Projects/_archive/_mini/{ProjectName}/
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\setup_project.ps1` | プロジェクトセットアップスクリプト |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\check_project.ps1` | 健全性チェックスクリプト |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\archive_project.ps1` | プロジェクトアーカイブスクリプト |
-| `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_launcher.ps1` | GUIランチャー |
+| `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_manager.ps1` | GUIプロジェクトマネージャー |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\config.template.json` | 設定ファイルテンプレート |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\context-compression-layer\setup_context_layer.ps1` | Context Compression Layerセットアップスクリプト |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\context-compression-layer\README.md` | Context Compression Layerドキュメント(英語) |

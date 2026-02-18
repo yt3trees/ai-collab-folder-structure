@@ -1,0 +1,220 @@
+# EditorHelpers.ps1 - File I/O with encoding detection and dirty-state tracking
+
+# Detect encoding from BOM or content analysis
+function Get-FileEncoding {
+    param([string]$Path)
+
+    $bytes = [System.IO.File]::ReadAllBytes($Path)
+
+    # Check BOM
+    if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+        return "UTF8BOM"
+    }
+    if ($bytes.Length -ge 2 -and $bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
+        return "UTF16LE"
+    }
+    if ($bytes.Length -ge 2 -and $bytes[0] -eq 0xFE -and $bytes[1] -eq 0xFF) {
+        return "UTF16BE"
+    }
+
+    # Try UTF-8 strict (no BOM)
+    try {
+        $utf8Strict = New-Object System.Text.UTF8Encoding($false, $true)
+        $utf8Strict.GetString($bytes) | Out-Null
+        return "UTF8"
+    } catch {
+        # Not valid UTF-8 -> assume Shift_JIS
+        return "SJIS"
+    }
+}
+
+# Read file content respecting detected encoding
+function Read-FileContent {
+    param([string]$Path)
+
+    $encoding = Get-FileEncoding -Path $Path
+
+    $enc = switch ($encoding) {
+        "UTF8BOM" { New-Object System.Text.UTF8Encoding($true) }
+        "UTF16LE" { [System.Text.Encoding]::Unicode }
+        "UTF16BE" { [System.Text.Encoding]::BigEndianUnicode }
+        "SJIS"    { [System.Text.Encoding]::GetEncoding(932) }
+        default   { [System.Text.Encoding]::UTF8 }  # UTF8 (no BOM)
+    }
+
+    $content = [System.IO.File]::ReadAllText($Path, $enc)
+    return @{
+        Content  = $content
+        Encoding = $encoding
+    }
+}
+
+# Save file preserving original encoding
+function Save-FileContent {
+    param(
+        [string]$Path,
+        [string]$Content,
+        [string]$Encoding
+    )
+
+    $enc = switch ($Encoding) {
+        "UTF8BOM" { New-Object System.Text.UTF8Encoding($true) }
+        "UTF16LE" { [System.Text.Encoding]::Unicode }
+        "UTF16BE" { [System.Text.Encoding]::BigEndianUnicode }
+        "SJIS"    { [System.Text.Encoding]::GetEncoding(932) }
+        default   { New-Object System.Text.UTF8Encoding($false) }  # UTF8 no BOM
+    }
+
+    [System.IO.File]::WriteAllText($Path, $Content, $enc)
+}
+
+# Open a file into the editor TextBox and update AppState
+function Open-FileInEditor {
+    param(
+        [string]$FilePath,
+        [System.Windows.Controls.TextBox]$EditorBox,
+        [System.Windows.Controls.TextBlock]$StatusText,
+        [System.Windows.Window]$Window
+    )
+
+    if ([string]::IsNullOrEmpty($FilePath) -or -not (Test-Path $FilePath)) {
+        return
+    }
+
+    # Warn about unsaved changes
+    if ($script:AppState.EditorState.IsDirty) {
+        $result = [System.Windows.MessageBox]::Show(
+            "Unsaved changes in '$([System.IO.Path]::GetFileName($script:AppState.EditorState.CurrentFile))'.`nDiscard changes?",
+            "Unsaved Changes",
+            [System.Windows.MessageBoxButton]::YesNo,
+            [System.Windows.MessageBoxImage]::Warning
+        )
+        if ($result -ne [System.Windows.MessageBoxResult]::Yes) { return }
+    }
+
+    try {
+        $result = Read-FileContent -Path $FilePath
+
+        # Update AppState BEFORE re-enabling (so TextChanged handler sees correct OriginalContent)
+        $script:AppState.EditorState.CurrentFile     = $FilePath
+        $script:AppState.EditorState.OriginalContent = $result.Content
+        $script:AppState.EditorState.IsDirty         = $false
+        $script:AppState.EditorState.Encoding        = $result.Encoding
+
+        # Disable TextBox while setting text to suppress TextChanged dirty-flag logic
+        $EditorBox.IsEnabled = $false
+        $EditorBox.Text = $result.Content
+        $EditorBox.IsEnabled = $true
+        $btnEditorSave   = $Window.FindName("btnEditorSave")
+        $btnEditorReload = $Window.FindName("btnEditorReload")
+        if ($null -ne $btnEditorSave)   { $btnEditorSave.IsEnabled   = $true }
+        if ($null -ne $btnEditorReload) { $btnEditorReload.IsEnabled = $true }
+
+        $fileName = [System.IO.Path]::GetFileName($FilePath)
+        $StatusText.Text = $fileName
+
+        # Update status bar
+        Update-StatusBar -Window $Window `
+                         -File $fileName `
+                         -Encoding $result.Encoding `
+                         -Dirty $false
+
+        $EditorBox.CaretIndex = 0
+        $EditorBox.ScrollToHome()
+    } catch {
+        [System.Windows.MessageBox]::Show(
+            "Failed to open file:`n$($_.Exception.Message)",
+            "Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        ) | Out-Null
+    }
+}
+
+# Save the currently open file
+function Save-EditorFile {
+    param([System.Windows.Window]$Window)
+
+    $state = $script:AppState.EditorState
+    if ([string]::IsNullOrEmpty($state.CurrentFile)) { return }
+
+    $editorBox = $Window.FindName("editorTextBox")
+    if ($null -eq $editorBox) { return }
+
+    try {
+        Save-FileContent -Path $state.CurrentFile `
+                         -Content $editorBox.Text `
+                         -Encoding $state.Encoding
+
+        $state.OriginalContent = $editorBox.Text
+        $state.IsDirty         = $false
+
+        $statusText = $Window.FindName("editorStatusText")
+        if ($null -ne $statusText) {
+            $statusText.Text = [System.IO.Path]::GetFileName($state.CurrentFile)
+        }
+
+        Update-StatusBar -Window $Window `
+                         -File ([System.IO.Path]::GetFileName($state.CurrentFile)) `
+                         -Encoding $state.Encoding `
+                         -Dirty $false
+    } catch {
+        [System.Windows.MessageBox]::Show(
+            "Failed to save file:`n$($_.Exception.Message)",
+            "Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        ) | Out-Null
+    }
+}
+
+# Create a new decision log file from template
+function New-DecisionLog {
+    param(
+        [string]$AiContextPath,
+        [System.Windows.Window]$Window
+    )
+
+    # Prompt for topic
+    $topic  = [Microsoft.VisualBasic.Interaction]::InputBox(
+        "Enter decision topic (used in filename, e.g. 'api-design'):",
+        "New Decision Log",
+        ""
+    )
+
+    if ([string]::IsNullOrWhiteSpace($topic)) { return $null }
+
+    # Sanitize topic for filename
+    $safeTopic = $topic.Trim() -replace '[^\w\-]', '_'
+    $date      = Get-Date -Format "yyyy-MM-dd"
+    $filename  = "${date}_${safeTopic}.md"
+    $logDir    = Join-Path $AiContextPath "decision_log"
+    $newPath   = Join-Path $logDir $filename
+
+    if (-not (Test-Path $logDir)) {
+        New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+    }
+
+    # Copy from template if available
+    $templatePath = Join-Path $logDir "TEMPLATE.md"
+    if (Test-Path $templatePath) {
+        $tmplResult = Read-FileContent -Path $templatePath
+        $content    = $tmplResult.Content
+    } else {
+        $content = @"
+# Decision: $topic
+
+Date: $date
+
+## Context
+
+## Decision
+
+## Consequences
+
+"@
+    }
+
+    [System.IO.File]::WriteAllText($newPath, $content, [System.Text.Encoding]::UTF8)
+    return $newPath
+}
