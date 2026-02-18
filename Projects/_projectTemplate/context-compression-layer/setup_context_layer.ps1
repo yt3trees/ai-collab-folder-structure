@@ -93,9 +93,28 @@ function Setup-Project {
     Copy-IfNotExists (Join-Path $TemplateDir "project_summary.md") (Join-Path $aiCtx "project_summary.md")
     Copy-IfNotExists (Join-Path $TemplateDir "current_focus.md") (Join-Path $aiCtx "current_focus.md")
     Copy-IfNotExists (Join-Path $TemplateDir "decision_log_TEMPLATE.md") (Join-Path $dlDir "TEMPLATE.md")
+    Copy-IfNotExists (Join-Path $TemplateDir "file_map.md") (Join-Path $aiCtx "file_map.md")
 
-    Write-Host "`n  [TODO] Add Context Compression Layer instructions to CLAUDE.md" -ForegroundColor Cyan
-    Write-Host "         -> See templates/CLAUDE_MD_SNIPPET.md" -ForegroundColor White
+    # Auto-append CCL instructions to CLAUDE.md
+    $claudeMdPath = Join-Path $dir "CLAUDE.md"
+    $snippetPath = Join-Path $TemplateDir "CLAUDE_MD_SNIPPET.md"
+    if ((Test-Path $claudeMdPath) -and (Test-Path $snippetPath)) {
+        $claudeContent = Get-Content $claudeMdPath -Raw -Encoding UTF8
+        if ($claudeContent -notlike "*## Context Compression Layer*") {
+            $snippetContent = Get-Content $snippetPath -Raw -Encoding UTF8
+            if ($snippetContent -match '(?s)```markdown\r?\n(.*?)\r?\n```') {
+                $cclSection = $Matches[1]
+                Add-Content -Path $claudeMdPath -Value "`n$cclSection" -Encoding UTF8
+                Write-Host "  [UPDATE] CLAUDE.md <- CCL instructions appended" -ForegroundColor Green
+            }
+        }
+        else {
+            Write-Host "  [SKIP]   CLAUDE.md (CCL already included)" -ForegroundColor Yellow
+        }
+    }
+    elseif (-not (Test-Path $claudeMdPath)) {
+        Write-Host "  [INFO]   CLAUDE.md not found, skipping CCL append" -ForegroundColor DarkGray
+    }
 
     # --- Skills setup (Per-Project) ---
     if (Test-Path $SkillsDir) {
@@ -170,4 +189,4 @@ Write-Host "`n=== Done ===" -ForegroundColor Green
 Write-Host "Next steps:" -ForegroundColor White
 Write-Host "  1. Write your current focus in current_focus.md" -ForegroundColor White
 Write-Host "  2. Fill in project_summary.md (you can ask AI to draft it)" -ForegroundColor White
-Write-Host "  3. Append the contents of CLAUDE_MD_SNIPPET.md to CLAUDE.md" -ForegroundColor White
+Write-Host "  3. Update file_map.md to reflect actual project structure" -ForegroundColor White

@@ -82,6 +82,8 @@ Documents/Projects/
 ├── _archive/                   # Archived projects
 │   └── _mini/               # Archived mini tier projects
 ├── _mini/                   # Mini tier projects
+├── .context/                   # Workspace-level AI context
+│   └── active_projects.md      # Active projects list
 ├── _ai-workspace/              # AI analysis and experimentation for entire workspace
 ├── CLAUDE.md                   # AI instructions for entire workspace
 ├── README.md                   # This file
@@ -247,8 +249,8 @@ After BOX sync is complete, simply run the same script to create junctions and s
 
 | File | Purpose |
 |------|---------|
-| `setup_context_layer.ps1` | Set up Context Compression Layer for a project |
-| `templates/` | Template files for AI context (current_focus, project_summary, etc.) |
+| `setup_context_layer.ps1` | Set up Context Compression Layer for a project (auto-appends CCL instructions to CLAUDE.md) |
+| `templates/` | Template files for AI context (project_summary, current_focus, file_map, decision_log, etc.) |
 | `examples/` | Example files showing usage patterns |
 | `skills/` | Agent skills for context initialization, session end, decision logging |
 

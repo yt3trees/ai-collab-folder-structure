@@ -80,6 +80,8 @@ Documents/Projects/
 ├── _archive/                   # アーカイブ済みプロジェクト
 │   └── _mini/               # アーカイブ済み mini tier プロジェクト
 ├── _mini/                   # mini tier プロジェクト群
+├── .context/                   # ワークスペースAIコンテキスト
+│   └── active_projects.md      # アクティブプロジェクト一覧
 ├── _ai-workspace/              # ワークスペース全体のAI分析・実験用
 ├── CLAUDE.md                   # ワークスペース全体のAI指示書
 ├── README.md                   # 本ファイル
@@ -246,8 +248,8 @@ BOX同期完了後、同じスクリプトを実行するだけでジャンク�
 
 | ファイル | 用途 |
 |---------|------|
-| `setup_context_layer.ps1` | プロジェクトへのContext Compression Layerセットアップ |
-| `templates/` | AIコンテキストファイルテンプレート (current_focus, project_summary等) |
+| `setup_context_layer.ps1` | プロジェクトへのContext Compression Layerセットアップ (CLAUDE.mdへのCCL指示自動追記) |
+| `templates/` | AIコンテキストファイルテンプレート (project_summary, current_focus, file_map, decision_log等) |
 | `examples/` | 使用パターンの例 |
 | `skills/` | コンテキスト初期化、セッション終了、意思決定ログ用Agentスキル |
 

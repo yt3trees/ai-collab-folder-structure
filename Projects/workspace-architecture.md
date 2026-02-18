@@ -64,6 +64,8 @@ Layer 1のローカルフォルダ内に2本のジャンクションを作成し
 │       │   └── paths.json                 (パス設定 - スクリプト共通)
 │       ├── _globalScripts\                (プロジェクト横断共通スクリプト) [Local]
 │       │   └── sync_from_asana.py         (Asana同期スクリプト)
+│       ├── .context\                      (ワークスペースAIコンテキスト) [Local]
+│       │   └── active_projects.md         (アクティブプロジェクト一覧)
 │       │
 │       └── ProjectA\                      [Layer 1: Execution]
 │           ├── _ai-context\               (Common AI Context) [Local]
@@ -270,7 +272,7 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
 #### 1.5 健全性チェック
 
-`_projectTemplate` の `check_project.ps1` を使用して、ジャンクションやリンクの検証を行う。
+`_projectTemplate` の `check_project.ps1` を使用して、ジャンクション、リンク、CCLファイルの鮮度を検証する。
 
 ```powershell
 cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
