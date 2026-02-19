@@ -244,7 +244,9 @@ function Initialize-TabEditor {
             }
 
             $combo = $Window.FindName("editorProjectCombo")
-            $proj = Get-SelectedEditorProject -ComboText $combo.Text
+            $selectedItem = $combo.SelectedItem
+            if ($null -eq $selectedItem) { return }
+            $proj = Get-SelectedEditorProject -ComboText "$selectedItem"
             if ($null -eq $proj) { return }
 
             $script:AppState.SelectedProject = $proj
