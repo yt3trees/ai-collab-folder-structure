@@ -15,7 +15,7 @@ function Get-ProjectNameList {
     if (Test-Path $miniDir) {
         $sDirs = Get-ChildItem -Path $miniDir -Directory -ErrorAction SilentlyContinue |
                  Where-Object { $_.Name -notmatch '^[_\.]' }
-        foreach ($d in $sDirs) { $projects += "[Mini] $($d.Name)" }
+        foreach ($d in $sDirs) { $projects += "$($d.Name) [Mini]" }
     }
 
     return ($projects | Sort-Object)

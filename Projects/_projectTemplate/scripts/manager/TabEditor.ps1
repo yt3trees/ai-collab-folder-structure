@@ -89,6 +89,11 @@ function New-TreeItem {
     return $item
 }
 
+# Load the context menu functions
+. (Join-Path $PSScriptRoot "TabEditorContextMenu.ps1")
+
+
+
 function Populate-FileTree {
     param(
         [System.Windows.Controls.TreeView]$Tree,
@@ -111,6 +116,7 @@ function Populate-FileTree {
 
         foreach ($f in $aiFiles) {
             $child = New-TreeItem -Label $f.Label -FilePath $f.Path
+            Add-ContextMenuToTreeItem -Item $child -Window $Window
             $aiFolder.Items.Add($child) | Out-Null
         }
         $Tree.Items.Add($aiFolder) | Out-Null
@@ -122,6 +128,7 @@ function Populate-FileTree {
 
         foreach ($f in $dlFiles) {
             $child = New-TreeItem -Label $f.Label -FilePath $f.Path
+            Add-ContextMenuToTreeItem -Item $child -Window $Window
             $dlFolder.Items.Add($child) | Out-Null
         }
         $Tree.Items.Add($dlFolder) | Out-Null
@@ -138,6 +145,7 @@ function Populate-FileTree {
 
             foreach ($f in $fhFiles) {
                 $child = New-TreeItem -Label $f.Name -FilePath $f.FullName
+                Add-ContextMenuToTreeItem -Item $child -Window $Window
                 $fhFolder.Items.Add($child) | Out-Null
             }
             $Tree.Items.Add($fhFolder) | Out-Null
@@ -153,27 +161,12 @@ function Populate-FileTree {
 
         foreach ($f in $wsFiles) {
             $child = New-TreeItem -Label $f.Label -FilePath $f.Path
+            Add-ContextMenuToTreeItem -Item $child -Window $Window
             $wsFolder.Items.Add($child) | Out-Null
         }
         $WorkspaceTree.Items.Add($wsFolder) | Out-Null
     }
 
-    # Attach click handlers to both trees
-    $openFile = {
-        param($s, $e)
-        $selected = $s.SelectedItem
-        if ($null -ne $selected -and $null -ne $selected.Tag) {
-            $eb = $Window.FindName("editorTextBox")
-            $st = $Window.FindName("editorStatusText")
-            Open-FileInEditor -FilePath $selected.Tag `
-                -EditorBox $eb `
-                -StatusText $st `
-                -Window $Window
-        }
-    }
-
-    $Tree.Add_SelectedItemChanged($openFile)
-    $WorkspaceTree.Add_SelectedItemChanged($openFile)
 }
 
 # ---- Helper: resolve selected project from combo text ----
@@ -184,7 +177,8 @@ function Get-SelectedEditorProject {
     if ([string]::IsNullOrEmpty($ComboText)) { return $null }
     $params = Get-ProjectParams -ComboText $ComboText -MiniChecked $false
     $name = $params.Name
-    $proj = $script:AppState.Projects | Where-Object { $_.Name -eq $name } | Select-Object -First 1
+    # Use case-insensitive comparison for project name matching
+    $proj = $script:AppState.Projects | Where-Object { $_.Name -ieq $name } | Select-Object -First 1
     return $proj
 }
 
@@ -200,6 +194,24 @@ function Initialize-TabEditor {
     foreach ($n in $nameList) {
         $editorProjectCombo.Items.Add($n) | Out-Null
     }
+
+    # Register tree file-open handlers ONCE here (prevents accumulation on project switch)
+    $fileTree     = $Window.FindName("editorFileTree")
+    $workspaceTree = $Window.FindName("editorWorkspaceTree")
+    $openFile = {
+        param($s, $e)
+        $selected = $s.SelectedItem
+        if ($null -ne $selected -and $null -ne $selected.Tag) {
+            $eb = $Window.FindName("editorTextBox")
+            $st = $Window.FindName("editorStatusText")
+            Open-FileInEditor -FilePath $selected.Tag `
+                -EditorBox $eb `
+                -StatusText $st `
+                -Window $Window
+        }
+    }
+    $fileTree.Add_SelectedItemChanged($openFile)
+    $workspaceTree.Add_SelectedItemChanged($openFile)
 
     # When project changes, reload file tree
     $editorProjectCombo.Add_SelectionChanged({
@@ -224,10 +236,10 @@ function Initialize-TabEditor {
                     }
                 }
 
-                # Clear editor UI
+                # Clear editor UI (disable first to suppress TextChanged dirty-flag)
                 $eb = $Window.FindName("editorTextBox")
-                $eb.Text = ""
                 $eb.IsEnabled = $false
+                $eb.Text = ""
                 $Window.FindName("editorStatusText").Text = "No file open"
 
                 $btnSave = $Window.FindName("btnEditorSave")
@@ -244,21 +256,21 @@ function Initialize-TabEditor {
             }
 
             $combo = $Window.FindName("editorProjectCombo")
-            $selectedItem = $combo.SelectedItem
-            if ($null -eq $selectedItem) { return }
-            $proj = Get-SelectedEditorProject -ComboText "$selectedItem"
+            # Use SelectedItem (not Text) for reliable value on non-editable ComboBox
+            $selText = if ($null -ne $combo.SelectedItem) { $combo.SelectedItem.ToString() } else { "" }
+            $proj = Get-SelectedEditorProject -ComboText $selText
             if ($null -eq $proj) { return }
 
             $script:AppState.SelectedProject = $proj
             Update-StatusBar -Window $Window -Project $proj.Name
 
-            $fileTree = $Window.FindName("editorFileTree")
-            $workspaceTree = $Window.FindName("editorWorkspaceTree")
+            $ft = $Window.FindName("editorFileTree")
+            $wt = $Window.FindName("editorWorkspaceTree")
 
             # Populate file tree
             Populate-FileTree `
-                -Tree            $fileTree `
-                -WorkspaceTree   $workspaceTree `
+                -Tree            $ft `
+                -WorkspaceTree   $wt `
                 -ProjectInfo     $proj `
                 -WorkspaceRoot   $script:AppState.WorkspaceRoot `
                 -Window          $Window
@@ -334,7 +346,8 @@ function Initialize-TabEditor {
     # New Decision Log button
     $Window.FindName("btnNewDecisionLog").Add_Click({
             $combo = $Window.FindName("editorProjectCombo")
-            $proj = Get-SelectedEditorProject -ComboText $combo.Text
+            $selText = if ($null -ne $combo.SelectedItem) { $combo.SelectedItem.ToString() } else { "" }
+            $proj = Get-SelectedEditorProject -ComboText $selText
             if ($null -eq $proj) {
                 [System.Windows.MessageBox]::Show(
                     "Please select a project first.",
@@ -347,20 +360,18 @@ function Initialize-TabEditor {
 
             $newFile = New-DecisionLog -AiContextPath $proj.AiContextPath -Window $Window
             if ($null -ne $newFile) {
-                $fileTree = $Window.FindName("editorFileTree")
-                $workspaceTree = $Window.FindName("editorWorkspaceTree")
                 $editorBox = $Window.FindName("editorTextBox")
                 $statusText = $Window.FindName("editorStatusText")
 
                 # Refresh tree and open new file
                 Populate-FileTree `
-                    -Tree            $fileTree `
-                    -WorkspaceTree   $workspaceTree `
+                    -Tree            $Window.FindName("editorFileTree") `
+                    -WorkspaceTree   $Window.FindName("editorWorkspaceTree") `
                     -ProjectInfo     $proj `
                     -WorkspaceRoot   $script:AppState.WorkspaceRoot `
                     -Window          $Window
 
-                Open-FileInEditor -FilePath $newFile `
+            Open-FileInEditor -FilePath $newFile `
                     -EditorBox $editorBox `
                     -StatusText $statusText `
                     -Window $Window

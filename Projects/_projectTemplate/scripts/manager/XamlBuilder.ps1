@@ -103,9 +103,9 @@ $styles
                             <TextBlock Grid.Column="0" Text="Project: " VerticalAlignment="Center"
                                        Foreground="#a6adc8" Margin="0,0,4,0" FontSize="12"/>
                             <ComboBox x:Name="editorProjectCombo" Grid.Column="1" Margin="0,0,8,0"/>
-                            <Button x:Name="btnNewDecisionLog" Grid.Column="3"
-                                    Content="+ Decision Log"
-                                    Style="{StaticResource SmallButton}"/>
+                             <Button x:Name="btnNewDecisionLog" Grid.Column="3"
+                                     Content="+ Decision Log"
+                                     Style="{StaticResource SmallButton}"/>
                         </Grid>
 
                         <!-- Split: Tree | Editor -->

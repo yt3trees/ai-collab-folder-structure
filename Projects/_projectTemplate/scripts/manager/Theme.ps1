@@ -398,5 +398,16 @@ function Get-ThemeResourcesXaml {
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- ContextMenu -->
+        <Style TargetType="ContextMenu">
+            <Setter Property="Background" Value="#313244"/>
+            <Setter Property="Foreground" Value="#f4cde4ff"/>
+            <Setter Property="BorderBrush" Value="#45475a"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="2"/>
+        </Style>
+
+
 '@
 }

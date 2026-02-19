@@ -57,7 +57,7 @@ function Get-ProjectParams {
     $name = $ComboText.Trim()
     $isMini = [bool]$MiniChecked
 
-    if ($name -match '^\[Mini\]\s+(.+)$') {
+    if ($name -match '^(.+)\s+\[Mini\]$') {
         $name = $Matches[1]
         $isMini = $true
     }

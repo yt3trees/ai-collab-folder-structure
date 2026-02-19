@@ -142,11 +142,9 @@ function New-ProjectCard {
     $btnPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
     $btnPanel.Margin = New-Object System.Windows.Thickness(0, 10, 0, 0)
 
-    # Store project data in Tag to avoid closure scope issues
-    $tagData = @{
-        Name   = $Info.Name
-        IsMini = ($Info.Tier -eq "mini")
-    }
+    # Store project info in variables for the closures
+    $localProjName = $Info.Name
+    $localIsMini = ($Info.Tier -eq "mini")
 
     # [Check] button
     $btnCheck = New-Object System.Windows.Controls.Button
@@ -158,28 +156,21 @@ function New-ProjectCard {
     $btnCheck.Foreground = New-ColorBrush "#cdd6f4"
     $btnCheck.BorderThickness = New-Object System.Windows.Thickness(0)
     $btnCheck.Cursor = [System.Windows.Input.Cursors]::Hand
-    $btnCheck.Tag = $tagData
+    # Store data in Tag property
+    $btnCheck.Tag = @{ ProjName = $localProjName; IsMini = $localIsMini }
 
     $btnCheck.Add_Click({
-            $data = $this.Tag
-            $projName = $data.Name
-            $isMini = $data.IsMini
-
+            param($sender, $e)
+            $data = $sender.Tag
+            
             $tabMain = $Window.FindName("tabMain")
             $tabMain.SelectedIndex = 4  # Check tab
 
-            $targetName = if ($isMini) { "[Mini] $projName" } else { $projName }
             $checkCombo = $Window.FindName("checkProjectCombo")
-            # Select matching item
-            for ($i = 0; $i -lt $checkCombo.Items.Count; $i++) {
-                if ($checkCombo.Items[$i] -eq $targetName) {
-                    $checkCombo.SelectedIndex = $i
-                    break
-                }
-            }
+            $checkCombo.Text = $data.ProjName
 
             $checkMiniBox = $Window.FindName("checkMini")
-            $checkMiniBox.IsChecked = $isMini
+            $checkMiniBox.IsChecked = $data.IsMini
         })
 
     # [Edit] button
@@ -192,30 +183,29 @@ function New-ProjectCard {
     $btnEdit.Foreground = New-ColorBrush "#cdd6f4"
     $btnEdit.BorderThickness = New-Object System.Windows.Thickness(0)
     $btnEdit.Cursor = [System.Windows.Input.Cursors]::Hand
-    $btnEdit.Tag = $tagData
+    # Store data in Tag property
+    $btnEdit.Tag = @{ ProjName = $localProjName; IsMini = $localIsMini }
 
     $btnEdit.Add_Click({
-            $data = $this.Tag
-            $projName = $data.Name
-            $isMini = $data.IsMini
-
+            param($sender, $e)
+            $data = $sender.Tag
+            
             $tabMain = $Window.FindName("tabMain")
             $tabMain.SelectedIndex = 1  # Editor tab
 
-            $targetName = if ($isMini) { "[Mini] $projName" } else { $projName }
             $editorCombo = $Window.FindName("editorProjectCombo")
-
-            # Try setting SelectedItem directly
-            if ($editorCombo.Items.Contains($targetName)) {
-                $editorCombo.SelectedItem = $targetName
-            }
-            else {
-                # Fallback to loop if direct set fails
-                for ($i = 0; $i -lt $editorCombo.Items.Count; $i++) {
-                    if ($editorCombo.Items[$i] -eq $targetName) {
-                        $editorCombo.SelectedIndex = $i
-                        return
+            # Build display name matching the combo format ([Mini] suffix for mini projects)
+            $displayName = if ($data.IsMini) { "$($data.ProjName) [Mini]" } else { $data.ProjName }
+            
+            for ($i = 0; $i -lt $editorCombo.Items.Count; $i++) {
+                $itemText = $editorCombo.Items[$i].ToString()
+                if ($itemText -eq $displayName) {
+                    # Force re-selection to trigger handler (and auto-open file)
+                    if ($editorCombo.SelectedIndex -eq $i) {
+                        $editorCombo.SelectedIndex = -1
                     }
+                    $editorCombo.SelectedIndex = $i
+                    break
                 }
             }
         })
