@@ -48,7 +48,8 @@ function Initialize-TabArchive {
                 if ($result -ne [System.Windows.MessageBoxResult]::Yes) { return }
             }
 
-            $argStr = "-ProjectName '$($params.Name)' -Force"
+            $safeName = $params.Name -replace "'", "''"
+            $argStr = "-ProjectName '$safeName' -Force"
             if ($params.IsMini) { $argStr += " -Mini" }
             if ($dryRun.IsChecked) { $argStr += " -DryRun" }
 

@@ -33,9 +33,12 @@ function Invoke-ScriptWithOutput {
         $psi.StandardErrorEncoding = [System.Text.Encoding]::UTF8
 
         $process = [System.Diagnostics.Process]::Start($psi)
+        $sbErr = [System.Text.StringBuilder]::new()
+        $process.add_ErrorDataReceived({ if ($null -ne $EventArgs.Data) { $sbErr.AppendLine($EventArgs.Data) } })
+        $process.BeginErrorReadLine()
         $stdout = $process.StandardOutput.ReadToEnd()
-        $stderr = $process.StandardError.ReadToEnd()
         $process.WaitForExit()
+        $stderr = $sbErr.ToString()
 
         if ($stdout) { $OutputBox.AppendText($stdout) }
         if ($stderr) { $OutputBox.AppendText($stderr) }

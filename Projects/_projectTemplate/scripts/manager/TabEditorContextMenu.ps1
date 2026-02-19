@@ -1,3 +1,5 @@
+$script:currentPopup = $null
+
 function Add-ContextMenuToTreeItem {
     param([System.Windows.Controls.TreeViewItem]$Item, [System.Windows.Window]$Window)
 
@@ -9,8 +11,6 @@ function Add-ContextMenuToTreeItem {
 
     # DO NOT overwrite Item.Tag - it contains the file path needed by SelectedItemChanged
     # Store context menu data locally in the closure
-
-    $script:currentPopup = $null
 
     # Attach right-click handler to TreeViewItem
     $Item.Add_MouseRightButtonUp({
@@ -125,6 +125,15 @@ function Add-ContextMenuToTreeItem {
             )
             
             if ($result -eq [System.Windows.MessageBoxResult]::Yes) {
+                if ($script:AppState.EditorState.CurrentFile -eq $filePath -and $script:AppState.EditorState.IsDirty) {
+                    $discardRes = [System.Windows.MessageBox]::Show(
+                        "This file has unsaved changes. Deleting will discard your changes.`nContinue?",
+                        "Unsaved Changes",
+                        [System.Windows.MessageBoxButton]::YesNo,
+                        [System.Windows.MessageBoxImage]::Warning
+                    )
+                    if ($discardRes -ne [System.Windows.MessageBoxResult]::Yes) { return }
+                }
                 try {
                     Remove-Item -Path $filePath -Force
                     

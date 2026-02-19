@@ -36,7 +36,8 @@ function Initialize-TabCheck {
                 return
             }
 
-            $argStr = "-ProjectName '$($params.Name)'"
+            $safeName = $params.Name -replace "'", "''"
+            $argStr = "-ProjectName '$safeName'"
             if ($params.IsMini) { $argStr += " -Mini" }
 
             $scriptPath = Join-Path $ScriptDir "check_project.ps1"

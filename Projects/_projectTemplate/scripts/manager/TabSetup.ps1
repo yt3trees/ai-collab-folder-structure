@@ -31,7 +31,8 @@ function Initialize-TabSetup {
             $tierCombo = $Window.FindName("setupTier")
             $structure = ($structureCombo.SelectedItem).Content
             $tier = ($tierCombo.SelectedItem).Content
-            $argStr = "-ProjectName '$name' -Structure $structure -Tier $tier"
+            $safeName = $name -replace "'", "''"
+            $argStr = "-ProjectName '$safeName' -Structure $structure -Tier $tier"
             $scriptPath = Join-Path $ScriptDir "setup_project.ps1"
 
             $outputBox = $Window.FindName("txtSetupOutput")

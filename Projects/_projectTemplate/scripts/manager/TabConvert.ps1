@@ -53,7 +53,8 @@ function Initialize-TabConvert {
                 if ($result -ne [System.Windows.MessageBoxResult]::Yes) { return }
             }
 
-            $argStr = "-ProjectName '$($params.Name)' -To $toTier -Structure $structure -Force"
+            $safeName = $params.Name -replace "'", "''"
+            $argStr = "-ProjectName '$safeName' -To $toTier -Structure $structure -Force"
             if ($dryRun.IsChecked) { $argStr += " -DryRun" }
 
             $scriptPath = Join-Path $ScriptDir "convert_tier.ps1"
