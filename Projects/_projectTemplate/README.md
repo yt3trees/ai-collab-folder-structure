@@ -168,7 +168,37 @@ What the script does:
    - For support projects: `Documents/Projects/_archive/_mini/{ProjectName}/`
 5. Prompt for manual update if references exist in `00_Projects-Index.md`
 
-### 7. Setup on PC-B
+### 7. Convert Project Tier
+
+Convert an existing project between mini and full tiers:
+
+```powershell
+cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
+
+# Convert mini -> full (DryRun first)
+.\convert_tier.ps1 -ProjectName "SupportProject" -To full -DryRun
+.\convert_tier.ps1 -ProjectName "SupportProject" -To full
+
+# Convert full -> mini
+.\convert_tier.ps1 -ProjectName "MyProject" -To mini -DryRun
+.\convert_tier.ps1 -ProjectName "MyProject" -To mini
+```
+
+Parameters:
+- `-ProjectName` (required): Project name to convert
+- `-To` (required): Target tier (`full` or `mini`)
+- `-Structure` (optional): `new` (default) or `legacy` (only for mini -> full conversion)
+- `-DryRun` (optional): Only display changes without executing
+
+What the script does:
+1. Remove existing junctions and AI instruction file copies
+2. Move all 3 layers to the new tier location
+3. Create additional folders required by the target tier
+4. Recreate junctions and AI instruction file copies
+
+> Note: Converting full -> mini does not delete full-only folders. Files in _ai-workspace/, reference/, records/, etc. are preserved.
+
+### 8. Setup on PC-B
 
 On PC-B, after BOX sync is complete, simply run the same script to set up the environment:
 
@@ -322,6 +352,7 @@ Documents/Projects/
 | `setup_project.ps1` | Initial project setup | `_projectTemplate/scripts/` |
 | `check_project.ps1` | Health check | `_projectTemplate/scripts/` |
 | `archive_project.ps1` | Archive completed projects | `_projectTemplate/scripts/` |
+| `convert_tier.ps1` | Convert between mini/full tiers | `_projectTemplate/scripts/` |
 | `config.template.json` | Configuration file template | Copy and use |
 
 ## 3-Layer Architecture Mapping

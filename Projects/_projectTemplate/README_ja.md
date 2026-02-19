@@ -168,7 +168,37 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
    - お手伝い系の場合: `Documents/Projects/_archive/_mini/{ProjectName}/`
 5. `00_Projects-Index.md` に参照がある場合は手動更新を案内
 
-### 7. PC-B でのセットアップ
+### 7. Tier の変換
+
+既存プロジェクトの Tier を変換できます:
+
+```powershell
+cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
+
+# Mini → Full に変換 (DryRunで確認)
+.\convert_tier.ps1 -ProjectName "SupportProject" -To full -DryRun
+.\convert_tier.ps1 -ProjectName "SupportProject" -To full
+
+# Full → Mini に変換
+.\convert_tier.ps1 -ProjectName "MyProject" -To mini -DryRun
+.\convert_tier.ps1 -ProjectName "MyProject" -To mini
+```
+
+パラメータ:
+- `-ProjectName` (必須): 変換するプロジェクト名
+- `-To` (必須): 変換先 Tier (`full` or `mini`)
+- `-Structure` (オプション): `new` (デフォルト) または `legacy` (mini → full 変換時のみ有効)
+- `-DryRun` (オプション): 変更内容を表示するだけで実行しない
+
+スクリプトが実行する内容:
+1. 既存のジャンクションとAI指示書コピーを解除
+2. 3層すべてのフォルダを変換先の場所に移動
+3. 変換先 Tier に必要な追加フォルダを作成
+4. ジャンクションとAI指示書コピーを再作成
+
+> 注意: Full → Mini 変換時、Full 固有のフォルダ (_ai-workspace/, reference/, records/ 等) のファイルは削除されず保持されます。
+
+### 8. PC-B でのセットアップ
 
 PC-B ではBOX同期完了後、同じスクリプトを実行するだけで環境が構築されます:
 
@@ -322,6 +352,7 @@ Documents/Projects/
 | `setup_project.ps1` | プロジェクトの初期セットアップ | `_projectTemplate/scripts/` |
 | `check_project.ps1` | 健全性チェック | `_projectTemplate/scripts/` |
 | `archive_project.ps1` | 完了プロジェクトのアーカイブ | `_projectTemplate/scripts/` |
+| `convert_tier.ps1` | Tier 変換 (mini <-> full) | `_projectTemplate/scripts/` |
 | `config.template.json` | 設定ファイルのテンプレート | コピーして使用 |
 
 ## 3層レイヤー構造との対応

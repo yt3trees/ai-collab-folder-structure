@@ -1,6 +1,6 @@
 # project_manager.ps1 - Project Manager GUI entry point
 # Usage: powershell -ExecutionPolicy Bypass -File project_manager.ps1
-#        or double-click _exec_project_manager.cmd
+#        or double-click exec_project_manager.cmd
 
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
@@ -23,6 +23,7 @@ $managerDir = Join-Path $scriptDir "manager"
 . "$managerDir\TabCheck.ps1"
 . "$managerDir\TabArchive.ps1"
 . "$managerDir\TabContextSetup.ps1"
+. "$managerDir\TabConvert.ps1"
 
 # --- Initialize config and discover projects ---
 Initialize-AppConfig -ScriptDir $scriptDir
@@ -146,6 +147,7 @@ Initialize-TabSetup        -Window $window -ScriptDir $scriptDir
 Initialize-TabCheck        -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabArchive      -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabContextSetup -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
+Initialize-TabConvert      -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 
 # --- Show window ---
 $window.ShowDialog() | Out-Null

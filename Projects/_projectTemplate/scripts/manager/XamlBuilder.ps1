@@ -4,7 +4,7 @@
 function Build-MainWindowXaml {
     $styles = Get-ThemeResourcesXaml
 
-    # Tab indices: 0=Dashboard, 1=Editor, 2=Setup, 3=AI Context, 4=Check, 5=Archive
+    # Tab indices: 0=Dashboard, 1=Editor, 2=Setup, 3=AI Context, 4=Check, 5=Archive, 6=Convert
     return @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -348,6 +348,55 @@ $styles
                     </Grid>
                 </TabItem>
 
+                <!-- Tab 6: Convert Tier -->
+                <TabItem Header="Convert">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="280">
+                            <StackPanel Margin="16">
+                                <Label Content="Project Name"/>
+                                <ComboBox x:Name="convertProjectCombo" IsEditable="True"/>
+                                <Label Content="Convert To"/>
+                                <ComboBox x:Name="convertToTier" SelectedIndex="0">
+                                    <ComboBoxItem Content="full"/>
+                                    <ComboBoxItem Content="mini"/>
+                                </ComboBox>
+                                <Label Content="Structure (mini to full only)"/>
+                                <ComboBox x:Name="convertStructure" SelectedIndex="0">
+                                    <ComboBoxItem Content="new"/>
+                                    <ComboBoxItem Content="legacy"/>
+                                </ComboBox>
+                                <CheckBox x:Name="convertDryRun"
+                                          Content="Dry Run (preview only, no changes)"
+                                          IsChecked="True" Margin="0,10,0,0"/>
+                                <Button x:Name="btnConvert" Content="Run Convert"
+                                        Style="{StaticResource DangerButton}"/>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
+                            <TextBlock Text="Output" FontSize="12" Foreground="#a6adc8"
+                                       VerticalAlignment="Center"/>
+                            <Button x:Name="btnConvertClear" Content="Clear"
+                                    Margin="10,0,0,0" Padding="8,3"
+                                    Background="Transparent" Foreground="#6c7086"
+                                    BorderBrush="#45475a" BorderThickness="1"
+                                    Cursor="Hand" FontSize="11"/>
+                        </StackPanel>
+                        <Border Grid.Row="2" Background="#181825" CornerRadius="6"
+                                BorderBrush="#313244" BorderThickness="1" Margin="16,0,16,16">
+                            <TextBox x:Name="txtConvertOutput" IsReadOnly="True" TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto" Background="Transparent"
+                                     Foreground="#a6e3a1" FontFamily="Consolas" FontSize="12"
+                                     BorderThickness="0" Padding="10" AcceptsReturn="True"/>
+                        </Border>
+                    </Grid>
+                </TabItem>
 
             </TabControl>
 
