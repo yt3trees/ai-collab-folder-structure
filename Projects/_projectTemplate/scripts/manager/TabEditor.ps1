@@ -127,6 +127,23 @@ function Populate-FileTree {
         $Tree.Items.Add($dlFolder) | Out-Null
     }
 
+    # --- Focus History ---
+    $fhDir = Join-Path $ProjectInfo.AiContextPath "focus_history"
+    if (Test-Path $fhDir) {
+        $fhFiles = Get-ChildItem $fhDir -Filter "*.md" -ErrorAction SilentlyContinue |
+        Sort-Object Name -Descending
+        if ($fhFiles.Count -gt 0) {
+            $fhFolder = New-TreeItem -Label "focus_history"
+            $fhFolder.IsExpanded = $false
+
+            foreach ($f in $fhFiles) {
+                $child = New-TreeItem -Label $f.Name -FilePath $f.FullName
+                $fhFolder.Items.Add($child) | Out-Null
+            }
+            $Tree.Items.Add($fhFolder) | Out-Null
+        }
+    }
+
     # --- Workspace: .context/ files ---
     $wsFiles = Get-WorkspaceAIFiles -WorkspaceRoot $WorkspaceRoot
 
@@ -186,6 +203,46 @@ function Initialize-TabEditor {
 
     # When project changes, reload file tree
     $editorProjectCombo.Add_SelectionChanged({
+            # Close current file before switching
+            $state = $script:AppState.EditorState
+            if (-not [string]::IsNullOrEmpty($state.CurrentFile)) {
+                if ($state.IsDirty) {
+                    $fName = [System.IO.Path]::GetFileName($state.CurrentFile)
+                    $res = [System.Windows.MessageBox]::Show(
+                        "Save changes to '$fName' before switching projects?",
+                        "Unsaved Changes",
+                        [System.Windows.MessageBoxButton]::YesNoCancel,
+                        [System.Windows.MessageBoxImage]::Warning
+                    )
+
+                    if ($res -eq [System.Windows.MessageBoxResult]::Yes) {
+                        Save-EditorFile -Window $Window
+                        if ($script:AppState.EditorState.IsDirty) { return } # Save failed
+                    }
+                    elseif ($res -eq [System.Windows.MessageBoxResult]::Cancel) {
+                        return
+                    }
+                }
+
+                # Clear editor UI
+                $eb = $Window.FindName("editorTextBox")
+                $eb.Text = ""
+                $eb.IsEnabled = $false
+                $Window.FindName("editorStatusText").Text = "No file open"
+
+                $btnSave = $Window.FindName("btnEditorSave")
+                if ($null -ne $btnSave) { $btnSave.IsEnabled = $false }
+
+                $btnReload = $Window.FindName("btnEditorReload")
+                if ($null -ne $btnReload) { $btnReload.IsEnabled = $false }
+
+                $state.CurrentFile = ""
+                $state.OriginalContent = ""
+                $state.IsDirty = $false
+
+                Update-StatusBar -Window $Window -File "" -Encoding "" -Dirty $false
+            }
+
             $combo = $Window.FindName("editorProjectCombo")
             $proj = Get-SelectedEditorProject -ComboText $combo.Text
             if ($null -eq $proj) { return }
@@ -196,12 +253,23 @@ function Initialize-TabEditor {
             $fileTree = $Window.FindName("editorFileTree")
             $workspaceTree = $Window.FindName("editorWorkspaceTree")
 
+            # Populate file tree
             Populate-FileTree `
                 -Tree            $fileTree `
                 -WorkspaceTree   $workspaceTree `
                 -ProjectInfo     $proj `
                 -WorkspaceRoot   $script:AppState.WorkspaceRoot `
                 -Window          $Window
+
+            # Auto-open current_focus.md if available
+            if ($null -ne $proj.FocusFile) {
+                $eb = $Window.FindName("editorTextBox")
+                $st = $Window.FindName("editorStatusText")
+                Open-FileInEditor -FilePath $proj.FocusFile `
+                    -EditorBox $eb `
+                    -StatusText $st `
+                    -Window $Window
+            }
         })
 
     # Track dirty state on text change

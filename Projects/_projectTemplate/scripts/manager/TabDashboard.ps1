@@ -188,6 +188,10 @@ function New-ProjectCard {
             # Select matching item
             for ($i = 0; $i -lt $editorCombo.Items.Count; $i++) {
                 if ($editorCombo.Items[$i] -eq $projName) {
+                    # Force re-selection to trigger handler (and auto-open file)
+                    if ($editorCombo.SelectedIndex -eq $i) {
+                        $editorCombo.SelectedIndex = -1
+                    }
                     $editorCombo.SelectedIndex = $i
                     break
                 }

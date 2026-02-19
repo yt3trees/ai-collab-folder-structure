@@ -26,6 +26,7 @@ Layer 3: Artifact (BOX)      <- Deliverables
 ├── _ai-context/
 │   ├── project_summary.md     ★ Project overview
 │   ├── current_focus.md       ★ Current focus (mainly written by humans)
+│   ├── focus_history/         ★ Daily snapshots of current_focus.md
 │   ├── decision_log/          ★ Decision log
 │   │   └── TEMPLATE.md
 │   └── obsidian_notes/        (Existing. Do not modify)
@@ -53,11 +54,12 @@ Documents/Projects/
 
 ### current_focus.md Usage
 
-Overwrite-based operation. Do not accumulate history. Always keep it at 10-20 lines as a "snapshot of now".
+Overwrite-based operation. Always keep it at 10-20 lines as a "snapshot of now".
 
 - Completed tasks -> Remove them
 - Old "recent events" -> Remove them (keep only the last 1-2 weeks)
 - Items needing history -> Handled by decision_log / Obsidian Vault / git log
+- Daily snapshots are saved to `focus_history/YYYY-MM-DD.md` via `save_focus_snapshot.ps1`
 
 ## Setup Guide
 
@@ -126,5 +128,6 @@ context-compression-layer/
 │   ├── context-init/SKILL.md
 │   ├── context-session-end/SKILL.md
 │   └── context-decision-log/SKILL.md
-└── setup_context_layer.ps1            Setup script
+├── setup_context_layer.ps1            Setup script
+└── save_focus_snapshot.ps1            Daily snapshot of current_focus.md
 ```

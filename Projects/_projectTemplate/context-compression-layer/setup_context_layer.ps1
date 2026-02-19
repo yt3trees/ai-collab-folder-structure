@@ -87,8 +87,10 @@ function Setup-Project {
     Write-Host "`n=== Project: $Name ===" -ForegroundColor Cyan
     $aiCtx = Join-Path $dir "_ai-context"
     $dlDir = Join-Path $aiCtx "decision_log"
+    $fhDir = Join-Path $aiCtx "focus_history"
     Ensure-Dir $aiCtx
     Ensure-Dir $dlDir
+    Ensure-Dir $fhDir
 
     Copy-IfNotExists (Join-Path $TemplateDir "project_summary.md") (Join-Path $aiCtx "project_summary.md")
     Copy-IfNotExists (Join-Path $TemplateDir "current_focus.md") (Join-Path $aiCtx "current_focus.md")

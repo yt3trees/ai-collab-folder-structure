@@ -22,7 +22,8 @@ function Get-FileEncoding {
         $utf8Strict = New-Object System.Text.UTF8Encoding($false, $true)
         $utf8Strict.GetString($bytes) | Out-Null
         return "UTF8"
-    } catch {
+    }
+    catch {
         # Not valid UTF-8 -> assume Shift_JIS
         return "SJIS"
     }
@@ -38,8 +39,8 @@ function Read-FileContent {
         "UTF8BOM" { New-Object System.Text.UTF8Encoding($true) }
         "UTF16LE" { [System.Text.Encoding]::Unicode }
         "UTF16BE" { [System.Text.Encoding]::BigEndianUnicode }
-        "SJIS"    { [System.Text.Encoding]::GetEncoding(932) }
-        default   { [System.Text.Encoding]::UTF8 }  # UTF8 (no BOM)
+        "SJIS" { [System.Text.Encoding]::GetEncoding(932) }
+        default { [System.Text.Encoding]::UTF8 }  # UTF8 (no BOM)
     }
 
     $content = [System.IO.File]::ReadAllText($Path, $enc)
@@ -61,8 +62,8 @@ function Save-FileContent {
         "UTF8BOM" { New-Object System.Text.UTF8Encoding($true) }
         "UTF16LE" { [System.Text.Encoding]::Unicode }
         "UTF16BE" { [System.Text.Encoding]::BigEndianUnicode }
-        "SJIS"    { [System.Text.Encoding]::GetEncoding(932) }
-        default   { New-Object System.Text.UTF8Encoding($false) }  # UTF8 no BOM
+        "SJIS" { [System.Text.Encoding]::GetEncoding(932) }
+        default { New-Object System.Text.UTF8Encoding($false) }  # UTF8 no BOM
     }
 
     [System.IO.File]::WriteAllText($Path, $Content, $enc)
@@ -96,18 +97,18 @@ function Open-FileInEditor {
         $result = Read-FileContent -Path $FilePath
 
         # Update AppState BEFORE re-enabling (so TextChanged handler sees correct OriginalContent)
-        $script:AppState.EditorState.CurrentFile     = $FilePath
+        $script:AppState.EditorState.CurrentFile = $FilePath
         $script:AppState.EditorState.OriginalContent = $result.Content
-        $script:AppState.EditorState.IsDirty         = $false
-        $script:AppState.EditorState.Encoding        = $result.Encoding
+        $script:AppState.EditorState.IsDirty = $false
+        $script:AppState.EditorState.Encoding = $result.Encoding
 
         # Disable TextBox while setting text to suppress TextChanged dirty-flag logic
         $EditorBox.IsEnabled = $false
         $EditorBox.Text = $result.Content
         $EditorBox.IsEnabled = $true
-        $btnEditorSave   = $Window.FindName("btnEditorSave")
+        $btnEditorSave = $Window.FindName("btnEditorSave")
         $btnEditorReload = $Window.FindName("btnEditorReload")
-        if ($null -ne $btnEditorSave)   { $btnEditorSave.IsEnabled   = $true }
+        if ($null -ne $btnEditorSave) { $btnEditorSave.IsEnabled = $true }
         if ($null -ne $btnEditorReload) { $btnEditorReload.IsEnabled = $true }
 
         $fileName = [System.IO.Path]::GetFileName($FilePath)
@@ -115,13 +116,14 @@ function Open-FileInEditor {
 
         # Update status bar
         Update-StatusBar -Window $Window `
-                         -File $fileName `
-                         -Encoding $result.Encoding `
-                         -Dirty $false
+            -File $fileName `
+            -Encoding $result.Encoding `
+            -Dirty $false
 
         $EditorBox.CaretIndex = 0
         $EditorBox.ScrollToHome()
-    } catch {
+    }
+    catch {
         [System.Windows.MessageBox]::Show(
             "Failed to open file:`n$($_.Exception.Message)",
             "Error",
@@ -142,12 +144,20 @@ function Save-EditorFile {
     if ($null -eq $editorBox) { return }
 
     try {
+        # Auto-snapshot: if saving current_focus.md, archive previous version to focus_history/
+        $fileName = [System.IO.Path]::GetFileName($state.CurrentFile)
+        if ($fileName -eq "current_focus.md") {
+            Save-FocusSnapshot -FilePath $state.CurrentFile `
+                -OriginalContent $state.OriginalContent `
+                -Encoding $state.Encoding
+        }
+
         Save-FileContent -Path $state.CurrentFile `
-                         -Content $editorBox.Text `
-                         -Encoding $state.Encoding
+            -Content $editorBox.Text `
+            -Encoding $state.Encoding
 
         $state.OriginalContent = $editorBox.Text
-        $state.IsDirty         = $false
+        $state.IsDirty = $false
 
         $statusText = $Window.FindName("editorStatusText")
         if ($null -ne $statusText) {
@@ -155,10 +165,11 @@ function Save-EditorFile {
         }
 
         Update-StatusBar -Window $Window `
-                         -File ([System.IO.Path]::GetFileName($state.CurrentFile)) `
-                         -Encoding $state.Encoding `
-                         -Dirty $false
-    } catch {
+            -File ([System.IO.Path]::GetFileName($state.CurrentFile)) `
+            -Encoding $state.Encoding `
+            -Dirty $false
+    }
+    catch {
         [System.Windows.MessageBox]::Show(
             "Failed to save file:`n$($_.Exception.Message)",
             "Error",
@@ -166,6 +177,52 @@ function Save-EditorFile {
             [System.Windows.MessageBoxImage]::Error
         ) | Out-Null
     }
+}
+
+# Auto-snapshot current_focus.md to focus_history/YYYY-MM-DD.md
+function Save-FocusSnapshot {
+    param(
+        [string]$FilePath,
+        [string]$OriginalContent,
+        [string]$Encoding
+    )
+
+    # Skip if original content is empty or template-only
+    if ([string]::IsNullOrWhiteSpace($OriginalContent)) { return }
+
+    # Strip HTML comments and check for real content
+    $stripped = $OriginalContent -replace '(?s)<!--.*?-->', ''
+    $lines = ($stripped -split "`n") | ForEach-Object { $_.Trim() }
+    $contentLines = $lines | Where-Object {
+        $_ -ne "" -and
+        $_ -ne "-" -and
+        -not $_.StartsWith("#") -and
+        -not $_.StartsWith("---") -and
+        -not ($_ -match '^更新:')
+    }
+    if ($contentLines.Count -eq 0) { return }
+
+    # Determine focus_history/ directory
+    $parentDir = [System.IO.Path]::GetDirectoryName($FilePath)
+    $historyDir = Join-Path $parentDir "focus_history"
+
+    if (-not (Test-Path $historyDir)) {
+        New-Item -ItemType Directory -Path $historyDir -Force | Out-Null
+    }
+
+    # Save snapshot with today's date (overwrite if same day)
+    $today = Get-Date -Format "yyyy-MM-dd"
+    $snapshotPath = Join-Path $historyDir "$today.md"
+
+    $enc = switch ($Encoding) {
+        "UTF8BOM" { New-Object System.Text.UTF8Encoding($true) }
+        "UTF16LE" { [System.Text.Encoding]::Unicode }
+        "UTF16BE" { [System.Text.Encoding]::BigEndianUnicode }
+        "SJIS" { [System.Text.Encoding]::GetEncoding(932) }
+        default { New-Object System.Text.UTF8Encoding($false) }
+    }
+
+    [System.IO.File]::WriteAllText($snapshotPath, $OriginalContent, $enc)
 }
 
 # Create a new decision log file from template
@@ -176,7 +233,7 @@ function New-DecisionLog {
     )
 
     # Prompt for topic
-    $topic  = [Microsoft.VisualBasic.Interaction]::InputBox(
+    $topic = [Microsoft.VisualBasic.Interaction]::InputBox(
         "Enter decision topic (used in filename, e.g. 'api-design'):",
         "New Decision Log",
         ""
@@ -186,10 +243,10 @@ function New-DecisionLog {
 
     # Sanitize topic for filename
     $safeTopic = $topic.Trim() -replace '[^\w\-]', '_'
-    $date      = Get-Date -Format "yyyy-MM-dd"
-    $filename  = "${date}_${safeTopic}.md"
-    $logDir    = Join-Path $AiContextPath "decision_log"
-    $newPath   = Join-Path $logDir $filename
+    $date = Get-Date -Format "yyyy-MM-dd"
+    $filename = "${date}_${safeTopic}.md"
+    $logDir = Join-Path $AiContextPath "decision_log"
+    $newPath = Join-Path $logDir $filename
 
     if (-not (Test-Path $logDir)) {
         New-Item -ItemType Directory -Path $logDir -Force | Out-Null
@@ -199,8 +256,9 @@ function New-DecisionLog {
     $templatePath = Join-Path $logDir "TEMPLATE.md"
     if (Test-Path $templatePath) {
         $tmplResult = Read-FileContent -Path $templatePath
-        $content    = $tmplResult.Content
-    } else {
+        $content = $tmplResult.Content
+    }
+    else {
         $content = @"
 # Decision: $topic
 

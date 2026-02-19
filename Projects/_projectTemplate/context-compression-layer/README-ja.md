@@ -26,6 +26,7 @@ Layer 3: Artifact (BOX)      <- 成果物
 ├── _ai-context/
 │   ├── project_summary.md     ★ プロジェクト全体像
 │   ├── current_focus.md       ★ 今のフォーカス(人間が主に書く)
+│   ├── focus_history/         ★ current_focus.md の日次スナップショット
 │   ├── decision_log/          ★ 意思決定ログ
 │   │   └── TEMPLATE.md
 │   └── obsidian_notes/        (既存。触らない)
@@ -53,11 +54,12 @@ Documents/Projects/
 
 ### current_focus.md の運用
 
-上書き運用。履歴を溜めない。常に10-20行で「今のスナップショット」を保つ。
+上書き運用。常に10-20行で「今のスナップショット」を保つ。
 
 - 終わったタスク -> 消す
 - 古い「最近あったこと」 -> 消す(直近1-2週間分だけ残す)
 - 履歴が必要なもの -> decision_log / Obsidian Vault / gitログが担う
+- 日次スナップショットは `save_focus_snapshot.ps1` で `focus_history/YYYY-MM-DD.md` に保存される
 
 ## 導入手順
 
@@ -126,5 +128,6 @@ context-compression-layer/
 │   ├── context-init/SKILL.md
 │   ├── context-session-end/SKILL.md
 │   └── context-decision-log/SKILL.md
-└── setup_context_layer.ps1            Setup script
+├── setup_context_layer.ps1            Setup script
+└── save_focus_snapshot.ps1            current_focus.md の日次スナップショット保存
 ```
