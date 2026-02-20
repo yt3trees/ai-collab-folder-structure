@@ -10,7 +10,7 @@ AI(Claude Code)との協働を前提とした、プロジェクトフォルダ�
 
 - Layer 1 (Execution): ローカル作業領域(Git管理、揮発性の高い作業)
 - Layer 2 (Knowledge): Obsidian Vault(思考・知見の蓄積、BOX同期)
-- Layer 3 (Artifact): 成果物・参照資料(チーム共有、BOX同期)
+- Layer 3 (Artifact): 成果物・参照資料(ファイルバックアップ・PC間同期、BOX同期)
 
 ## 3層レイヤー構造
 
@@ -18,7 +18,7 @@ AI(Claude Code)との協働を前提とした、プロジェクトフォルダ�
 |-------|------|------|-------------|
 | Layer 1: Execution | 作業場 | Documents/Projects/{案件}/ (Local) | WIP、揮発性が高い |
 | Layer 2: Knowledge | 思考・知識 | Box/Obsidian-Vault/ (BOX Sync) | 文脈、経緯、知見 |
-| Layer 3: Artifact | 成果物・参照 | Box/Projects/{案件}/ (BOX Sync) | チーム共有ドキュメント |
+| Layer 3: Artifact | 成果物・参照 | Box/Projects/{案件}/ (BOX Sync) | バックアップ・PC間同期ドキュメント |
 
 ## 特徴
 
@@ -63,7 +63,8 @@ Documents/Projects/
 │   │   ├── check_project.ps1       # 健全性チェック
 │   │   ├── archive_project.ps1     # 完了プロジェクトのアーカイブ
 │   │   ├── config.template.json    # 設定ファイルテンプレート
-│   │   └── _exec_project_manager.cmd   # GUIマネージャー起動用バッチ
+│   │   └── manager/                   # GUIマネージャーモジュール
+├── exec_project_manager.cmd       # GUIマネージャー起動用バッチ (Projects ルート)
 │   ├── context-compression-layer/  # AIコンテキスト圧縮層セットアップ
 │   │   ├── setup_context_layer.ps1 # コンテキスト層セットアップスクリプト
 │   │   ├── templates/              # コンテキストファイルテンプレート
@@ -172,7 +173,7 @@ Box/Projects/_mini/{ProjectName}/
 powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_manager.ps1"
 ```
 
-または `_projectTemplate\scripts\_exec_project_manager.cmd` をダブルクリックでも起動できます。
+または Projects ルートの `exec_project_manager.cmd` をダブルクリックでも起動できます。
 
 機能:
 - Dashboard タブ: プロジェクト概要とクイックアクション
@@ -243,8 +244,9 @@ BOX同期完了後、同じスクリプトを実行するだけでジャンク�
 | `setup_project.ps1` | プロジェクト初期セットアップ |
 | `check_project.ps1` | 健全性チェック |
 | `archive_project.ps1` | 完了プロジェクトのアーカイブ |
+| `convert_tier.ps1` | Tier 変換 (mini <-> full) |
 | `config.template.json` | 設定ファイルテンプレート |
-| `_exec_project_manager.cmd` | GUIマネージャー起動用バッチファイル |
+| `exec_project_manager.cmd` | GUIマネージャー起動用バッチファイル (Projects ルート) |
 
 ### context-compression-layer/
 

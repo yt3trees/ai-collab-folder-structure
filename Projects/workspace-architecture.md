@@ -30,7 +30,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | Layer 1: Execution | 実行・作業 | Documents/Projects/ProjectA (Local)<br>Git (Source)<br>Asana (Task) | Work in Progress (WIP)<br>揮発性が高い、速度優先 | Git / Asana / Local |
 | Layer 2: Knowledge | 思考・知識 | Obsidian Vault (BOX) | Linked Knowledge<br>文脈、経緯、知見、ドラフト | Vault (Markdown) |
-| Layer 3: Artifact | 成果物・参照 | Box/Projects/ProjectA (BOX Sync) | Shared Docs (+ 手動Symlink)<br>チーム共有ドキュメント + 公式資料参照 | Official / Shared |
+| Layer 3: Artifact | 成果物・参照 | Box/Projects/ProjectA (BOX Sync) | Backup & Sync Docs (+ 手動Symlink)<br>バックアップ・PC間同期ドキュメント + 参照資料 | BOX / Local |
 
 ### ジャンクション方針: 2本構成
 
@@ -113,7 +113,7 @@ Layer 1のローカルフォルダ内に2本のジャンクションを作成し
     │       └── meeting-note.md
     │
     └── Projects\                          [Layer 3: Artifact - BOX Sync]
-        └── ProjectA\               (個人使用・資料の用途別分類)
+        └── ProjectA\               (バックアップ・PC間同期・資料の用途別分類)
             ├── docs\                       (本筋ドキュメント - 作成・編集する)
             │   ├── planning\               (企画・要件定義・提案書)
             │   ├── design\                 (設計書 - 基本/詳細/データモデル/UI)
@@ -168,7 +168,7 @@ Layer 1のローカルフォルダ内に2本のジャンクションを作成し
 
 #### Layer 3: Artifact (成果物・参照)
 - 場所: BOX内 `Projects/ProjectA`
-- 役割: 個人使用のドキュメントと成果物の一元管理。
+- 役割: ドキュメントと成果物のバックアップ・PC間同期による一元管理。
 - ローカルとの統合: `shared/` ジャンクションで ProjectA/ 配下からアクセス。
 - 運用:
     - **docs/**: 自分が作成・編集する本筋のドキュメント。企画からリリースまでの一連の資料。
@@ -876,6 +876,41 @@ Box/Projects/_archive/_mini/{ProjectName}/
 Box/Obsidian-Vault/Projects/_archive/_mini/{ProjectName}/
 ```
 
+### Tier の変換 (mini <-> full)
+
+既存プロジェクトの Tier を変換するには、`convert_tier.ps1` を使用する。
+
+```powershell
+cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
+
+# Mini → Full に変換 (DryRun で確認)
+.\convert_tier.ps1 -ProjectName "SupportProject" -To full -DryRun
+
+# 問題なければ実行
+.\convert_tier.ps1 -ProjectName "SupportProject" -To full
+
+# Full → Mini に変換
+.\convert_tier.ps1 -ProjectName "MyProject" -To mini -DryRun
+.\convert_tier.ps1 -ProjectName "MyProject" -To mini
+
+# Mini → Full 変換時に legacy 構造を指定
+.\convert_tier.ps1 -ProjectName "SupportProject" -To full -Structure legacy
+```
+
+スクリプトが自動実行する内容:
+1. ジャンクション (shared/, obsidian_notes/) とAI指示書コピーを安全に解除
+2. Layer 3 (BOX) のフォルダを移動 (`_mini/` 内外)
+3. Layer 2 (Obsidian) のフォルダを移動 (`_mini/` 内外)
+4. Layer 1 (ローカル) のフォルダを移動 (`_mini/` 内外)
+5. 変換先 Tier に応じた追加フォルダを作成
+6. ジャンクションを新パスで再作成
+7. AI指示書コピーを再作成
+
+注意事項:
+- Full → Mini 変換時、Full 固有のフォルダ (`_ai-workspace`, `reference/`, `records/` 等) にファイルが存在する場合は削除せず警告のみ表示する
+- 変換先のパスに既にフォルダが存在する場合はエラーとなる
+- 変換後は `check_project.ps1` で健全性を確認すること
+
 ---
 
 ## 10. クリティカルなファイル
@@ -913,6 +948,7 @@ Box/Obsidian-Vault/Projects/_archive/_mini/{ProjectName}/
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\setup_project.ps1` | プロジェクトセットアップスクリプト |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\check_project.ps1` | 健全性チェックスクリプト |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\archive_project.ps1` | プロジェクトアーカイブスクリプト |
+| `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\convert_tier.ps1` | Tier変換スクリプト (mini <-> full) |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_manager.ps1` | GUIプロジェクトマネージャー |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\config.template.json` | 設定ファイルテンプレート |
 | `%USERPROFILE%\Documents\Projects\_projectTemplate\context-compression-layer\setup_context_layer.ps1` | Context Compression Layerセットアップスクリプト |

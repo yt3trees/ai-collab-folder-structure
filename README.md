@@ -12,7 +12,7 @@ A three-layer workspace structure for organizing multiple projects and optimizin
 
 - **Layer 1 (Execution)**: Local workspace (Git-managed, volatile work)
 - **Layer 2 (Knowledge)**: Obsidian Vault (accumulation of thoughts and insights, BOX sync)
-- **Layer 3 (Artifact)**: Deliverables and reference materials (team sharing, BOX sync)
+- **Layer 3 (Artifact)**: Deliverables and reference materials (file backup and cross-PC sync, BOX sync)
 
 ## Three-Layer Structure
 
@@ -20,7 +20,7 @@ A three-layer workspace structure for organizing multiple projects and optimizin
 |-------|------|----------|---------------------|
 | Layer 1: Execution | Workspace | Documents/Projects/{Project}/ (Local) | WIP, highly volatile |
 | Layer 2: Knowledge | Thinking & Knowledge | Box/Obsidian-Vault/ (BOX Sync) | Context, history, insights |
-| Layer 3: Artifact | Deliverables & References | Box/Projects/{Project}/ (BOX Sync) | Team shared documents |
+| Layer 3: Artifact | Deliverables & References | Box/Projects/{Project}/ (BOX Sync) | Backup and cross-PC sync documents |
 
 ## Features
 
@@ -65,7 +65,8 @@ Documents/Projects/
 │   │   ├── check_project.ps1       # Health check
 │   │   ├── archive_project.ps1     # Archive completed projects
 │   │   ├── config.template.json    # Config file template
-│   │   └── _exec_project_manager.cmd   # GUI manager batch
+│   │   └── manager/                   # GUI manager modules
+├── exec_project_manager.cmd       # GUI manager batch (Projects root)
 │   ├── context-compression-layer/  # AI Context Compression Layer setup
 │   │   ├── setup_context_layer.ps1 # Context layer setup script
 │   │   ├── templates/              # Context file templates
@@ -174,7 +175,7 @@ Each value is a relative path from `%USERPROFILE%`.
 powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_manager.ps1"
 ```
 
-Or double-click `_projectTemplate\scripts\_exec_project_manager.cmd` to launch.
+Or double-click `exec_project_manager.cmd` in the Projects root to launch.
 
 Features:
 - Dashboard tab: Project overview with quick actions
@@ -244,8 +245,9 @@ After BOX sync is complete, simply run the same script to create junctions and s
 | `setup_project.ps1` | Project initial setup |
 | `check_project.ps1` | Health check |
 | `archive_project.ps1` | Archive completed projects |
+| `convert_tier.ps1` | Convert between mini/full tiers |
 | `config.template.json` | Config file template |
-| `_exec_project_manager.cmd` | GUI manager batch file |
+| `exec_project_manager.cmd` | GUI manager batch file (in Projects root) |
 
 ### context-compression-layer/
 
