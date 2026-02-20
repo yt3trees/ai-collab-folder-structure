@@ -63,10 +63,6 @@ _mini/<project>/
 
 ## Scripts
 
-### Per-Project (ProjectA/scripts/)
-- `setup_junctions.ps1` - Initial setup
-- `check_symlinks.ps1` - Health check
-
 ### New Project Template
 
 ```powershell
@@ -90,5 +86,5 @@ _projectTemplate/scripts/setup_project.ps1 -ProjectName "SupportProject" -Tier m
 
 ## Context Compression Layer
 
-When working across projects, check `.context/active_projects.md`.
-Per-project instructions are in each project's CLAUDE.md.
+When working across projects, check `Documents/Projects/.context/active_projects.md`.
+Per-project instructions are in each project's `CLAUDE.md`.

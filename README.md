@@ -267,7 +267,7 @@ After BOX sync is complete, simply run the same script to create junctions and s
 
 ## Documentation
 
-- [workspace-architecture.md](./Projects/workspace-architecture.md) - Detailed design documentation
+- [workspace-architecture.md](./workspace-architecture.md) - Detailed design documentation
 - [_projectTemplate/README.md](./Projects/_projectTemplate/README.md) - Template detailed documentation
 - [CLAUDE.md](./Projects/CLAUDE.md) - AI instructions for entire workspace
 

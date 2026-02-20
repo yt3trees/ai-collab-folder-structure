@@ -266,7 +266,7 @@ BOX同期完了後、同じスクリプトを実行するだけでジャンク�
 
 ## ドキュメント
 
-- [workspace-architecture.md](./Projects/workspace-architecture.md) - 詳細設計ドキュメント
+- [workspace-architecture.md](./workspace-architecture.md) - 詳細設計ドキュメント
 - [_projectTemplate/README.md](./Projects/_projectTemplate/README.md) - テンプレート詳細ドキュメント
 - [CLAUDE.md](./Projects/CLAUDE.md) - ワークスペース全体のAI指示書
 
