@@ -10,6 +10,20 @@ Add-Type -AssemblyName Microsoft.VisualBasic
 $scriptDir = $PSScriptRoot
 $managerDir = Join-Path $scriptDir "manager"
 
+# Load AvalonEdit assembly for syntax-highlighted editor
+$avalonEditDll = Join-Path $managerDir "lib\ICSharpCode.AvalonEdit.dll"
+if (Test-Path $avalonEditDll) {
+    Add-Type -Path $avalonEditDll
+}
+else {
+    [System.Windows.MessageBox]::Show(
+        "AvalonEdit DLL not found:`n$avalonEditDll",
+        "Missing Dependency",
+        [System.Windows.MessageBoxButton]::OK,
+        [System.Windows.MessageBoxImage]::Warning
+    ) | Out-Null
+}
+
 # --- Dot-source all modules ---
 . "$managerDir\Config.ps1"
 . "$managerDir\Theme.ps1"

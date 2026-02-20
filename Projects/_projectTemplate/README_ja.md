@@ -361,7 +361,7 @@ Documents/Projects/
 |------|------|------|-------------|
 | Layer 1: Execution | 作業場 | Documents/Projects/{ProjectName}/ (Local) | WIP、揮発性が高い |
 | Layer 2: Knowledge | 思考・知識 | Box/Obsidian-Vault/ (BOX Sync) | 文脈、経緯、知見 |
-| Layer 3: Artifact | 成果物・参照 | Box/Projects/{ProjectName}/ (BOX Sync) | チーム共有ドキュメント |
+| Layer 3: Artifact | 成果物・参照 | Box/Projects/{ProjectName}/ (BOX Sync) | バックアップ・PC間同期ドキュメント |
 
 ## リンク構成まとめ
 

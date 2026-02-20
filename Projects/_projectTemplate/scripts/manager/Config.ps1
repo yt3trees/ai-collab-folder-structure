@@ -2,15 +2,17 @@
 # Encoding: UTF-8 (ASCII-safe content)
 
 $script:AppState = @{
-    WorkspaceRoot    = ""
-    PathsConfig      = $null
-    Projects         = @()
-    SelectedProject  = $null
-    EditorState      = @{
-        CurrentFile     = ""
-        OriginalContent = ""
-        IsDirty         = $false
-        Encoding        = "UTF8"
+    WorkspaceRoot   = ""
+    PathsConfig     = $null
+    Projects        = @()
+    SelectedProject = $null
+    EditorControl   = $null
+    EditorState     = @{
+        CurrentFile         = ""
+        OriginalContent     = ""
+        IsDirty             = $false
+        Encoding            = "UTF8"
+        SuppressChangeEvent = $false
     }
 }
 
@@ -25,7 +27,8 @@ function Initialize-AppConfig {
         try {
             $json = [System.IO.File]::ReadAllText($configPath, [System.Text.Encoding]::UTF8)
             $script:AppState.PathsConfig = $json | ConvertFrom-Json
-        } catch {
+        }
+        catch {
             # Fall through to defaults
         }
     }
@@ -53,9 +56,9 @@ function Update-StatusBar {
     )
 
     $statusProject = $Window.FindName("statusProject")
-    $statusFile    = $Window.FindName("statusFile")
+    $statusFile = $Window.FindName("statusFile")
     $statusEncoding = $Window.FindName("statusEncoding")
-    $statusDirty   = $Window.FindName("statusDirty")
+    $statusDirty = $Window.FindName("statusDirty")
 
     if ($null -ne $Project -and $null -ne $statusProject) {
         $statusProject.Text = $Project

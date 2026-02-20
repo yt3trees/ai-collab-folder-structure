@@ -137,26 +137,18 @@ $styles
 
                             <!-- Splitter -->
                             <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"
-                                          Background="#45475a" ShowsPreview="True"/>
+                                          Background="#45475a" ShowsPreview="True">
+                                <GridSplitter.Template>
+                                    <ControlTemplate TargetType="GridSplitter">
+                                        <Border Background="{TemplateBinding Background}"/>
+                                    </ControlTemplate>
+                                </GridSplitter.Template>
+                            </GridSplitter>
 
-                            <!-- Text editor -->
+                            <!-- Text editor (AvalonEdit host) -->
                             <Border Grid.Column="2" Background="#181825" CornerRadius="4"
                                     BorderBrush="#313244" BorderThickness="1">
-                                <TextBox x:Name="editorTextBox"
-                                         FontFamily="Consolas, MS Gothic, Courier New"
-                                         FontSize="14"
-                                         Background="Transparent"
-                                         Foreground="#cdd6f4"
-                                         CaretBrush="#cdd6f4"
-                                         SelectionBrush="#45475a"
-                                         BorderThickness="0"
-                                         Padding="12"
-                                         AcceptsReturn="True"
-                                         AcceptsTab="True"
-                                         VerticalScrollBarVisibility="Auto"
-                                         HorizontalScrollBarVisibility="Auto"
-                                         TextWrapping="NoWrap"
-                                         IsEnabled="False"/>
+                                <ContentControl x:Name="editorHost" />
                             </Border>
                         </Grid>
 

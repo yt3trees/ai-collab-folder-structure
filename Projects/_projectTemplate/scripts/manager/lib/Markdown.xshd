@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<SyntaxDefinition name="MarkDown" extensions=".md"
+                  xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+  <Color name="Heading"        foreground="#cba6f7" fontWeight="bold" />
+  <Color name="StrongEmphasis" foreground="#f5c2e7" fontWeight="bold" />
+  <Color name="Emphasis"       foreground="#f5c2e7" fontStyle="italic" />
+  <Color name="InlineCode"     foreground="#a6e3a1" />
+  <Color name="CodeBlock"      foreground="#a6e3a1" />
+  <Color name="BlockQuote"     foreground="#9399b2" />
+  <Color name="Link"           foreground="#89b4fa" />
+  <Color name="Image"          foreground="#94e2d5" />
+  <Color name="ListMarker"     foreground="#f9e2af" />
+  <Color name="HorizontalRule" foreground="#6c7086" />
+  <Color name="LineBreak"      background="#313244" />
+
+  <RuleSet ignoreCase="true">
+    <Rule color="Heading">
+      ^\#.*
+    </Rule>
+
+    <Rule color="HorizontalRule">
+      ^(\-{3,}|\*{3,}|_{3,})\s*$
+    </Rule>
+
+    <Rule color="ListMarker">
+      ^[\s]*[-\*\+]\s
+    </Rule>
+    <Rule color="ListMarker">
+      ^[\s]*\d+\.\s
+    </Rule>
+
+    <Rule color="StrongEmphasis">
+      \*\*.*\*\*
+    </Rule>
+    <Rule color="StrongEmphasis">
+      __.*__
+    </Rule>
+
+    <Rule color="Emphasis">
+      \*(?![ ]).*\*
+    </Rule>
+    <Rule color="Emphasis">
+      _.*_
+    </Rule>
+
+    <Rule color="InlineCode">
+      `.*`
+    </Rule>
+
+    <Span color="CodeBlock" multiline="true">
+      <Begin>^```</Begin>
+      <End>^```</End>
+    </Span>
+
+    <Span color="CodeBlock" multiline="true">
+      <Begin>^\t</Begin>
+      <End>^(?!\t)</End>
+    </Span>
+
+    <Span color="CodeBlock" multiline="true">
+      <Begin>^[ ]{4}</Begin>
+      <End>^(?![ ]{4})</End>
+    </Span>
+
+    <Span color="BlockQuote" multiline="true">
+      <Begin>^&gt;</Begin>
+      <End>^(?!&gt;)</End>
+    </Span>
+
+    <Rule color="Image">
+      \!\[.*\]\(.*\)
+    </Rule>
+
+    <Rule color="Link">
+      \[.*\]\(.*\)
+    </Rule>
+    <Rule color="Link">
+      \[.*\]\[.*\]
+    </Rule>
+
+    <Rule color="LineBreak">
+      [ ]{2}$
+    </Rule>
+  </RuleSet>
+</SyntaxDefinition>

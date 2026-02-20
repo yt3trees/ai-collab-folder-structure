@@ -69,11 +69,10 @@ function Save-FileContent {
     [System.IO.File]::WriteAllText($Path, $Content, $enc)
 }
 
-# Open a file into the editor TextBox and update AppState
+# Open a file into the AvalonEdit editor and update AppState
 function Open-FileInEditor {
     param(
         [string]$FilePath,
-        [System.Windows.Controls.TextBox]$EditorBox,
         [System.Windows.Controls.TextBlock]$StatusText,
         [System.Windows.Window]$Window
     )
@@ -81,6 +80,9 @@ function Open-FileInEditor {
     if ([string]::IsNullOrEmpty($FilePath) -or -not (Test-Path $FilePath)) {
         return
     }
+
+    $editor = $script:AppState.EditorControl
+    if ($null -eq $editor) { return }
 
     # Warn about unsaved changes
     if ($script:AppState.EditorState.IsDirty) {
@@ -96,16 +98,19 @@ function Open-FileInEditor {
     try {
         $result = Read-FileContent -Path $FilePath
 
-        # Update AppState BEFORE re-enabling (so TextChanged handler sees correct OriginalContent)
+        # Update AppState BEFORE setting text (so Changed handler sees correct OriginalContent)
         $script:AppState.EditorState.CurrentFile = $FilePath
         $script:AppState.EditorState.OriginalContent = $result.Content
         $script:AppState.EditorState.IsDirty = $false
         $script:AppState.EditorState.Encoding = $result.Encoding
 
-        # Disable TextBox while setting text to suppress TextChanged dirty-flag logic
-        $EditorBox.IsEnabled = $false
-        $EditorBox.Text = $result.Content
-        $EditorBox.IsEnabled = $true
+        # Suppress dirty-flag while loading text
+        $script:AppState.EditorState.SuppressChangeEvent = $true
+        $editor.Text = $result.Content
+        $script:AppState.EditorState.SuppressChangeEvent = $false
+
+        $editor.IsReadOnly = $false
+
         $btnEditorSave = $Window.FindName("btnEditorSave")
         $btnEditorReload = $Window.FindName("btnEditorReload")
         if ($null -ne $btnEditorSave) { $btnEditorSave.IsEnabled = $true }
@@ -120,8 +125,8 @@ function Open-FileInEditor {
             -Encoding $result.Encoding `
             -Dirty $false
 
-        $EditorBox.CaretIndex = 0
-        $EditorBox.ScrollToHome()
+        $editor.TextArea.Caret.Offset = 0
+        $editor.ScrollToLine(1)
     }
     catch {
         [System.Windows.MessageBox]::Show(
@@ -140,8 +145,8 @@ function Save-EditorFile {
     $state = $script:AppState.EditorState
     if ([string]::IsNullOrEmpty($state.CurrentFile)) { return }
 
-    $editorBox = $Window.FindName("editorTextBox")
-    if ($null -eq $editorBox) { return }
+    $editor = $script:AppState.EditorControl
+    if ($null -eq $editor) { return }
 
     try {
         # Auto-snapshot: if saving current_focus.md, archive previous version to focus_history/
@@ -153,10 +158,10 @@ function Save-EditorFile {
         }
 
         Save-FileContent -Path $state.CurrentFile `
-            -Content $editorBox.Text `
+            -Content $editor.Text `
             -Encoding $state.Encoding
 
-        $state.OriginalContent = $editorBox.Text
+        $state.OriginalContent = $editor.Text
         $state.IsDirty = $false
 
         $statusText = $Window.FindName("editorStatusText")

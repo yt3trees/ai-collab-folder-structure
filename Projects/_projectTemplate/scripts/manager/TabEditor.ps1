@@ -1,4 +1,4 @@
-# TabEditor.ps1 - Markdown editor tab: file tree, editor, save/reload
+# TabEditor.ps1 - Markdown editor tab: file tree, AvalonEdit editor, save/reload
 
 # ---- File list definitions ----
 
@@ -182,6 +182,68 @@ function Get-SelectedEditorProject {
     return $proj
 }
 
+# ---- Create AvalonEdit TextEditor ----
+
+function New-AvalonEditEditor {
+    param([string]$ManagerDir)
+
+    $editor = New-Object ICSharpCode.AvalonEdit.TextEditor
+
+    # Catppuccin Mocha theme styling
+    $editor.FontFamily = New-Object System.Windows.Media.FontFamily("Consolas, MS Gothic, Courier New")
+    $editor.FontSize = 14
+    $editor.Background = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#181825"))
+    $editor.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#cdd6f4"))
+    $editor.BorderThickness = New-Object System.Windows.Thickness(0)
+    $editor.Padding = New-Object System.Windows.Thickness(12)
+    $editor.ShowLineNumbers = $true
+    $editor.WordWrap = $false
+    $editor.HorizontalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Auto
+    $editor.VerticalScrollBarVisibility = [System.Windows.Controls.ScrollBarVisibility]::Auto
+    $editor.IsReadOnly = $true
+
+    # Line number colors
+    $editor.LineNumbersForeground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#45475a"))
+
+    # Caret and selection colors
+    $editor.TextArea.Caret.CaretBrush = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#cdd6f4"))
+    $editor.TextArea.SelectionBrush = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#45475a"))
+    $editor.TextArea.SelectionForeground = $null  # Use syntax colors in selection
+
+    # Current line highlight
+    $editor.TextArea.TextView.CurrentLineBackground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#11b4befe"))
+    $editor.TextArea.TextView.CurrentLineBorder = New-Object System.Windows.Media.Pen(
+        [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#11b4befe")), 1)
+
+    # Load Markdown syntax highlighting
+    $xshdPath = Join-Path $ManagerDir "lib\Markdown.xshd"
+    if (Test-Path $xshdPath) {
+        try {
+            $xshdStream = [System.IO.File]::OpenRead($xshdPath)
+            $xmlReader = [System.Xml.XmlReader]::Create($xshdStream)
+            $highlighting = [ICSharpCode.AvalonEdit.Highlighting.Xshd.HighlightingLoader]::Load(
+                $xmlReader,
+                [ICSharpCode.AvalonEdit.Highlighting.HighlightingManager]::Instance
+            )
+            $editor.SyntaxHighlighting = $highlighting
+            $xmlReader.Close()
+            $xshdStream.Close()
+        }
+        catch {
+            # Silently fall back to no syntax highlighting
+        }
+    }
+
+    return $editor
+}
+
 # ---- Initialize Editor Tab ----
 
 function Initialize-TabEditor {
@@ -195,17 +257,27 @@ function Initialize-TabEditor {
         $editorProjectCombo.Items.Add($n) | Out-Null
     }
 
+    # Create AvalonEdit TextEditor and add to host
+    $managerDir = Split-Path $PSScriptRoot -Parent
+    # PSScriptRoot here is the manager/ dir since TabEditor.ps1 is dot-sourced from there
+    $managerDir = $PSScriptRoot
+    $editor = New-AvalonEditEditor -ManagerDir $managerDir
+    $editorHost = $Window.FindName("editorHost")
+    $editorHost.Content = $editor
+
+    # Store reference in AppState
+    $script:AppState.EditorControl = $editor
+    $script:AppState.EditorState.SuppressChangeEvent = $false
+
     # Register tree file-open handlers ONCE here (prevents accumulation on project switch)
-    $fileTree     = $Window.FindName("editorFileTree")
+    $fileTree = $Window.FindName("editorFileTree")
     $workspaceTree = $Window.FindName("editorWorkspaceTree")
     $openFile = {
         param($s, $e)
         $selected = $s.SelectedItem
         if ($null -ne $selected -and $null -ne $selected.Tag) {
-            $eb = $Window.FindName("editorTextBox")
             $st = $Window.FindName("editorStatusText")
             Open-FileInEditor -FilePath $selected.Tag `
-                -EditorBox $eb `
                 -StatusText $st `
                 -Window $Window
         }
@@ -236,10 +308,12 @@ function Initialize-TabEditor {
                     }
                 }
 
-                # Clear editor UI (disable first to suppress TextChanged dirty-flag)
-                $eb = $Window.FindName("editorTextBox")
-                $eb.IsEnabled = $false
-                $eb.Text = ""
+                # Clear editor UI (suppress change event while clearing)
+                $ed = $script:AppState.EditorControl
+                $script:AppState.EditorState.SuppressChangeEvent = $true
+                $ed.Text = ""
+                $ed.IsReadOnly = $true
+                $script:AppState.EditorState.SuppressChangeEvent = $false
                 $Window.FindName("editorStatusText").Text = "No file open"
 
                 $btnSave = $Window.FindName("btnEditorSave")
@@ -277,27 +351,25 @@ function Initialize-TabEditor {
 
             # Auto-open current_focus.md if available
             if ($null -ne $proj.FocusFile) {
-                $eb = $Window.FindName("editorTextBox")
                 $st = $Window.FindName("editorStatusText")
                 Open-FileInEditor -FilePath $proj.FocusFile `
-                    -EditorBox $eb `
                     -StatusText $st `
                     -Window $Window
             }
         })
 
-    # Track dirty state on text change
-    $Window.FindName("editorTextBox").Add_TextChanged({
-            $editorBox = $Window.FindName("editorTextBox")
-            $statusText = $Window.FindName("editorStatusText")
+    # Track dirty state on text change (AvalonEdit Document.Changed event)
+    $editor.Document.Add_Changed({
+            if ($script:AppState.EditorState.SuppressChangeEvent) { return }
 
-            if (-not $editorBox.IsEnabled) { return }
             $currentFile = $script:AppState.EditorState.CurrentFile
             if ([string]::IsNullOrEmpty($currentFile)) { return }
 
-            $isDirty = ($editorBox.Text -ne $script:AppState.EditorState.OriginalContent)
+            $ed = $script:AppState.EditorControl
+            $isDirty = ($ed.Text -ne $script:AppState.EditorState.OriginalContent)
             $script:AppState.EditorState.IsDirty = $isDirty
 
+            $statusText = $Window.FindName("editorStatusText")
             $fileName = [System.IO.Path]::GetFileName($currentFile)
             $dispText = if ($isDirty) { "$fileName *" } else { $fileName }
             $statusText.Text = $dispText
@@ -307,10 +379,32 @@ function Initialize-TabEditor {
         })
 
     # Ctrl+S shortcut on editor
-    $Window.FindName("editorTextBox").Add_KeyDown({
+    $editor.Add_KeyDown({
             if ($_.Key -eq [System.Windows.Input.Key]::S -and
                 [System.Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftCtrl)) {
                 Save-EditorFile -Window $Window
+                $_.Handled = $true
+            }
+        })
+
+    # Shift+Mouse wheel for horizontal scrolling
+    $editor.Add_PreviewMouseWheel({
+            if ([System.Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftShift) -or
+                [System.Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::RightShift)) {
+                # Walk up the visual tree to find the ScrollViewer
+                $sv = $null
+                $current = $script:AppState.EditorControl.TextArea
+                while ($null -ne $current) {
+                    if ($current -is [System.Windows.Controls.ScrollViewer]) {
+                        $sv = $current
+                        break
+                    }
+                    $current = [System.Windows.Media.VisualTreeHelper]::GetParent($current)
+                }
+                if ($null -ne $sv) {
+                    $offset = $sv.HorizontalOffset - $_.Delta
+                    $sv.ScrollToHorizontalOffset($offset)
+                }
                 $_.Handled = $true
             }
         })
@@ -335,10 +429,8 @@ function Initialize-TabEditor {
                 if ($result -ne [System.Windows.MessageBoxResult]::Yes) { return }
             }
 
-            $editorBox = $Window.FindName("editorTextBox")
             $statusText = $Window.FindName("editorStatusText")
             Open-FileInEditor -FilePath $currentFile `
-                -EditorBox $editorBox `
                 -StatusText $statusText `
                 -Window $Window
         })
@@ -360,7 +452,6 @@ function Initialize-TabEditor {
 
             $newFile = New-DecisionLog -AiContextPath $proj.AiContextPath -Window $Window
             if ($null -ne $newFile) {
-                $editorBox = $Window.FindName("editorTextBox")
                 $statusText = $Window.FindName("editorStatusText")
 
                 # Refresh tree and open new file
@@ -371,8 +462,7 @@ function Initialize-TabEditor {
                     -WorkspaceRoot   $script:AppState.WorkspaceRoot `
                     -Window          $Window
 
-            Open-FileInEditor -FilePath $newFile `
-                    -EditorBox $editorBox `
+                Open-FileInEditor -FilePath $newFile `
                     -StatusText $statusText `
                     -Window $Window
             }
