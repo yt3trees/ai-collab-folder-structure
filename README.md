@@ -251,6 +251,107 @@ After BOX sync is complete, simply run the same script to create junctions and s
 
 - CLAUDE.md/AGENTS.md copies are created automatically by the script.
 
+## AI Collaboration Workflow Example (Claude Code)
+
+Daily tasks are performed within the BOX-synced `_work` folder, organized by date-based working directories.
+By leveraging Claude Code and custom AI Skills (SKILLs), you can work efficiently without losing context.
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Work as _work/2026/...
+    participant Claude
+    participant CCL as AI Skills (CCL)
+
+    User->>Work: Create & Enter Daily Folder
+    User->>Claude: Launch `claude` (Context Loaded)
+    
+    rect rgba(128, 128, 128, 0.1)
+        Note right of Claude: Interactive Session
+        
+        User->>Claude: Discuss & Code
+        Claude->>Work: Modify source code
+        
+        Claude->>CCL: Run `context-decision-log`
+        CCL-->>Work: Save decision_log.md
+        
+        User->>Claude: Ask about past configurations
+        Claude->>CCL: Run `project-memory` (Search)
+        CCL-->>Claude: Return past knowledge
+        
+        Claude->>CCL: Run `project-memory` (Save)
+        CCL-->>Work: Save new knowledge
+    end
+
+    User->>Claude: Finish for the day
+    Claude->>CCL: Run `context-session-end`
+    CCL-->>Work: Update current_focus.md
+```
+
+### 1. Create and Navigate to Work Folder
+
+```bash
+# Create and navigate to a date-based dedicated working folder
+cd Box\Projects\NewProject\_work
+mkdir 2026\202602_feature_x
+cd 2026\202602_feature_x
+
+# Launch Claude Code (project context is automatically loaded)
+claude
+```
+
+### 2. Working with Claude Code (Using SKILLs)
+
+As you work, the AI autonomously evaluates the situation and proposes executing appropriate SKILLs at the right time.
+
+**👨‍💻 User**:
+> Improve the login process in `src/api/auth.ts`. Let's add a token refresh mechanism when the token expires.
+
+**🤖 Claude**:
+> (After modifying the code...)
+> The updates are complete.
+> Since this implementation change affects the architecture, shall I record this in the decision log using the `context-decision-log` skill?
+
+**👨‍💻 User**:
+> Yes, please.
+
+**🤖 Claude**:
+> (Executes the `context-decision-log` skill and records "Added token refresh process" in `decision_log.md`)
+
+**👨‍💻 User**:
+> That's all for today.
+
+**🤖 Claude**:
+> Understood. Before ending the session, shall I use the `context-session-end` skill to append today's progress (login process improvements) to `current_focus.md`?
+
+**👨‍💻 User**:
+> Yes, go ahead.
+
+### 3. Leveraging Project Memory (`project-memory`)
+
+The SKILL also shines when preserving new discoveries or recalling past knowledge specifically for the project (both Search and Record).
+
+**👨‍💻 User**:
+> How did we configure the DB connection timeout when we fixed that issue previously in this project?
+
+**🤖 Claude**:
+> (Executes the `project-memory` skill to search...)
+> I found the relevant knowledge in the project memory.
+> According to `db_timeout_config.md` recorded in Jan 2026, the connection pool settings were...
+
+**👨‍💻 User**:
+> I see, thanks. By the way, the Redis caching strategy we just added seems like something we'll need to reference later. Please save it.
+
+**🤖 Claude**:
+> Understood. I will use the `project-memory` skill to record our new Redis caching strategy as `redis_cache_strategy.md` in the project memory.
+
+### 4. Benefits of this Workflow
+
+By working within the `_work` folder in this manner, you gain the following benefits:
+- Work-in-progress files (e.g., temporary outputs) do not clutter the formal documents in `docs`
+- Only verified, important decisions (`decision_log.md`) and progress (`current_focus.md`) are automatically extracted and recorded via AI Skills
+- When you resume work next time, the AI loads the updated `current_focus.md`, allowing for a seamless restart
+
 ## Script List
 
 ### _projectTemplate/scripts/
