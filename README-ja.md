@@ -15,14 +15,14 @@ AI(Claude Code)との協働を前提とした、プロジェクトフォルダ�
 ## 3層レイヤー構造
 
 ```mermaid
-graph TD
+flowchart TD
     %% Define styles
     classDef local fill:#2d2d2d,stroke:#555,stroke-width:2px,color:#fff
     classDef box fill:#0b4d75,stroke:#1a7BB9,stroke-width:2px,color:#fff
     classDef obs fill:#4a1e6d,stroke:#7D3CB5,stroke-width:2px,color:#fff
     classDef junction fill:#d06000,stroke:#ff8800,stroke-width:2px,stroke-dasharray: 5 5,color:#fff
 
-    subgraph L1 ["Layer 1: Execution (ローカル・揮発性)"]
+    subgraph L1 ["Layer 1: Execution"]
         direction TB
         LocalProj["📁 Documents/Projects/{ProjectName}"]:::local
         Dev["💻 development/ (Git管理)"]:::local
@@ -36,7 +36,7 @@ graph TD
         LocalProj --- JuncCtx
     end
 
-    subgraph L3 ["Layer 3: Artifact (成果物・BOX同期)"]
+    subgraph L3 ["Layer 3: Artifact"]
         direction TB
         BoxProj["📁 Box/Projects/{ProjectName}"]:::box
         Work["💻 _work/ (日々の作業場)"]:::box
@@ -46,7 +46,7 @@ graph TD
         BoxProj --- Docs
     end
 
-    subgraph L2 ["Layer 2: Knowledge (知識と思考・BOX同期)"]
+    subgraph L2 ["Layer 2: Knowledge"]
         direction TB
         ObsVault["📁 Box/Obsidian-Vault"]:::obs
         AiCtx["🧠 ai-context/ (AIコンテキストファイル)"]:::obs

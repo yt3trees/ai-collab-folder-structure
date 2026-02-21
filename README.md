@@ -17,14 +17,14 @@ A three-layer workspace structure for organizing multiple projects and optimizin
 ## Three-Layer Structure
 
 ```mermaid
-graph TD
+flowchart TD
     %% Define styles
     classDef local fill:#2d2d2d,stroke:#555,stroke-width:2px,color:#fff
     classDef box fill:#0b4d75,stroke:#1a7BB9,stroke-width:2px,color:#fff
     classDef obs fill:#4a1e6d,stroke:#7D3CB5,stroke-width:2px,color:#fff
     classDef junction fill:#d06000,stroke:#ff8800,stroke-width:2px,stroke-dasharray: 5 5,color:#fff
 
-    subgraph L1 ["Layer 1: Execution (Local Workspace)"]
+    subgraph L1 ["Layer 1: Execution"]
         direction TB
         LocalProj["📁 Documents/Projects/{ProjectName}"]:::local
         Dev["💻 development/ (Git Managed)"]:::local
@@ -38,7 +38,7 @@ graph TD
         LocalProj --- JuncCtx
     end
 
-    subgraph L3 ["Layer 3: Artifact (BOX Sync)"]
+    subgraph L3 ["Layer 3: Artifact"]
         direction TB
         BoxProj["📁 Box/Projects/{ProjectName}"]:::box
         Work["💻 _work/ (Daily Work)"]:::box
@@ -48,7 +48,7 @@ graph TD
         BoxProj --- Docs
     end
 
-    subgraph L2 ["Layer 2: Knowledge (BOX Sync)"]
+    subgraph L2 ["Layer 2: Knowledge"]
         direction TB
         ObsVault["📁 Box/Obsidian-Vault"]:::obs
         AiCtx["🧠 ai-context/ (Context Layer)"]:::obs
