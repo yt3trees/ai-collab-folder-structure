@@ -325,9 +325,20 @@ Write-Host "[AI Instruction Files]" -ForegroundColor Yellow
 # 3.1 Ensure Master AGENTS.md exists on BOX
 $boxAgents = "$boxShared\AGENTS.md"
 if (-not (Test-Path $boxAgents)) {
-    Write-Host "  AGENTS.md not found on BOX. Creating default file..." -ForegroundColor Cyan
-    $defaultContent = "# Project: $ProjectName`n`nSee _ProjectTemplate/AGENTS.md for full template."
-    New-Item -Path $boxAgents -ItemType File -Value $defaultContent -Force | Out-Null
+    Write-Host "  AGENTS.md not found on BOX. Creating from template..." -ForegroundColor Cyan
+    $templateAgentsPath = Join-Path (Split-Path $PSScriptRoot) "AGENTS.md"
+    if (Test-Path $templateAgentsPath) {
+        $creationDate = (Get-Date).ToString("yyyy-MM-dd")
+        $defaultContent = (Get-Content $templateAgentsPath -Raw -Encoding UTF8) `
+            -replace '\{\{PROJECT_NAME\}\}', $ProjectName `
+            -replace '\{\{STRUCTURE_TYPE\}\}', $Structure `
+            -replace '\{\{CREATION_DATE\}\}', $creationDate
+    }
+    else {
+        Write-Warning "  Template not found: $templateAgentsPath"
+        $defaultContent = "# Project: $ProjectName`n`nTemplate not found: $templateAgentsPath"
+    }
+    Set-Content -Path $boxAgents -Value $defaultContent -Encoding UTF8
     Write-Host "  Created: $boxAgents" -ForegroundColor Green
 }
 else {

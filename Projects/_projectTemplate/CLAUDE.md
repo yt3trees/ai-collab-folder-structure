@@ -22,13 +22,7 @@ The directory `_ai-context/` contains junctions to BOX/Obsidian.
 ├── AGENTS.md             # Symlink to Box/Projects/{{PROJECT_NAME}}/AGENTS.md
 ├── CLAUDE.md             # Symlink to AGENTS.md
 ├── development/          # Development artifacts
-│   ├── source/           # Source code
-│   ├── config/           # Configuration files
-│   └── scripts/          # Development scripts
-├── scripts/              # Project management scripts
-│   ├── config.json       # Project configuration
-│   ├── setup_project.ps1    # Setup script
-│   └── check_project.ps1    # Health check
+│   └── source/           # Source code
 └── shared/               # Junction to Box/{{PROJECT_NAME}}
 ```
 
@@ -36,47 +30,9 @@ The directory `_ai-context/` contains junctions to BOX/Obsidian.
 ```
 ├── AGENTS.md            # Master Instruction File
 ├── docs/                # Documentation
-│   ├── planning/        # Planning documents
-│   ├── design/          # Design documents
-│   ├── testing/         # Test documents
-│   └── release/         # Release notes
 ├── reference/           # Reference materials
-│   ├── vendor/          # Vendor docs
-│   ├── standards/       # Standards & guidelines
-│   └── external/        # External references
 ├── records/             # Project records
-│   ├── minutes/         # Meeting minutes
-│   ├── reports/         # Reports
-│   └── reviews/         # Review records
-└── _work/            # Work logs
-```
-
-## Key Scripts
-
-All scripts are located in `_projectTemplate/scripts/`.
-
-### GUI Launcher (recommended)
-```powershell
-# GUI for Setup / Check / Archive
-powershell -ExecutionPolicy Bypass -File "_projectTemplate\scripts\project_launcher.ps1"
-```
-
-### Setup
-```powershell
-# Initial project setup
-.\_projectTemplate\scripts\setup_project.ps1 -ProjectName "{{PROJECT_NAME}}" -Structure new
-```
-
-### Health Check
-```powershell
-# Verify project structure and junctions
-.\_projectTemplate\scripts\check_project.ps1 -ProjectName "{{PROJECT_NAME}}"
-```
-
-### Archive
-```powershell
-# Archive completed project (DryRun first)
-.\_projectTemplate\scripts\archive_project.ps1 -ProjectName "{{PROJECT_NAME}}" -DryRun
+└── _work/               # Work logs
 ```
 
 ## Context Compression Layer
@@ -113,5 +69,3 @@ current_focus.md の末尾「更新」日付が3日以上前の場合、1回だ�
 - Use `shared/` junction to access Box shared folders
 - Use `_ai-context/context/` for AI context files (BOX-synced via Obsidian)
 - Use `_ai-context/obsidian_notes/` for full Obsidian note access
-- Asana sync is managed globally via `_globalScripts/sync_from_asana.py`
-- Environment variables in `scripts/config/.env` (not committed to git)
