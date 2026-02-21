@@ -108,6 +108,13 @@ current_focus.md の末尾「更新」日付が3日以上前の場合、1回だ�
 - 3-5行以内で簡潔に
 - 短い質問応答だけの場合は提案不要
 
+### Project Memory
+
+価値のある知見を発見したら、`_ai-context/context/memories/` に保存してください:
+- 「覚えておいて」「この知見を記録」などのトリガー
+- 先回りして保存も推奨
+- search: `rg "^summary:" _ai-context/context/memories/`
+
 ## Notes
 
 - Use `shared/` junction to access Box shared folders

@@ -125,8 +125,11 @@ CLAUDE.md が存在しない場合は新規作成。
       (実態は Box/Obsidian-Vault/.../ai-context/ に保存、context/ junction 経由でアクセス)
 CLAUDE.md に自動読み込み指示を追記済み。
 
+追加: _ai-context/context/memories/ (プロジェクトメモリ用フォルダ)
+
 次回からAIが自動でコンテキストを読み込みます。
 current_focus.md は作業の区切りで上書き更新してください（30秒で書ける設計です）。
+project-memory スキルで知見を記録できます。
 ```
 
 ## Mini Tier

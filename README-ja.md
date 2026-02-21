@@ -271,6 +271,7 @@ BOX同期完了後、同じスクリプトを実行するだけでジャンク�
 | `skills/context-init/` | プロジェクトへのCCL初期化 |
 | `skills/context-decision-log/` | 構造化意思決定ログの記録、暗黙的決定の検出 |
 | `skills/context-session-end/` | current_focus.mdへのAI作業分追提案 |
+| `skills/project-memory/` | プロジェクト固有のメモリ - 知見の保存と検索 |
 
 ### _globalScripts/
 

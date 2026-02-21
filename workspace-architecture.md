@@ -350,10 +350,13 @@ AIはセッションが終了するとコンテキストを失う。CCLは以下
 _ai-context/
 ├── context/                  ← Junction -> Box/Obsidian-Vault/.../ai-context/
 │   ├── project_summary.md    プロジェクト全体像 (Obsidian/BOX実体)
-│   ├── current_focus.md      今のフォーカス（人間が主に書く）(Obsidian/BOX実体)
+│   ├── current_focus.md      今のフォーカス（ 사람이 主要하게 작성）(Obsidian/BOX実体)
 │   ├── decision_log/         意思決定ログ (Obsidian/BOX実体)
 │   │   └── YYYY-MM-DD_topic.md
-│   └── file_map.md           ファイルマップ (Obsidian/BOX実体)
+│   ├── file_map.md           ファイルマップ (Obsidian/BOX実体)
+│   └── memories/              プロジェクトメモリ (Obsidian/BOX実体)
+│       └── {category}/
+│           └── *.md
 └── obsidian_notes/           既存のまま（触らない）
 ```
 
@@ -473,6 +476,68 @@ current_focus.md の末尾「更新」日付が3日以上前の場合、1回だ�
 - ❌ 人間が書いた行を編集・削除しない
 - ❌ 承認なしに更新しない
 
+#### 4. project-memory
+プロジェクト固有のメモリ。AIが作業中に発見した知見を記録・検索する。
+
+**配置:**
+- **SKILL本体**: `Box/Projects/{Project}/.claude/skills/project-memory/SKILL.md` (BOX同期、各CLIのskillsフォルダに配置)
+- **メモリ保存先**: `_ai-context/context/memories/` (BOX同期、Obsidian Vault実体)
+
+**agent-memory (グローバル) との差別化:**
+
+| 項目 | agent-memory | project-memory |
+|------|-------------|----------------|
+| スコープ | グローバル (全プロジェクト) | プロジェクト固有 |
+| 寿命 | AIユーザーの生涯 | プロジェクトの期間 |
+| 保存先 | `.claude/skills/agent-memory/memories/` | `_ai-context/context/memories/` |
+| 自動読み込み | なし | なし |
+
+**トリガー:**
+- 「覚えておいて」「この知見を記録」「前に調べたことは」
+- AIが発見した価値のある知見を先手を打って保存
+- 作業開始前に相关内容を検索
+
+**Frontmatter:**
+```yaml
+---
+summary: "1-2行の説明"
+created: 2026-02-21
+project: ProjectA
+phase: design  # 任意
+tags: []       # 任意
+---
+```
+
+**フォルダ構成:**
+自由形式。コンテンツに応じてAIが判断。以下は例:
+```
+memories/
+├── architecture/
+│   └── microservices-decision.md
+├── debugging/
+│   └── sql-timeout-issue.md
+└── setup/
+    └── environment-config.md
+```
+
+**検索ワークフロー:**
+```bash
+# 1. 全サマリー表示
+rg "^summary:" _ai-context/context/memories/ --no-ignore
+
+# 2. キーワード検索
+rg "^summary:.*api" _ai-context/context/memories/ -i
+
+# 3. タグ検索
+rg "^tags:.*performance" _ai-context/context/memories/ -i
+```
+
+**保存時のルール:**
+- summary必须有足够的上下文来判断是否需要详细信息
+- プロジェクト固有情報は `project` フィールドに記載
+- current_focus.md への更新を提案（重要な場合）
+- decision_log に書くべき決定事項場合は提案
+
 ### テンプレート
 
 #### current_focus.md
@@ -580,11 +645,12 @@ CLAUDE.md (ワークスペース全体用) への追記:
 ### Mini Tier
 
 必須: `current_focus.md` のみ
-任意: `project_summary.md`, `decision_log/`
+任意: `project_summary.md`, `decision_log/`, `memories/`
 
 ### 既存プロジェクトへの後付け
 
 既存ファイル・junctionには一切触れない。新規ファイルを追加し、CLAUDE.mdに追記するだけ。
+memories/ フォルダは自動的に作成される。
 
 ### Phase 3: Obsidian Vault の設定
 

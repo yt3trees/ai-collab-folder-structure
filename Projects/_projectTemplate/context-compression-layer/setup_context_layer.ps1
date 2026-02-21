@@ -93,9 +93,11 @@ function Setup-Project {
     $obsAiCtx = Join-Path $obsidianVaultRoot "Projects\$obsidianSubPath\ai-context"
     $dlDir    = Join-Path $obsAiCtx "decision_log"
     $fhDir    = Join-Path $obsAiCtx "focus_history"
+    $memDir   = Join-Path $obsAiCtx "memories"
     Ensure-Dir $obsAiCtx
     Ensure-Dir $dlDir
     Ensure-Dir $fhDir
+    Ensure-Dir $memDir
 
     Copy-IfNotExists (Join-Path $TemplateDir "project_summary.md")    (Join-Path $obsAiCtx "project_summary.md")
     Copy-IfNotExists (Join-Path $TemplateDir "current_focus.md")      (Join-Path $obsAiCtx "current_focus.md")
@@ -212,3 +214,4 @@ Write-Host "Next steps:" -ForegroundColor White
 Write-Host "  1. Write your current focus in current_focus.md" -ForegroundColor White
 Write-Host "  2. Fill in project_summary.md (you can ask AI to draft it)" -ForegroundColor White
 Write-Host "  3. Update file_map.md to reflect actual project structure" -ForegroundColor White
+Write-Host "  4. Use project-memory skill to save discoveries during work" -ForegroundColor White

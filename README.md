@@ -272,6 +272,7 @@ After BOX sync is complete, simply run the same script to create junctions and s
 | `skills/context-init/` | Initialize CCL in a project |
 | `skills/context-decision-log/` | Record structured decision logs, detect implicit decisions |
 | `skills/context-session-end/` | Propose appending AI contributions to current_focus.md |
+| `skills/project-memory/` | Project-specific memory for saving discoveries and searching |
 
 ### _globalScripts/
 
