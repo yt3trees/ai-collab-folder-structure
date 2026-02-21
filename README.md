@@ -322,13 +322,13 @@ Create `Documents/Projects/_config/paths.json`:
 
 ```json
 {
-  "localProjectsRoot": "Documents\\Projects",
-  "boxProjectsRoot": "Box\\Projects",
-  "obsidianVaultRoot": "Box\\Obsidian-Vault"
+  "localProjectsRoot": "%USERPROFILE%\\Documents\\Projects",
+  "boxProjectsRoot": "%USERPROFILE%\\Box\\Projects",
+  "obsidianVaultRoot": "%USERPROFILE%\\Box\\Obsidian-Vault"
 }
 ```
 
-Each value is a relative path from `%USERPROFILE%`.
+Each value is a full path. Environment variables such as `%USERPROFILE%` are expanded automatically.
 
 ### 2. Using GUI Manager (Recommended)
 

@@ -28,9 +28,9 @@ if (-not (Test-Path $configPath)) {
 }
 
 $config = Get-Content $configPath -Raw | ConvertFrom-Json
-$projectsRoot    = Join-Path $env:USERPROFILE $config.localProjectsRoot
-$boxProjectsRoot = Join-Path $env:USERPROFILE $config.boxProjectsRoot
-$obsidianVaultRoot = Join-Path $env:USERPROFILE $config.obsidianVaultRoot
+$projectsRoot    = [System.Environment]::ExpandEnvironmentVariables($config.localProjectsRoot)
+$boxProjectsRoot = [System.Environment]::ExpandEnvironmentVariables($config.boxProjectsRoot)
+$obsidianVaultRoot = [System.Environment]::ExpandEnvironmentVariables($config.obsidianVaultRoot)
 
 if (-not $TemplateDir) {
     $TemplateDir = Join-Path $PSScriptRoot "templates"

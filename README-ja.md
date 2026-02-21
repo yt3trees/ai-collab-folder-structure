@@ -321,13 +321,13 @@ Box/Projects/_mini/{ProjectName}/
 
 ```json
 {
-  "localProjectsRoot": "Documents\\Projects",
-  "boxProjectsRoot": "Box\\Projects",
-  "obsidianVaultRoot": "Box\\Obsidian-Vault"
+  "localProjectsRoot": "%USERPROFILE%\\Documents\\Projects",
+  "boxProjectsRoot": "%USERPROFILE%\\Box\\Projects",
+  "obsidianVaultRoot": "%USERPROFILE%\\Box\\Obsidian-Vault"
 }
 ```
 
-各値は `%USERPROFILE%` からの相対パスです。
+各値はフルパスで記述します。`%USERPROFILE%` などの環境変数は自動的に展開されます。
 
 ### 2. GUIマネージャーで操作 (推奨)
 

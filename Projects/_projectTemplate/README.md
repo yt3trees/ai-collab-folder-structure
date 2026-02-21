@@ -26,13 +26,14 @@ File: `Documents/Projects/_config/paths.json`
 
 ```json
 {
-  "localProjectsRoot": "Documents\\Projects",
-  "boxProjectsRoot": "Box\\Projects",
-  "obsidianVaultRoot": "Box\\Obsidian-Vault"
+  "localProjectsRoot": "%USERPROFILE%\\Documents\\Projects",
+  "boxProjectsRoot": "%USERPROFILE%\\Box\\Projects",
+  "obsidianVaultRoot": "%USERPROFILE%\\Box\\Obsidian-Vault"
 }
 ```
 
-Each value is a relative path from `%USERPROFILE%`. If PC-B has the same directory structure, it works as-is.
+Each value is a full path. Environment variables such as `%USERPROFILE%` are expanded automatically.
+If PC-B has the same directory structure, it works as-is.
 Modify the paths if the BOX sync destination differs between PCs.
 
 ### 2. Enable Developer Mode

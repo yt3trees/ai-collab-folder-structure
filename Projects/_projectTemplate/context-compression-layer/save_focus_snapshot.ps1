@@ -30,7 +30,7 @@ if (-not (Test-Path $configPath)) {
 }
 
 $config = Get-Content $configPath -Raw | ConvertFrom-Json
-$projectsRoot = Join-Path $env:USERPROFILE $config.localProjectsRoot
+$projectsRoot = [System.Environment]::ExpandEnvironmentVariables($config.localProjectsRoot)
 
 if ($Workspace) {
     $ctxDir = Join-Path $projectsRoot ".context"

@@ -27,6 +27,11 @@ function Initialize-AppConfig {
         try {
             $json = [System.IO.File]::ReadAllText($configPath, [System.Text.Encoding]::UTF8)
             $script:AppState.PathsConfig = $json | ConvertFrom-Json
+            foreach ($prop in $script:AppState.PathsConfig.PSObject.Properties) {
+                if ($prop.Value -is [string]) {
+                    $prop.Value = [System.Environment]::ExpandEnvironmentVariables($prop.Value)
+                }
+            }
         }
         catch {
             # Fall through to defaults

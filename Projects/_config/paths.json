@@ -1,5 +1,5 @@
 {
-  "localProjectsRoot": "Documents\\Projects",
-  "boxProjectsRoot": "Box\\Projects",
-  "obsidianVaultRoot": "Box\\Obsidian-Vault"
+  "localProjectsRoot": "%USERPROFILE%\\Documents\\Projects",
+  "boxProjectsRoot": "%USERPROFILE%\\Box\\Projects",
+  "obsidianVaultRoot": "%USERPROFILE%\\Box\\Obsidian-Vault"
 }

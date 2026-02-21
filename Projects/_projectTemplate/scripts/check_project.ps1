@@ -20,9 +20,9 @@ if (-not (Test-Path $pathsConfigFile)) {
 }
 $pathsConfig = Get-Content $pathsConfigFile -Raw | ConvertFrom-Json
 
-$localProjectsRoot = Join-Path $env:USERPROFILE $pathsConfig.localProjectsRoot
-$boxProjectsRoot = Join-Path $env:USERPROFILE $pathsConfig.boxProjectsRoot
-$obsidianVaultRoot = Join-Path $env:USERPROFILE $pathsConfig.obsidianVaultRoot
+$localProjectsRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConfig.localProjectsRoot)
+$boxProjectsRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConfig.boxProjectsRoot)
+$obsidianVaultRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConfig.obsidianVaultRoot)
 
 # Determine project subpath based on Support flag
 if ($Mini) {

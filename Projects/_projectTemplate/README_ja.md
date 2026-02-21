@@ -26,13 +26,14 @@
 
 ```json
 {
-  "localProjectsRoot": "Documents\\Projects",
-  "boxProjectsRoot": "Box\\Projects",
-  "obsidianVaultRoot": "Box\\Obsidian-Vault"
+  "localProjectsRoot": "%USERPROFILE%\\Documents\\Projects",
+  "boxProjectsRoot": "%USERPROFILE%\\Box\\Projects",
+  "obsidianVaultRoot": "%USERPROFILE%\\Box\\Obsidian-Vault"
 }
 ```
 
-各値は `%USERPROFILE%` からの相対パスです。PC-B でも同じ構成であればそのまま使えます。
+各値はフルパスで記述します。`%USERPROFILE%` などの環境変数は自動的に展開されます。
+PC-B でも同じ構成であればそのまま使えます。
 BOXの同期先が異なるPCでは、該当パスを変更してください。
 
 ### 2. 開発者モードの有効化
