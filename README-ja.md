@@ -1,6 +1,6 @@
 # ai-collab-folder-structure
 
-![Workspace Architecture](_asset/ai-collab-folder-structure.drawio.svg)
+<!-- ![Workspace Architecture](_asset/ai-collab-folder-structure.drawio.svg) -->
 
 AI(Claude Code)との協働を前提とした、プロジェクトフォルダ管理フレームワークです。
 
@@ -13,6 +13,53 @@ AI(Claude Code)との協働を前提とした、プロジェクトフォルダ�
 - Layer 3 (Artifact): 成果物・参照資料(ファイルバックアップ・PC間同期、BOX同期)
 
 ## 3層レイヤー構造
+
+```mermaid
+graph TD
+    %% Define styles
+    classDef local fill:#2d2d2d,stroke:#555,stroke-width:2px,color:#fff
+    classDef box fill:#0b4d75,stroke:#1a7BB9,stroke-width:2px,color:#fff
+    classDef obs fill:#4a1e6d,stroke:#7D3CB5,stroke-width:2px,color:#fff
+    classDef junction fill:#d06000,stroke:#ff8800,stroke-width:2px,stroke-dasharray: 5 5,color:#fff
+
+    subgraph L1 ["Layer 1: Execution (ローカル・揮発性)"]
+        direction TB
+        LocalProj["📁 Documents/Projects/{ProjectName}"]:::local
+        Dev["💻 development/ (Git管理)"]:::local
+        
+        %% Junctions
+        JuncShared["🔗 shared/ (ジャンクション)"]:::junction
+        JuncCtx["🔗 _ai-context/ (ジャンクション)"]:::junction
+        
+        LocalProj --- Dev
+        LocalProj --- JuncShared
+        LocalProj --- JuncCtx
+    end
+
+    subgraph L3 ["Layer 3: Artifact (成果物・BOX同期)"]
+        direction TB
+        BoxProj["📁 Box/Projects/{ProjectName}"]:::box
+        Work["💻 _work/ (日々の作業場)"]:::box
+        Docs["📄 docs/ (正式な成果物)"]:::box
+        
+        BoxProj --- Work
+        BoxProj --- Docs
+    end
+
+    subgraph L2 ["Layer 2: Knowledge (知識と思考・BOX同期)"]
+        direction TB
+        ObsVault["📁 Box/Obsidian-Vault"]:::obs
+        AiCtx["🧠 ai-context/ (AIコンテキストファイル)"]:::obs
+        Daily["📝 daily/ (個人の思考・メモ)"]:::obs
+        
+        ObsVault --- AiCtx
+        ObsVault --- Daily
+    end
+
+    %% Links
+    JuncShared == ファイル自動同期 === BoxProj
+    JuncCtx == 知識ベース同期 === ObsVault
+```
 
 | Layer | 役割 | 場所 | データの性質 |
 |-------|------|------|-------------|

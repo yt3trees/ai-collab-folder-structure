@@ -1,6 +1,6 @@
 # ai-collab-folder-structure
 
-![Workspace Architecture](_asset/ai-collab-folder-structure.drawio.svg)
+<!-- ![Workspace Architecture](_asset/ai-collab-folder-structure.drawio.svg) -->
 
 > 🌐 [日本語版はこちら / Japanese version available here](README-ja.md)
 
@@ -15,6 +15,53 @@ A three-layer workspace structure for organizing multiple projects and optimizin
 - **Layer 3 (Artifact)**: Deliverables and reference materials (file backup and cross-PC sync, BOX sync)
 
 ## Three-Layer Structure
+
+```mermaid
+graph TD
+    %% Define styles
+    classDef local fill:#2d2d2d,stroke:#555,stroke-width:2px,color:#fff
+    classDef box fill:#0b4d75,stroke:#1a7BB9,stroke-width:2px,color:#fff
+    classDef obs fill:#4a1e6d,stroke:#7D3CB5,stroke-width:2px,color:#fff
+    classDef junction fill:#d06000,stroke:#ff8800,stroke-width:2px,stroke-dasharray: 5 5,color:#fff
+
+    subgraph L1 ["Layer 1: Execution (Local Workspace)"]
+        direction TB
+        LocalProj["📁 Documents/Projects/{ProjectName}"]:::local
+        Dev["💻 development/ (Git Managed)"]:::local
+        
+        %% Junctions
+        JuncShared["🔗 shared/ (Junction)"]:::junction
+        JuncCtx["🔗 _ai-context/ (Junction)"]:::junction
+        
+        LocalProj --- Dev
+        LocalProj --- JuncShared
+        LocalProj --- JuncCtx
+    end
+
+    subgraph L3 ["Layer 3: Artifact (BOX Sync)"]
+        direction TB
+        BoxProj["📁 Box/Projects/{ProjectName}"]:::box
+        Work["💻 _work/ (Daily Work)"]:::box
+        Docs["📄 docs/ (Deliverables)"]:::box
+        
+        BoxProj --- Work
+        BoxProj --- Docs
+    end
+
+    subgraph L2 ["Layer 2: Knowledge (BOX Sync)"]
+        direction TB
+        ObsVault["📁 Box/Obsidian-Vault"]:::obs
+        AiCtx["🧠 ai-context/ (Context Layer)"]:::obs
+        Daily["📝 daily/ (Human Notes)"]:::obs
+        
+        ObsVault --- AiCtx
+        ObsVault --- Daily
+    end
+
+    %% Links
+    JuncShared == Sync Artifacts === BoxProj
+    JuncCtx == Sync Knowledge === ObsVault
+```
 
 | Layer | Role | Location | Data Characteristics |
 |-------|------|----------|---------------------|
