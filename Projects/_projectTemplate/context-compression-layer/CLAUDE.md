@@ -22,7 +22,6 @@ context-compression-layer/
 │   ├── decision_log_TEMPLATE.md
 │   └── file_map.md
 ├── skills/                   # Claude Code skills
-│   ├── context-init/
 │   ├── context-session-end/
 │   └── context-decision-log/
 └── examples/                 # Example files

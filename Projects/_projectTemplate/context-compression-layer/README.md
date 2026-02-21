@@ -79,7 +79,6 @@ You can have AI draft this. It can be refined later.
 
 ```bash
 # Deploy skills to Claude Code
-cp -r skills/context-init ~/.claude/skills/
 cp -r skills/context-session-end ~/.claude/skills/
 cp -r skills/context-decision-log ~/.claude/skills/
 ```
@@ -99,7 +98,6 @@ Steps 1-2 provide the core functionality. Skills are additional conveniences.
 
 | Skill | Role | Trigger |
 |-------|------|---------|
-| context-init | CCL setup and initialization | "Set up context layer" (first time only) |
 | context-session-end | Suggest AI work additions at work boundaries | Natural boundaries ("thanks", "let's stop here", etc.) |
 | context-decision-log | Structured recording of decisions + detection of implicit decisions | At decision time or detection |
 
@@ -125,7 +123,6 @@ context-compression-layer/
 │   ├── project_summary_example.md
 │   └── decision_log_example.md
 ├── skills/
-│   ├── context-init/SKILL.md
 │   ├── context-session-end/SKILL.md
 │   └── context-decision-log/SKILL.md
 ├── setup_context_layer.ps1            Setup script

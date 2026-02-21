@@ -79,7 +79,6 @@ AIに下書きさせてOK。後から修正できる。
 
 ```bash
 # スキルをClaude Codeに配置
-cp -r skills/context-init ~/.claude/skills/
 cp -r skills/context-session-end ~/.claude/skills/
 cp -r skills/context-decision-log ~/.claude/skills/
 ```
@@ -99,7 +98,6 @@ Step 1-2だけで基本機能は動く。スキルは便利機能の追加。
 
 | スキル | 役割 | トリガー |
 |--------|------|---------|
-| context-init | CCL導入・初期化 | 「コンテキスト層を作って」(初回のみ) |
 | context-session-end | 作業区切りでAI作業分を追記提案 | 自然な区切り(「ありがとう」「一旦ここまで」等) |
 | context-decision-log | 意思決定の構造化記録+暗黙的決定の検出 | 決定時 or 検出時 |
 
@@ -125,7 +123,6 @@ context-compression-layer/
 │   ├── project_summary_example.md
 │   └── decision_log_example.md
 ├── skills/
-│   ├── context-init/SKILL.md
 │   ├── context-session-end/SKILL.md
 │   └── context-decision-log/SKILL.md
 ├── setup_context_layer.ps1            Setup script

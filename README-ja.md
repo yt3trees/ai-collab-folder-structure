@@ -28,15 +28,21 @@ AI(Claude Code)との協働を前提とした、プロジェクトフォルダ�
 - `CLAUDE.md` - プロジェクト固有のAI指示書(Sharedフォルダからのコピー)
 - ジャンクションによる知識ベース連携
 
+### カスタムAIスキル (Custom AI Skills)
+
+本アーキテクチャでは、AIエージェントの拡張機能である「スキル」を重要なコア機能として統合しています。これにより、プロジェクトのコンテキスト管理をAI自身に自律的に行わせることが可能になります。
+
+- **`context-decision-log`**: 作業中や会議での暗黙的な決定事項を検出し、構造化された意思決定ログとして記録を提案
+- **`context-session-end`**: 作業の区切りで、AIが関与した作業内容のみを `current_focus.md` へ追記提案
+- **`project-memory`**: プロジェクト固有の知識ベース。AIが作業中に発見した価値ある知見をプロジェクトメモリとして記録・検索
+
 ### Context Compression Layer (CCL)
 
-セッション跨ぎのAIコンテキスト管理 - AIコンテキストを管理するための手法とツールセット:
+セッション跨ぎのAIコンテキスト管理 - AIが過去の文脈を正しく理解し、作業の継続性を保つための仕組み:
 
-- **3つのスキル**: context-init, context-decision-log, context-session-end
-- **テンプレート**: project_summary.md, current_focus.md, decision_log, file_map
-- **自動読み込み**: セッション開始時にCLAUDE.mdがCCLファイルを自動読み込み
-- **意思決定追跡**: 暗黙的な決定を検出し構造化ログを記録
-- **フォーカス更新**: 作業の区切りでAI作業分の追 предложを提案
+- **構成要素**: project_summary.md (全体像), current_focus.md (今のフォーカス), decision_log (意思決定履歴), memories (プロジェクトメモリ)
+- **自動連携**: セッション開始時に `AGENTS.md` (または `CLAUDE.md`) がCCLの内容を読み込み、現在の状況を把握
+- **AIスキルとの統合**: 上記のカスタムAIスキルを通じて、AI自身がこれらのコンテキストファイルの更新や維持をサポート
 
 ### 2種類のプロジェクト Tier
 
@@ -267,10 +273,9 @@ BOX同期完了後、同じスクリプトを実行するだけでジャンク�
 | `templates/` | AIコンテキストファイルテンプレート (project_summary, current_focus, file_map, decision_log等) |
 | `templates/CLAUDE_MD_SNIPPET.md` | CLAUDE.mdに追記するCCL指示 |
 | `examples/` | 使用パターンの例 |
-| `skills/` | Claude Codeスキル for コンテキスト管理 |
-| `skills/context-init/` | プロジェクトへのCCL初期化 |
+| `skills/` | AIエージェントスキル for コンテキスト管理 |
 | `skills/context-decision-log/` | 構造化意思決定ログの記録、暗黙的決定の検出 |
-| `skills/context-session-end/` | current_focus.mdへのAI作業分追提案 |
+| `skills/context-session-end/` | current_focus.mdへのAI作業分追記提案 |
 | `skills/project-memory/` | プロジェクト固有のメモリ - 知見の保存と検索 |
 
 ### _globalScripts/
