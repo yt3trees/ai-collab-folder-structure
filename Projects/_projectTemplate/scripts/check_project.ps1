@@ -47,20 +47,6 @@ if (-not (Test-Path $docRoot)) {
     exit 1
 }
 
-# Read config.json if exists to detect tier
-$configPath = "$docRoot\scripts\config.json"
-$tier = "unknown"
-if (Test-Path $configPath) {
-    try {
-        $config = Get-Content $configPath | ConvertFrom-Json
-        if ($config.project.tier) {
-            $tier = $config.project.tier
-        }
-    } catch {
-        # Ignore invalid JSON, will be reported later
-    }
-}
-
 # Detect structure
 $hasLegacy = Test-Path "$boxShared\01_planning"
 $hasNew = Test-Path "$boxShared\docs"
@@ -68,9 +54,6 @@ if ($hasLegacy) { $structure = 'legacy' }
 elseif ($hasNew) { $structure = 'new' }
 else { $structure = 'none' }
 Write-Host "Structure: $structure" -ForegroundColor DarkGray
-if ($tier -ne "unknown") {
-    Write-Host "Tier (from config): $tier" -ForegroundColor DarkGray
-}
 Write-Host ""
 
 # Check Junctions
@@ -85,13 +68,13 @@ if (Test-Path $link) {
         if ($target -eq $boxShared) {
             Write-Host "  OK: shared/ -> $boxShared" -ForegroundColor Green
         } else {
-            Write-Warning "  shared/ points to: $target"
+            Write-Host "  [!] shared/ points to: $target" -ForegroundColor Yellow
         }
     } else {
-        Write-Warning "  shared/ is a regular folder (not junction)"
+        Write-Host "  [!] shared/ is a regular folder (not junction)" -ForegroundColor Yellow
     }
 } else {
-    Write-Warning "  shared/ missing - run setup_project.ps1"
+    Write-Host "  [!] shared/ missing - run setup_project.ps1" -ForegroundColor Yellow
 }
 
 # obsidian_notes/
@@ -103,13 +86,13 @@ if (Test-Path $obsLink) {
         if ($target -eq $obsidianProject) {
             Write-Host "  OK: obsidian_notes/ -> $obsidianProject" -ForegroundColor Green
         } else {
-            Write-Warning "  obsidian_notes/ points to: $target"
+            Write-Host "  [!] obsidian_notes/ points to: $target" -ForegroundColor Yellow
         }
     } else {
-        Write-Warning "  obsidian_notes/ is a regular folder (not junction)"
+        Write-Host "  [!] obsidian_notes/ is a regular folder (not junction)" -ForegroundColor Yellow
     }
 } else {
-    Write-Warning "  obsidian_notes/ missing - run setup_project.ps1"
+    Write-Host "  [!] obsidian_notes/ missing - run setup_project.ps1" -ForegroundColor Yellow
 }
 
 # context/
@@ -122,13 +105,13 @@ if (Test-Path $contextLink) {
         if ($target -eq $obsidianAiCtx) {
             Write-Host "  OK: context/ -> $obsidianAiCtx" -ForegroundColor Green
         } else {
-            Write-Warning "  context/ points to: $target"
+            Write-Host "  [!] context/ points to: $target" -ForegroundColor Yellow
         }
     } else {
-        Write-Warning "  context/ is a regular folder (not junction)"
+        Write-Host "  [!] context/ is a regular folder (not junction)" -ForegroundColor Yellow
     }
 } else {
-    Write-Warning "  context/ missing - run setup_project.ps1"
+    Write-Host "  [!] context/ missing - run setup_project.ps1" -ForegroundColor Yellow
 }
 
 # [AI Instruction Files]
@@ -142,10 +125,10 @@ $boxAgents = "$boxShared\AGENTS.md"
 if (Test-Path $localAgents) {
     Write-Host "  OK: AGENTS.md (Local Copy)" -ForegroundColor Green
     if (-not (Test-Path $boxAgents)) {
-        Write-Warning "  Master AGENTS.md missing on BOX"
+        Write-Host "  [!] Master AGENTS.md missing on BOX" -ForegroundColor Yellow
     }
 } else {
-    Write-Warning "  AGENTS.md missing locally - run setup_project.ps1"
+    Write-Host "  [!] AGENTS.md missing locally - run setup_project.ps1" -ForegroundColor Yellow
 }
 
 # CLAUDE.md (Local Copy)
@@ -154,7 +137,7 @@ $localClaude = "$docRoot\CLAUDE.md"
 if (Test-Path $localClaude) {
     Write-Host "  OK: CLAUDE.md (Local Copy)" -ForegroundColor Green
 } else {
-    Write-Warning "  CLAUDE.md missing locally - run setup_project.ps1"
+    Write-Host "  [!] CLAUDE.md missing locally - run setup_project.ps1" -ForegroundColor Yellow
 }
 
 # Folder Structure
@@ -168,35 +151,10 @@ if (Test-Path $boxShared) {
             Write-Host "    - $($dir.Name)" -ForegroundColor Gray
         }
     } else {
-        Write-Warning "  BOX shared folder is empty"
+        Write-Host "  [!] BOX shared folder is empty" -ForegroundColor Yellow
     }
 } else {
-    Write-Warning "  BOX shared folder not found"
-}
-
-# Config file check
-Write-Host ""
-Write-Host "[Config File]" -ForegroundColor Yellow
-if (Test-Path $configPath) {
-    try {
-        $config = Get-Content $configPath | ConvertFrom-Json
-        Write-Host "  Found: scripts/config.json" -ForegroundColor Green
-        if ($config.project.tier) {
-            Write-Host "  Tier: $($config.project.tier)" -ForegroundColor Gray
-        }
-        if ($config.project.structure) {
-            Write-Host "  Structure: $($config.project.structure)" -ForegroundColor Gray
-        }
-        if ($config.asana.workspace_gid) {
-            Write-Host "  Asana Workspace GID: $($config.asana.workspace_gid)" -ForegroundColor Gray
-        } else {
-            Write-Host "  Asana Workspace GID: not configured" -ForegroundColor DarkGray
-        }
-    } catch {
-        Write-Warning "  Config file exists but is invalid JSON"
-    }
-} else {
-    Write-Warning "  Config file not found: scripts/config.json"
+    Write-Host "  [!] BOX shared folder not found" -ForegroundColor Yellow
 }
 
 # .lnk check
@@ -211,7 +169,7 @@ if (Test-Path $boxShared) {
             $shortcut = $shell.CreateShortcut($lnk.FullName)
             $target = $shortcut.TargetPath
             if (-not (Test-Path $target)) {
-                Write-Warning "  Broken: $($lnk.Name) -> $target"
+                Write-Host "  [!] Broken: $($lnk.Name) -> $target" -ForegroundColor Yellow
                 $broken++
             }
         }
