@@ -142,67 +142,45 @@ claude
 As you work, the AI autonomously evaluates the situation and proposes executing appropriate SKILLs at the right time.
 
 👨‍💻 User:
-```
 Improve the login process in `src/api/auth.ts`. Let's add a token refresh mechanism when the token expires.
-```
 
 🤖 Claude:
-```
 (After modifying the code...)
 The updates are complete.
 Since this implementation change affects the architecture, shall I record this in the decision log using the `context-decision-log` skill?
-```
 
 👨‍💻 User:
-```
 Yes, please.
-```
 
 🤖 Claude:
-```
 (Executes the `context-decision-log` skill and records "Added token refresh process" in `decision_log.md`)
-```
 
 👨‍💻 User:
-```
 That's all for today.
-```
 
 🤖 Claude:
-```
 Understood. Before ending the session, shall I use the `context-session-end` skill to append today's progress (login process improvements) to `current_focus.md`?
-```
 
 👨‍💻 User:
-```
 Yes, go ahead.
-```
 
 #### 3. Leveraging Project Memory (`project-memory`)
 
 The SKILL also shines when preserving new discoveries or recalling past knowledge specifically for the project (both Search and Record).
 
 👨‍💻 User:
-```
 How did we configure the DB connection timeout when we fixed that issue previously in this project?
-```
 
 🤖 Claude:
-```
 (Executes the `project-memory` skill to search...)
 I found the relevant knowledge in the project memory.
 According to `db_timeout_config.md` recorded in Jan 2026, the connection pool settings were...
-```
 
 👨‍💻 User:
-```
 I see, thanks. By the way, the Redis caching strategy we just added seems like something we'll need to reference later. Please save it.
-```
 
 🤖 Claude:
-```
 Understood. I will use the `project-memory` skill to record our new Redis caching strategy as `redis_cache_strategy.md` in the project memory.
-```
 
 #### 4. Benefits of this Workflow
 
