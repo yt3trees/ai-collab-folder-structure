@@ -67,29 +67,128 @@ flowchart TD
 | Layer 2: Knowledge | 思考・知識 | Box/Obsidian-Vault/ (BOX Sync) | 文脈、経緯、知見 |
 | Layer 3: Artifact | 成果物・参照 | Box/Projects/{案件}/ (BOX Sync) | バックアップ・PC間同期ドキュメント |
 
-## 特徴
+## AIとの協働ワークフロー
 
-### AIとの協働を設計に組み込み
-
-- `.claude/context/` - (Legacy) Context aggregation (Use `_ai-context` instead)
-- `CLAUDE.md` - プロジェクト固有のAI指示書(Sharedフォルダからのコピー)
-- ジャンクションによる知識ベース連携
-
-### カスタムAIスキル (Custom AI Skills)
-
-本アーキテクチャでは、AIエージェントの拡張機能である「スキル」を重要なコア機能として統合しています。これにより、プロジェクトのコンテキスト管理をAI自身に自律的に行わせることが可能になります。
-
-- **`context-decision-log`**: 作業中や会議での暗黙的な決定事項を検出し、構造化された意思決定ログとして記録を提案
-- **`context-session-end`**: 作業の区切りで、AIが関与した作業内容のみを `current_focus.md` へ追記提案
-- **`project-memory`**: プロジェクト固有の知識ベース。AIが作業中に発見した価値ある知見をプロジェクトメモリとして記録・検索
+本アーキテクチャでは、AIエージェントの拡張機能である「SKILL」と「Context Compression Layer (CCL)」をコア機能として統合し、シームレスな協働作業を実現します。
 
 ### Context Compression Layer (CCL)
 
 セッション跨ぎのAIコンテキスト管理 - AIが過去の文脈を正しく理解し、作業の継続性を保つための仕組み:
 
-- **構成要素**: project_summary.md (全体像), current_focus.md (今のフォーカス), decision_log (意思決定履歴), memories (プロジェクトメモリ)
-- **自動連携**: セッション開始時に `AGENTS.md` (または `CLAUDE.md`) がCCLの内容を読み込み、現在の状況を把握
-- **AIスキルとの統合**: 上記のカスタムAIスキルを通じて、AI自身がこれらのコンテキストファイルの更新や維持をサポート
+- 構成要素: project_summary.md (全体像), current_focus.md (今のフォーカス), decision_log (意思決定履歴), memories (プロジェクトメモリ)
+- 自動連携: セッション開始時に `AGENTS.md` (または `CLAUDE.md`) がCCLの内容を読み込み、現在の状況を把握
+- AIスキルとの統合: 後述のカスタムAIスキルを通じて、AI自身がコンテキストファイルの維持をサポート
+
+### カスタムAIスキル (Custom AI Skills)
+
+プロジェクトのコンテキスト管理をAI自身に自律的に行わせるための拡張機能です。
+
+- `context-decision-log`: 作業中や会議での暗黙的な決定事項を検出し、構造化された意思決定ログとして記録を提案
+- `context-session-end`: 作業の区切りで、AIが関与した作業内容のみを `current_focus.md` へ追記提案
+- `project-memory`: プロジェクト固有の知識ベース。AIが作業中に発見した価値ある知見をプロジェクトメモリとして記録・検索
+
+### ワークフロー例 (Claude Code)
+
+日々の作業はBOX同期対象の `_work` フォルダ内で、日付ベースの作業フォルダを作成して行います。
+Claude CodeとカスタムAIスキル（SKILL）を活用することで、作業の文脈を失わずに効率的に進めることができます。
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Work as _work/2026/...
+    participant Claude
+    participant CCL as AI Skills (CCL)
+
+    User->>Work: 日付ベースの作業専用フォルダを作って移動
+    User->>Claude: `claude` を起動 (自動コンテキスト読み込み)
+    
+    rect rgba(128, 128, 128, 0.1)
+        Note right of Claude: 対話的な作業セッション
+        
+        User->>Claude: コーディング・修正の依頼
+        Claude->>Work: ソースコードの更新
+        
+        Claude->>CCL: `context-decision-log` を実行 (提案・記録)
+        CCL-->>Work: decision_log.md の保存
+        
+        User->>Claude: 過去の経緯や知見を質問
+        Claude->>CCL: `project-memory` を実行 (検索)
+        CCL-->>Claude: 過去の知識を返却
+        
+        Claude->>CCL: `project-memory` を実行 (保存・提案)
+        CCL-->>Work: 新たな知見を保存
+    end
+
+    User->>Claude: 今日の作業終了
+    Claude->>CCL: `context-session-end` を実行 (提案・記録)
+    CCL-->>Work: current_focus.md の更新
+```
+
+#### 1. 作業フォルダの作成と移動
+
+```bash
+# 日付ベースの作業専用フォルダを作成・移動
+cd Box\Projects\NewProject\_work
+mkdir 2026\202602_feature_x
+cd 2026\202602_feature_x
+
+# Claude Codeを起動（自動的にプロジェクトのコンテキストが読み込まれます）
+claude
+```
+
+#### 2. Claude Codeとの作業（SKILLの活用）
+
+作業を進める中で、AI自身が状況を判断し、適切なタイミングでSKILLの実行を提案してくれます。
+
+👨‍💻 User:
+> `src/api/auth.ts` のログイン処理を改善して。トークンの有効期限切れエラー時にはリフレッシュ処理を挟むようにしたい。
+
+🤖 Claude:
+> （コードの修正後...）
+> 修正が完了しました。
+> この実装方針の変更はアーキテクチャに影響を与えるため、`context-decision-log` スキルを使って意思決定ログに記録しておきましょうか？
+
+👨‍💻 User:
+> お願い。
+
+🤖 Claude:
+> （`context-decision-log` スキルを実行し、`decision_log.md` に「トークンリフレッシュ処理の追加」を記録）
+
+👨‍💻 User:
+> 今日の作業はここまで。
+
+🤖 Claude:
+> 承知しました。セッションを終了する前に、`context-session-end` スキルを使用して、本日の進捗（ログイン処理の改善）を `current_focus.md` に追記しておきますか？
+
+👨‍💻 User:
+> はい、よろしく。
+
+#### 3. プロジェクト固有メモリの活用（project-memory）
+
+作業中に得た知見や、既存の知識を引き出す際にもSKILLが活躍します（検索と記録の2つの用途）。
+
+👨‍💻 User:
+> 以前、このプロジェクトでDB接続のタイムアウト問題に対処した時の構成ってどうなってたっけ？
+
+🤖 Claude:
+> （`project-memory` スキルで検索を実行...）
+> プロジェクトメモリから該当の知見が見つかりました。
+> 2026年1月に記録された `db_timeout_config.md` によると、コネクションプールの設定値を...
+
+👨‍💻 User:
+> なるほど、ありがとう。ところで、今回新しく追加したRedisのキャッシュ戦略について、今後も参照しそうなので保存しておいて。
+
+🤖 Claude:
+> 承知しました。`project-memory` スキルを使用して、今回のRedisキャッシュ戦略を `redis_cache_strategy.md` としてプロジェクトメモリに記録しておきます。
+
+#### 4. このワークフローの利点
+
+このように `_work` フォルダで作業を進めることで以下のメリットがあります。
+- 作業の過程（一時ファイルなど）は `docs` などの正式なドキュメント群を汚しません
+- 重要な意思決定（`decision_log.md`）や進捗（`current_focus.md`）のみが、AIスキルによって自動的に引き上げられ記録されます
+- 次回作業時に、AIが最新の `current_focus.md` を読み込むため、すぐに作業を再開できます
+
+## ワークスペース構成の詳細
 
 ### 2種類のプロジェクト Tier
 
@@ -113,7 +212,7 @@ full tier では、BOX側(Layer 3)のドキュメント構造を2種類から選
 - Git同期: ソースコード(development/source/)
 - ローカル独立: _ai-workspace/
 
-## ワークスペース全体の構成
+### ワークスペース全体の構成
 
 ```
 Documents/Projects/
@@ -153,9 +252,9 @@ Documents/Projects/
 └── {ProjectName}/              # 各プロジェクト (full tier)
 ```
 
-## プロジェクトフォルダ構成
+### プロジェクトフォルダ構成
 
-### full tier
+#### full tier
 
 ```
 Documents/Projects/{ProjectName}/
@@ -188,7 +287,7 @@ Box/Projects/{ProjectName}/         (new 構造)
 └── _work/                      # 日付ベースの作業フォルダ
 ```
 
-### mini tier
+#### mini tier
 
 ```
 Documents/Projects/_mini/{ProjectName}/
@@ -207,7 +306,7 @@ Box/Projects/_mini/{ProjectName}/
 └── _work/                      # 作業フォルダ
 ```
 
-## リンク構成
+### リンク構成
 
 | 種類 | ローカル側 | リンク先 (BOX側) | 管理者権限 |
 |------|-----------|-----------------|-----------|
@@ -296,107 +395,6 @@ BOX同期完了後、同じスクリプトを実行するだけでジャンク�
 
 - `_config/paths.json` は各PCで個別に作成が必要(BOX非同期)
 - CLAUDE.md/AGENTS.md はスクリプトにより自動的にコピーされます。
-
-## AIとの協働ワークフロー例 (Claude Code)
-
-日々の作業はBOX同期対象の `_work` フォルダ内で、日付ベースの作業フォルダを作成して行います。
-Claude CodeとカスタムAIスキル（SKILL）を活用することで、作業の文脈を失わずに効率的に進めることができます。
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant Work as _work/2026/...
-    participant Claude
-    participant CCL as AI Skills (CCL)
-
-    User->>Work: 日付ベースの作業専用フォルダを作って移動
-    User->>Claude: `claude` を起動 (自動コンテキスト読み込み)
-    
-    rect rgba(128, 128, 128, 0.1)
-        Note right of Claude: 対話的な作業セッション
-        
-        User->>Claude: コーディング・修正の依頼
-        Claude->>Work: ソースコードの更新
-        
-        Claude->>CCL: `context-decision-log` を実行 (提案・記録)
-        CCL-->>Work: decision_log.md の保存
-        
-        User->>Claude: 過去の経緯や知見を質問
-        Claude->>CCL: `project-memory` を実行 (検索)
-        CCL-->>Claude: 過去の知識を返却
-        
-        Claude->>CCL: `project-memory` を実行 (保存・提案)
-        CCL-->>Work: 新たな知見を保存
-    end
-
-    User->>Claude: 今日の作業終了
-    Claude->>CCL: `context-session-end` を実行 (提案・記録)
-    CCL-->>Work: current_focus.md の更新
-```
-
-### 1. 作業フォルダの作成と移動
-
-```bash
-# 日付ベースの作業専用フォルダを作成・移動
-cd Box\Projects\NewProject\_work
-mkdir 2026\202602_feature_x
-cd 2026\202602_feature_x
-
-# Claude Codeを起動（自動的にプロジェクトのコンテキストが読み込まれます）
-claude
-```
-
-### 2. Claude Codeとの作業（SKILLの活用）
-
-作業を進める中で、AI自身が状況を判断し、適切なタイミングでSKILLの実行を提案してくれます。
-
-**👨‍💻 User**:
-> `src/api/auth.ts` のログイン処理を改善して。トークンの有効期限切れエラー時にはリフレッシュ処理を挟むようにしたい。
-
-**🤖 Claude**:
-> （コードの修正後...）
-> 修正が完了しました。
-> この実装方針の変更はアーキテクチャに影響を与えるため、`context-decision-log` スキルを使って意思決定ログに記録しておきましょうか？
-
-**👨‍💻 User**:
-> お願い。
-
-**🤖 Claude**:
-> （`context-decision-log` スキルを実行し、`decision_log.md` に「トークンリフレッシュ処理の追加」を記録）
-
-**👨‍💻 User**:
-> 今日の作業はここまで。
-
-**🤖 Claude**:
-> 承知しました。セッションを終了する前に、`context-session-end` スキルを使用して、本日の進捗（ログイン処理の改善）を `current_focus.md` に追記しておきますか？
-
-**👨‍💻 User**:
-> はい、よろしく。
-
-### 3. プロジェクト固有メモリの活用（project-memory）
-
-作業中に得た知見や、既存の知識を引き出す際にもSKILLが活躍します（検索と記録の2つの用途）。
-
-**👨‍💻 User**:
-> 以前、このプロジェクトでDB接続のタイムアウト問題に対処した時の構成ってどうなってたっけ？
-
-**🤖 Claude**:
-> （`project-memory` スキルで検索を実行...）
-> プロジェクトメモリから該当の知見が見つかりました。
-> 2026年1月に記録された `db_timeout_config.md` によると、コネクションプールの設定値を...
-
-**👨‍💻 User**:
-> なるほど、ありがとう。ところで、今回新しく追加したRedisのキャッシュ戦略について、今後も参照しそうなので保存しておいて。
-
-**🤖 Claude**:
-> 承知しました。`project-memory` スキルを使用して、今回のRedisキャッシュ戦略を `redis_cache_strategy.md` としてプロジェクトメモリに記録しておきます。
-
-### 4. このワークフローの利点
-
-このように `_work` フォルダで作業を進めることで以下のメリットがあります。
-- 作業の過程（一時ファイルなど）は `docs` などの正式なドキュメント群を汚しません
-- 重要な意思決定（`decision_log.md`）や進捗（`current_focus.md`）のみが、AIスキルによって自動的に引き上げられ記録されます
-- 次回作業時に、AIが最新の `current_focus.md` を読み込むため、すぐに作業を再開できます
 
 ## スクリプト一覧
 

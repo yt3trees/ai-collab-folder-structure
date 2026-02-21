@@ -10,9 +10,9 @@ A project folder management framework designed for collaboration with AI (Claude
 
 A three-layer workspace structure for organizing multiple projects and optimizing context sharing with AI.
 
-- **Layer 1 (Execution)**: Local workspace (Git-managed, volatile work)
-- **Layer 2 (Knowledge)**: Obsidian Vault (accumulation of thoughts and insights, BOX sync)
-- **Layer 3 (Artifact)**: Deliverables and reference materials (file backup and cross-PC sync, BOX sync)
+- Layer 1 (Execution): Local workspace (Git-managed, volatile work)
+- Layer 2 (Knowledge): Obsidian Vault (accumulation of thoughts and insights, BOX sync)
+- Layer 3 (Artifact): Deliverables and reference materials (file backup and cross-PC sync, BOX sync)
 
 ## Three-Layer Structure
 
@@ -69,29 +69,127 @@ flowchart TD
 | Layer 2: Knowledge | Thinking & Knowledge | Box/Obsidian-Vault/ (BOX Sync) | Context, history, insights |
 | Layer 3: Artifact | Deliverables & References | Box/Projects/{Project}/ (BOX Sync) | Backup and cross-PC sync documents |
 
-## Features
+## AI Collaboration Workflow
 
-### Built-in AI Collaboration Design
-
-- `.claude/context/` - (Legacy) Context aggregation (Use `_ai-context` instead)
-- `CLAUDE.md` - Project-specific AI instructions (Copy from shared folder)
-- Knowledge base linkage via junction points
-
-### Custom AI Skills
-
-In this architecture, custom "Skills" (extensions for AI tools) are integrated as a core feature. They empower the AI to autonomously manage project context and memory.
-
-- **`context-decision-log`**: Detects implicit decisions during work and proposes recording them as structured logs.
-- **`context-session-end`**: Proposes appending the AI's recent contributions to `current_focus.md` at work boundaries.
-- **`project-memory`**: A project-specific knowledge base where the AI records and searches for valuable technical insights.
+This architecture integrates SKILLs (AI agent extensions) and the Context Compression Layer (CCL) to enable seamless collaboration with AI.
 
 ### Context Compression Layer (CCL)
 
 AI context management across sessions - ensuring the AI correctly understands past context and maintains continuous workflow:
 
-- **Components**: project_summary.md (overview), current_focus.md (current focus), decision_log (history of decisions), memories (project memory).
-- **Auto-loading**: `AGENTS.md` (or `CLAUDE.md`) is designed to automatically read CCL files at session start.
-- **Skill Integration**: Powered by the Custom AI Skills mentioned above, enabling autonomous context maintenance by the AI.
+- Components: project_summary.md (overview), current_focus.md (current focus), decision_log (history of decisions), memories (project memory).
+- Auto-loading: `AGENTS.md` (or `CLAUDE.md`) is designed to automatically read CCL files at session start.
+
+### Custom AI Skills
+
+Custom Skills empower the AI to autonomously manage project context and memory.
+
+- `context-decision-log`: Detects implicit decisions during work and proposes recording them as structured logs.
+- `context-session-end`: Proposes appending the AI's recent contributions to `current_focus.md` at work boundaries.
+- `project-memory`: A project-specific knowledge base where the AI records and searches for valuable technical insights.
+
+### Workflow Example (Claude Code)
+
+Daily tasks are performed within the BOX-synced `_work` folder, organized by date-based working directories.
+By leveraging Claude Code and custom AI Skills (SKILLs), you can work efficiently without losing context.
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Work as _work/2026/...
+    participant Claude
+    participant CCL as AI Skills (CCL)
+
+    User->>Work: Create & Enter Daily Folder
+    User->>Claude: Launch `claude` (Context Loaded)
+    
+    rect rgba(128, 128, 128, 0.1)
+        Note right of Claude: Interactive Session
+        
+        User->>Claude: Discuss & Code
+        Claude->>Work: Modify source code
+        
+        Claude->>CCL: Run `context-decision-log`
+        CCL-->>Work: Save decision_log.md
+        
+        User->>Claude: Ask about past configurations
+        Claude->>CCL: Run `project-memory` (Search)
+        CCL-->>Claude: Return past knowledge
+        
+        Claude->>CCL: Run `project-memory` (Save)
+        CCL-->>Work: Save new knowledge
+    end
+
+    User->>Claude: Finish for the day
+    Claude->>CCL: Run `context-session-end`
+    CCL-->>Work: Update current_focus.md
+```
+
+#### 1. Create and Navigate to Work Folder
+
+```bash
+# Create and navigate to a date-based dedicated working folder
+cd Box\Projects\NewProject\_work
+mkdir 2026\202602_feature_x
+cd 2026\202602_feature_x
+
+# Launch Claude Code (project context is automatically loaded)
+claude
+```
+
+#### 2. Working with Claude Code (Using SKILLs)
+
+As you work, the AI autonomously evaluates the situation and proposes executing appropriate SKILLs at the right time.
+
+👨‍💻 User:
+> Improve the login process in `src/api/auth.ts`. Let's add a token refresh mechanism when the token expires.
+
+🤖 Claude:
+> (After modifying the code...)
+> The updates are complete.
+> Since this implementation change affects the architecture, shall I record this in the decision log using the `context-decision-log` skill?
+
+👨‍💻 User:
+> Yes, please.
+
+🤖 Claude:
+> (Executes the `context-decision-log` skill and records "Added token refresh process" in `decision_log.md`)
+
+👨‍💻 User:
+> That's all for today.
+
+🤖 Claude:
+> Understood. Before ending the session, shall I use the `context-session-end` skill to append today's progress (login process improvements) to `current_focus.md`?
+
+👨‍💻 User:
+> Yes, go ahead.
+
+#### 3. Leveraging Project Memory (`project-memory`)
+
+The SKILL also shines when preserving new discoveries or recalling past knowledge specifically for the project (both Search and Record).
+
+👨‍💻 User:
+> How did we configure the DB connection timeout when we fixed that issue previously in this project?
+
+🤖 Claude:
+> (Executes the `project-memory` skill to search...)
+> I found the relevant knowledge in the project memory.
+> According to `db_timeout_config.md` recorded in Jan 2026, the connection pool settings were...
+
+👨‍💻 User:
+> I see, thanks. By the way, the Redis caching strategy we just added seems like something we'll need to reference later. Please save it.
+
+🤖 Claude:
+> Understood. I will use the `project-memory` skill to record our new Redis caching strategy as `redis_cache_strategy.md` in the project memory.
+
+#### 4. Benefits of this Workflow
+
+By working within the `_work` folder in this manner, you gain the following benefits:
+- Work-in-progress files (e.g., temporary outputs) do not clutter the formal documents in `docs`
+- Only verified, important decisions (`decision_log.md`) and progress (`current_focus.md`) are automatically extracted and recorded via AI Skills
+- When you resume work next time, the AI loads the updated `current_focus.md`, allowing for a seamless restart
+
+## Detailed Workspace Architecture
 
 ### Two Project Tiers
 
@@ -111,11 +209,11 @@ For full tier, you can choose between two document structures on the BOX side (L
 
 ### Sync Strategy Between 2 PCs
 
-- **BOX sync**: Obsidian Vault, deliverables via shared/
-- **Git sync**: Source code (development/source/)
-- **Local independent**: _ai-workspace/
+- BOX sync: Obsidian Vault, deliverables via shared/
+- Git sync: Source code (development/source/)
+- Local independent: _ai-workspace/
 
-## Overall Workspace Structure
+### Overall Workspace Structure
 
 ```
 Documents/Projects/
@@ -155,9 +253,9 @@ Documents/Projects/
 └── {ProjectName}/              # Individual projects (full tier)
 ```
 
-## Project Folder Structure
+### Project Folder Structure
 
-### Full Tier
+#### Full Tier
 
 ```
 Documents/Projects/{ProjectName}/
@@ -190,7 +288,7 @@ Box/Projects/{ProjectName}/         (new structure)
 └── _work/                      # Date-based working folders
 ```
 
-### Mini Tier
+#### Mini Tier
 
 ```
 Documents/Projects/_mini/{ProjectName}/
@@ -209,7 +307,7 @@ Box/Projects/_mini/{ProjectName}/
 └── _work/                      # Working folder
 ```
 
-## Link Configuration
+### Link Configuration
 
 | Type | Local Side | Link Destination (BOX Side) | Admin Rights |
 |------|-----------|----------------------------|-------------|
@@ -297,107 +395,6 @@ After BOX sync is complete, simply run the same script to create junctions and s
 ```
 
 - CLAUDE.md/AGENTS.md copies are created automatically by the script.
-
-## AI Collaboration Workflow Example (Claude Code)
-
-Daily tasks are performed within the BOX-synced `_work` folder, organized by date-based working directories.
-By leveraging Claude Code and custom AI Skills (SKILLs), you can work efficiently without losing context.
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant Work as _work/2026/...
-    participant Claude
-    participant CCL as AI Skills (CCL)
-
-    User->>Work: Create & Enter Daily Folder
-    User->>Claude: Launch `claude` (Context Loaded)
-    
-    rect rgba(128, 128, 128, 0.1)
-        Note right of Claude: Interactive Session
-        
-        User->>Claude: Discuss & Code
-        Claude->>Work: Modify source code
-        
-        Claude->>CCL: Run `context-decision-log`
-        CCL-->>Work: Save decision_log.md
-        
-        User->>Claude: Ask about past configurations
-        Claude->>CCL: Run `project-memory` (Search)
-        CCL-->>Claude: Return past knowledge
-        
-        Claude->>CCL: Run `project-memory` (Save)
-        CCL-->>Work: Save new knowledge
-    end
-
-    User->>Claude: Finish for the day
-    Claude->>CCL: Run `context-session-end`
-    CCL-->>Work: Update current_focus.md
-```
-
-### 1. Create and Navigate to Work Folder
-
-```bash
-# Create and navigate to a date-based dedicated working folder
-cd Box\Projects\NewProject\_work
-mkdir 2026\202602_feature_x
-cd 2026\202602_feature_x
-
-# Launch Claude Code (project context is automatically loaded)
-claude
-```
-
-### 2. Working with Claude Code (Using SKILLs)
-
-As you work, the AI autonomously evaluates the situation and proposes executing appropriate SKILLs at the right time.
-
-**👨‍💻 User**:
-> Improve the login process in `src/api/auth.ts`. Let's add a token refresh mechanism when the token expires.
-
-**🤖 Claude**:
-> (After modifying the code...)
-> The updates are complete.
-> Since this implementation change affects the architecture, shall I record this in the decision log using the `context-decision-log` skill?
-
-**👨‍💻 User**:
-> Yes, please.
-
-**🤖 Claude**:
-> (Executes the `context-decision-log` skill and records "Added token refresh process" in `decision_log.md`)
-
-**👨‍💻 User**:
-> That's all for today.
-
-**🤖 Claude**:
-> Understood. Before ending the session, shall I use the `context-session-end` skill to append today's progress (login process improvements) to `current_focus.md`?
-
-**👨‍💻 User**:
-> Yes, go ahead.
-
-### 3. Leveraging Project Memory (`project-memory`)
-
-The SKILL also shines when preserving new discoveries or recalling past knowledge specifically for the project (both Search and Record).
-
-**👨‍💻 User**:
-> How did we configure the DB connection timeout when we fixed that issue previously in this project?
-
-**🤖 Claude**:
-> (Executes the `project-memory` skill to search...)
-> I found the relevant knowledge in the project memory.
-> According to `db_timeout_config.md` recorded in Jan 2026, the connection pool settings were...
-
-**👨‍💻 User**:
-> I see, thanks. By the way, the Redis caching strategy we just added seems like something we'll need to reference later. Please save it.
-
-**🤖 Claude**:
-> Understood. I will use the `project-memory` skill to record our new Redis caching strategy as `redis_cache_strategy.md` in the project memory.
-
-### 4. Benefits of this Workflow
-
-By working within the `_work` folder in this manner, you gain the following benefits:
-- Work-in-progress files (e.g., temporary outputs) do not clutter the formal documents in `docs`
-- Only verified, important decisions (`decision_log.md`) and progress (`current_focus.md`) are automatically extracted and recorded via AI Skills
-- When you resume work next time, the AI loads the updated `current_focus.md`, allowing for a seamless restart
 
 ## Script List
 
