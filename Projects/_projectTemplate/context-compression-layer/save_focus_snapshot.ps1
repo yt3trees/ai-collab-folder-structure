@@ -42,7 +42,8 @@ elseif ($ProjectName) {
     else {
         $projDir = Join-Path $projectsRoot $ProjectName
     }
-    $ctxDir = Join-Path $projDir "_ai-context"
+    # Files live in _ai-context/context/ (junction to Obsidian ai-context/)
+    $ctxDir = Join-Path $projDir "_ai-context\context"
 }
 else {
     Write-Host "[ERROR] Specify -ProjectName or -Workspace" -ForegroundColor Red

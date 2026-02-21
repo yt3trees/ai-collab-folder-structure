@@ -145,8 +145,7 @@ function Add-ContextMenuToTreeItem {
                                 $ed.Text = ""
                                 $ed.IsReadOnly = $true
                                 $script:AppState.EditorState.SuppressChangeEvent = $false
-                                $Window.FindName("editorStatusText").Text = "No file open"
-                        
+
                                 $script:AppState.EditorState.CurrentFile = ""
                                 $script:AppState.EditorState.OriginalContent = ""
                                 $script:AppState.EditorState.IsDirty = $false

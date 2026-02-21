@@ -19,20 +19,22 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 Mini tier projects are placed under `_mini/`, with `_ai-workspace/` and some Layer 2/3 folders omitted.
 
-### Junctions (2) - full tier
+### Junctions (3) - full tier
 
 ```
 <project>/
+├── _ai-context/context/             → Box/Obsidian-Vault/Projects/<project>/ai-context/
 ├── _ai-context/obsidian_notes/      → Box/Obsidian-Vault/Projects/<project>/
 ├── shared/                          → Box/Projects/<project>/
 ├── development/source/              (Git-managed, not BOX-synced)
 └── _ai-workspace/                   (local workspace)
 ```
 
-### Junctions (2) - mini tier
+### Junctions (3) - mini tier
 
 ```
 _mini/<project>/
+├── _ai-context/context/             → Box/Obsidian-Vault/Projects/_mini/<project>/ai-context/
 ├── _ai-context/obsidian_notes/      → Box/Obsidian-Vault/Projects/_mini/<project>/
 ├── shared/                          → Box/Projects/_mini/<project>/
 └── development/source/              (Git-managed, not BOX-synced)
@@ -44,7 +46,8 @@ _mini/<project>/
 | Purpose | Location | Notes |
 |---------|----------|-------|
 | Experiments / drafts | `_ai-workspace/` | full tier only |
-| AI context | `_ai-context/` | all tiers |
+| AI context files | `_ai-context/context/` | all tiers (BOX-synced via Obsidian ai-context/) |
+| Obsidian notes access | `_ai-context/obsidian_notes/` | all tiers |
 | Deliverables | `shared/docs/`, `shared/reference/`, `shared/records/` | full: structured, mini: `shared/docs/` (flat) |
 | Source code | `development/source/` (Git) | all tiers |
 | Obsidian notes | `Box/Obsidian-Vault/Projects/<project>/` | full: multiple folders, mini: `notes/` only |

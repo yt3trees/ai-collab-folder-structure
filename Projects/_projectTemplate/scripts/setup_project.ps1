@@ -163,9 +163,12 @@ else {
 Write-Host ""
 Write-Host "[Obsidian Vault Folders]" -ForegroundColor Yellow
 if ($Tier -eq "mini") {
-    # Mini tier: notes only
+    # Mini tier: notes + ai-context
     $obsidianFolders = @(
-        "notes"
+        "notes",
+        "ai-context",
+        "ai-context\decision_log",
+        "ai-context\focus_history"
     )
 }
 else {
@@ -175,7 +178,10 @@ else {
         "meetings",
         "specs",
         "notes",
-        "weekly"
+        "weekly",
+        "ai-context",
+        "ai-context\decision_log",
+        "ai-context\focus_history"
     )
 }
 foreach ($folder in $obsidianFolders) {
@@ -186,6 +192,31 @@ foreach ($folder in $obsidianFolders) {
     }
     else {
         Write-Host "  Exists: Projects/$ProjectName/$folder" -ForegroundColor Gray
+    }
+}
+
+# Copy templates to ai-context/ (only if not already present)
+Write-Host ""
+Write-Host "[AI Context Templates]" -ForegroundColor Yellow
+$templateDir = Join-Path $PSScriptRoot "..\context-compression-layer\templates"
+$obsAiCtx    = "$obsidianProject\ai-context"
+$templateFiles = @(
+    @{ Src = "project_summary.md";        Dst = "$obsAiCtx\project_summary.md" }
+    @{ Src = "current_focus.md";          Dst = "$obsAiCtx\current_focus.md" }
+    @{ Src = "file_map.md";               Dst = "$obsAiCtx\file_map.md" }
+)
+foreach ($t in $templateFiles) {
+    $src = Join-Path $templateDir $t.Src
+    $dst = $t.Dst
+    if (Test-Path $dst) {
+        Write-Host "  Exists: $([System.IO.Path]::GetFileName($dst))" -ForegroundColor Gray
+    }
+    elseif (Test-Path $src) {
+        Copy-Item -Path $src -Destination $dst -Force
+        Write-Host "  Created: $([System.IO.Path]::GetFileName($dst))" -ForegroundColor Green
+    }
+    else {
+        Write-Host "  Skip (template not found): $($t.Src)" -ForegroundColor DarkGray
     }
 }
 
@@ -257,9 +288,37 @@ else {
     Write-Host "    Please check Box sync status or create manually" -ForegroundColor DarkYellow
 }
 
+# 3. _ai-context/context/ -> Box/Obsidian-Vault/Projects/{ProjectName}/ai-context
+$contextLink   = "$docRoot\_ai-context\context"
+$obsidianAiCtx = "$obsidianProject\ai-context"
+if (Test-Path $contextLink) {
+    $item = Get-Item $contextLink -Force
+    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+        $existingTarget = $item.Target
+        if ($existingTarget -eq $obsidianAiCtx) {
+            Write-Host "  OK: context/ -> $obsidianAiCtx" -ForegroundColor Gray
+        }
+        else {
+            Write-Warning "  context/ points to different target: $existingTarget"
+        }
+    }
+    else {
+        Write-Warning "  context/ exists but is not a junction (regular folder)"
+        Write-Host "    Please backup and remove, then rerun this script" -ForegroundColor DarkYellow
+    }
+}
+elseif (Test-Path $obsidianAiCtx) {
+    New-Item -ItemType Junction -Path $contextLink -Target $obsidianAiCtx | Out-Null
+    Write-Host "  Created: context/ -> $obsidianAiCtx" -ForegroundColor Green
+}
+else {
+    Write-Warning "  Obsidian ai-context folder not found: $obsidianAiCtx"
+    Write-Host "    Please check Box sync status or create manually" -ForegroundColor DarkYellow
+}
 
 
-# 3. [AI Instruction Files] AGENTS.md (Master) & CLAUDE.md (Symlink)
+
+# 4. [AI Instruction Files] AGENTS.md (Master) & CLAUDE.md (Symlink)
 Write-Host ""
 Write-Host "[AI Instruction Files]" -ForegroundColor Yellow
 

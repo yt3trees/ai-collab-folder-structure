@@ -111,17 +111,17 @@ function New-ProjectCard {
     $stack.Children.Add($summBlock) | Out-Null
 
     # --- Junction status ---
-    $junctionColor = if ($Info.JunctionShared -eq "OK" -and $Info.JunctionObsidian -eq "OK") {
+    $junctionColor = if ($Info.JunctionShared -eq "OK" -and $Info.JunctionObsidian -eq "OK" -and $Info.JunctionContext -eq "OK") {
         "#a6e3a1"
     }
-    elseif ($Info.JunctionShared -eq "Missing" -or $Info.JunctionObsidian -eq "Missing") {
+    elseif ($Info.JunctionShared -eq "Missing" -or $Info.JunctionObsidian -eq "Missing" -or $Info.JunctionContext -eq "Missing") {
         "#f38ba8"
     }
     else {
         "#fab387"
     }
     $junctionBlock = New-Object System.Windows.Controls.TextBlock
-    $junctionBlock.Text = "Junctions: $($Info.JunctionShared) / $($Info.JunctionObsidian)"
+    $junctionBlock.Text = "Junctions: $($Info.JunctionShared) / $($Info.JunctionObsidian) / $($Info.JunctionContext)"
     $junctionBlock.FontSize = 11
     $junctionBlock.Foreground = New-ColorBrush $junctionColor
     $junctionBlock.Margin = New-Object System.Windows.Thickness(0, 2, 0, 0)

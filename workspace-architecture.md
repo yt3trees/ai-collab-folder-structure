@@ -32,16 +32,19 @@
 | Layer 2: Knowledge | 思考・知識 | Obsidian Vault (BOX) | Linked Knowledge<br>文脈、経緯、知見、ドラフト | Vault (Markdown) |
 | Layer 3: Artifact | 成果物・参照 | Box/Projects/ProjectA (BOX Sync) | Backup & Sync Docs (+ 手動Symlink)<br>バックアップ・PC間同期ドキュメント + 参照資料 | BOX / Local |
 
-### ジャンクション方針: 2本構成
+### ジャンクション方針: 3本構成
 
-Layer 1のローカルフォルダ内に2本のジャンクションを作成し、Layer 2 (Knowledge) と Layer 3 (Artifact) を統合する。
+Layer 1のローカルフォルダ内に3本のジャンクションを作成し、Layer 2 (Knowledge) と Layer 3 (Artifact) を統合する。
 
 1. `shared/` → Box/Projects/ProjectA (Layer 3: 成果物・参照)
-3. `_ai-context/obsidian_notes/` → Box/Obsidian-Vault/Projects/ProjectA (Layer 2: 知識ベース - AI参照用)
+2. `_ai-context/obsidian_notes/` → Box/Obsidian-Vault/Projects/ProjectA (Layer 2: 全Obsidianノート参照)
+3. `_ai-context/context/` → Box/Obsidian-Vault/Projects/ProjectA/ai-context (Layer 2: AIコンテキストファイル)
 
-ローカル専用領域とBOX同期領域が `shared/` の内外で明確に分かれる:
-- `shared/` の外 = ローカル専用 (BOX非同期) ※ただし `_ai-context` はAI設定の一部として管理
+ローカル専用領域とBOX同期領域の分離:
+- `shared/` の外 = 原則ローカル専用 (BOX非同期)
 - `shared/` の中 = BOX同期 (他PCや共有先に影響)
+- `_ai-context/context/` = BOX同期 (Obsidian経由でPC間共有・Obsidian UIで編集可能)
+- `_ai-context/obsidian_notes/` = BOX同期 (Obsidian全ノートへの参照)
 
 ### Multi-CLI Support
 
@@ -69,6 +72,7 @@ Layer 1のローカルフォルダ内に2本のジャンクションを作成し
 │       │
 │       └── ProjectA\                      [Layer 1: Execution]
 │           ├── _ai-context\               (Common AI Context) [Local]
+│           │   ├── context\               ← Junction → Box/Obsidian-Vault/Projects/ProjectA/ai-context
 │           │   └── obsidian_notes\        ← Junction → Box/Obsidian-Vault/Projects/ProjectA
 │           ├── _ai-workspace\             (AI作業領域) [Local]
 │           ├── development\               (Source Code - Git Managed) [Local]
@@ -88,6 +92,12 @@ Layer 1のローカルフォルダ内に2本のジャンクションを作成し
     │   ├── Projects\                      (案件ごとのナレッジ)
     │   │   ├── 00_Projects-Index.md       (案件管理インデックス)
     │   │   ├── ProjectA\
+    │   │   │   ├── ai-context\            (AIコンテキスト - BOX同期) ← context/ Junction参照先
+    │   │   │   │   ├── current_focus.md
+    │   │   │   │   ├── project_summary.md
+    │   │   │   │   ├── file_map.md
+    │   │   │   │   ├── decision_log\
+    │   │   │   │   └── focus_history\
     │   │   │   ├── daily\                 (Project Specific Log)
     │   │   │   ├── meetings\              (Meeting Notes)
     │   │   │   ├── specs\                 (Draft Specs)
@@ -246,9 +256,10 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
 `setup_project.ps1` が自動的にローカルフォルダ、BOX共有フォルダ、ジャンクション、およびAI指示書のコピーを構成する。
 
-スクリプトが作成するジャンクション (2本):
+スクリプトが作成するジャンクション (3本):
 1. `shared/` → Box/Projects/ProjectA (Layer 3: Artifact)
-2. `_ai-context/obsidian_notes/` → Box/Obsidian-Vault/Projects/ProjectA (Layer 2: Knowledge)
+2. `_ai-context/obsidian_notes/` → Box/Obsidian-Vault/Projects/ProjectA (Layer 2: 全Obsidianノート)
+3. `_ai-context/context/` → Box/Obsidian-Vault/Projects/ProjectA/ai-context (Layer 2: AIコンテキスト)
 
 テンプレートの利点:
 - プロジェクト名を指定するだけで、フォルダ構造とジャンクションが自動作成される
@@ -319,6 +330,261 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
    - `ProjectA/AGENTS.md` (Copy from shared)
    - `ProjectA/CLAUDE.md` (Copy from shared)
 3. **Context**: `_ai-context/` フォルダに必要な情報を集約し、`AGENTS.md` 内で「このフォルダを参照せよ」と指示する。
+
+---
+
+## Context Compression Layer (CCL)
+
+AIコンテキストをセッション跨いで管理するレイヤー。AIが過去の文脈を正しく理解し、作業の継続性を保つための仕組み。
+
+### コンセプト
+
+AIはセッションが終了するとコンテキストを失う。CCLは以下を提供:
+- **project_summary.md**: プロジェクト全体像（継続的に更新）
+- **current_focus.md**: 現在のフォーカス（人間が主に書く、AIが読む）
+- **decision_log/**: 意思決定履歴（構造化テンプレート）
+
+### フォルダ構成
+
+```
+_ai-context/
+├── context/                  ← Junction -> Box/Obsidian-Vault/.../ai-context/
+│   ├── project_summary.md    プロジェクト全体像 (Obsidian/BOX実体)
+│   ├── current_focus.md      今のフォーカス（人間が主に書く）(Obsidian/BOX実体)
+│   ├── decision_log/         意思決定ログ (Obsidian/BOX実体)
+│   │   └── YYYY-MM-DD_topic.md
+│   └── file_map.md           ファイルマップ (Obsidian/BOX実体)
+└── obsidian_notes/           既存のまま（触らない）
+```
+
+### 3つのスキル
+
+#### 1. context-init
+プロジェクトへのCCL初期化。
+
+**作成するもの:**
+- `project_summary.md`: プロジェクト目的、技術スタック、フェーズ、制約ルール
+- `current_focus.md`: 今やってること、次やること、メモ
+- `decision_log/TEMPLATE.md`: 意思決定ログテンプレート
+- `file_map.md`: 主要ファイル・マッピング
+
+**CLAUDE.mdへの自動追記:**
+```markdown
+## Context Compression Layer
+
+### 初回読み込み（自動）
+
+このプロジェクトで最初のタスクに取りかかる前に、以下を読んでください:
+
+1. `_ai-context/context/project_summary.md` - プロジェクト全体像
+2. `_ai-context/context/current_focus.md` - 現在のフォーカス
+3. `_ai-context/context/decision_log/` の最新3件（日付降順）
+
+current_focus.md の末尾「更新」日付が3日以上前の場合、1回だけ聞いてください:
+「前回から何か進展や変更はありましたか？（なければそのまま作業に入ります）」
+回答があれば current_focus.md に反映してから作業開始。なければそのまま開始。
+
+### 作業中
+
+重要な意思決定（技術選定、設計判断、方針変更）があったら、1行で提案してください:
+「💡 Decision Logに記録しますか？ → {決定の要約}」
+承認されたら `_ai-context/context/decision_log/YYYY-MM-DD_topic.md` をTEMPLATEに従い作成。
+1セッションで最大3回まで。断られたらそれ以上勧めない。
+
+### 作業の区切り
+
+まとまった作業が一段落したら、AI作業分を current_focus.md に追記提案してください:
+- 既存の内容は触らない
+- AIが追記する行には [AI] をつける
+- 3-5行以内で簡潔に
+- 短い質問応答だけの場合は提案不要
+```
+
+#### 2. context-decision-log
+意思決定を構造化して記録するスキル。暗黙的な決定の検出も担う。
+
+**2つの記録パターン:**
+- **パターンA**: AIとの作業中に決まったこと（会話から自動抽出）
+- **パターンB**: 人間が別の場所で決めたこと（事後報告、質問で補完）
+
+**暗黙的な決定の検出:**
+| パターン | 例 |
+|---------|---|
+| 「○○にする」「○○を使う」 | 「DBはPostgreSQLにする」 |
+| 「○○で行こう」「○○で進める」 | 「この設計で行こう」 |
+| 「○○はやめる」「○○は不採用」 | 「Redisはやめておこう」 |
+| 比較検討後の結論 | 「AよりBの方がいいね」 |
+| 「○○にしておく」（暫定） | 「ひとまずSQLiteにしておく」→ 🔄仮決定 |
+
+**ファイル名:** `YYYY-MM-DD_topic.md` (例: `2026-02-21_db_schema_choice.md`)
+
+**テンプレート:**
+```markdown
+# Decision: {タイトル}
+
+> 日付: YYYY-MM-DD
+> ステータス: ✅ 確定 / 🔄 仮決定
+> 経緯: AI作業中 / 会議 / 単独判断
+
+## Context（背景）
+
+{2-3文}
+
+## Options（選択肢）
+
+### Option A: {名前}
+- メリット:
+- デメリット:
+
+### Option B: {名前}
+- メリット:
+- デメリット:
+
+## Chosen（選択）
+
+**→ Option {X}: {名前}**
+
+## Why（理由）
+
+{2-4文}
+
+## Risk（リスク）
+
+-
+
+## Revisit Trigger（再検討条件）
+
+-
+```
+
+#### 3. context-session-end
+作業の区切りで、AIが関与した分だけ current_focus.md に追記提案するスキル。
+
+**トリガー:**
+- 明示的コマンド不要
+- 「ありがとう」「一旦ここまで」「今日はこれで」
+- 短い質問応答程度では発動しない
+
+**ルール:**
+- ✅ AI作業分のみ追記提案
+- ✅ 既存の人間が書いた行はそのまま残す
+- ✅ `[AI]` プレフィックスで区別
+- ✅ 3-5行以内
+- ❌ 人間が書いた行を編集・削除しない
+- ❌ 承認なしに更新しない
+
+### テンプレート
+
+#### current_focus.md
+```markdown
+# Focus
+
+<!--
+  人間が主に書く、AIが読むファイル。
+  上書き運用。常に「今」のスナップショットを10-20行で保つ。
+  終わったタスクは消す。古い情報は消す。
+-->
+
+## 今やってること
+
+-
+
+## 最近あったこと
+
+<!-- AI不在の間に起きたこと。会議の結論、手作業の結果、方針変更など -->
+
+-
+
+## 次やること
+
+-
+
+## メモ
+
+<!-- 制約、気になること、AIへのお願い等 -->
+
+-
+
+---
+更新: YYYY-MM-DD
+```
+
+#### decision_log/TEMPLATE.md
+```markdown
+# Decision: {タイトル}
+
+> 日付: YYYY-MM-DD
+> ステータス: ✅ 確定 / 🔄 仮決定
+> 経緯: AI作業中 / 会議 / 単独判断
+
+## Context（背景）
+
+-
+
+## Options（選択肢）
+
+### Option A: {名前}
+- メリット:
+- デメリット:
+
+### Option B: {名前}
+- メリット:
+- デメリット:
+
+## Chosen（選択）
+
+**→ Option : {名前}**
+
+## Why（理由）
+
+-
+
+## Risk（リスク）
+
+-
+
+## Revisit Trigger（再検討条件）
+
+-
+```
+
+### セットアップ
+
+```powershell
+# GUIマネージャーでセットアップ
+cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
+.\project_manager.ps1
+
+# AI Context タブでセットアップ
+
+# またはコマンドライン
+cd %USERPROFILE%\Documents\Projects\_projectTemplate\context-compression-layer
+.\setup_context_layer.ps1 -ProjectName "ProjectA"
+```
+
+### ワークスペース全体用CCL
+
+`.context/` にワークスペース全体のコンテキストを配置:
+- `.context/workspace_summary.md`: ワークスペース全体像
+- `.context/current_focus.md`: 現在のフォーカス
+- `.context/active_projects.md`: アクティブプロジェクト一覧
+
+CLAUDE.md (ワークスペース全体用) への追記:
+```markdown
+## Context Compression Layer
+
+プロジェクト横断の作業時は `.context/active_projects.md` を確認してください。
+各プロジェクト内の指示は、各プロジェクトの CLAUDE.md に記載されています。
+```
+
+### Mini Tier
+
+必須: `current_focus.md` のみ
+任意: `project_summary.md`, `decision_log/`
+
+### 既存プロジェクトへの後付け
+
+既存ファイル・junctionには一切触れない。新規ファイルを追加し、CLAUDE.mdに追記するだけ。
 
 ### Phase 3: Obsidian Vault の設定
 
@@ -704,9 +970,10 @@ python-frontmatter>=1.1.0
 - ジャンクションは同一ボリューム内のみ
 - リンク先のフォルダを移動・削除するとジャンクション無効化
 - PC-Bでは `setup_project.ps1` でジャンクション再作成が必要
-- ジャンクションは2本:
+- ジャンクションは3本:
   - `shared/` → Box/Projects/ProjectA (成果物)
-  - `_ai-context/obsidian_notes/` → Box/Obsidian-Vault/Projects/ProjectA (知識ベース)
+  - `_ai-context/obsidian_notes/` → Box/Obsidian-Vault/Projects/ProjectA (Obsidian全ノート)
+  - `_ai-context/context/` → Box/Obsidian-Vault/Projects/ProjectA/ai-context (AIコンテキスト)
 
 ### 4. Asana API レート制限
 

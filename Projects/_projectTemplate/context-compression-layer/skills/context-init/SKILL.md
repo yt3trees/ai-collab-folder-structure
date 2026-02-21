@@ -11,10 +11,12 @@ Context Compression Layerをプロジェクトに導入・初期化するスキ�
 
 ```
 _ai-context/
-├── project_summary.md       プロジェクト全体像
-├── current_focus.md          今のフォーカス（人間が主に書く）
-├── decision_log/             意思決定ログ
-│   └── TEMPLATE.md
+├── context/                  ← Junction -> Box/Obsidian-Vault/.../ai-context/
+│   ├── project_summary.md    プロジェクト全体像 (実態は Obsidian/BOX)
+│   ├── current_focus.md      今のフォーカス（人間が主に書く）(実態は Obsidian/BOX)
+│   ├── decision_log/         意思決定ログ (実態は Obsidian/BOX)
+│   │   └── TEMPLATE.md
+│   └── file_map.md           ファイルマップ (実態は Obsidian/BOX)
 └── obsidian_notes/           既存のまま（触らない）
 ```
 
@@ -88,9 +90,9 @@ TEMPLATE.md を配置するだけ。初期ログは作らない。
 
 このプロジェクトで最初のタスクに取りかかる前に、以下を読んでください:
 
-1. `_ai-context/project_summary.md` - プロジェクト全体像
-2. `_ai-context/current_focus.md` - 現在のフォーカス
-3. `_ai-context/decision_log/` の最新3件（日付降順）
+1. `_ai-context/context/project_summary.md` - プロジェクト全体像
+2. `_ai-context/context/current_focus.md` - 現在のフォーカス
+3. `_ai-context/context/decision_log/` の最新3件（日付降順）
 
 current_focus.md の末尾「更新」日付が3日以上前の場合、1回だけ聞いてください:
 「前回から何か進展や変更はありましたか？（なければそのまま作業に入ります）」
@@ -100,7 +102,7 @@ current_focus.md の末尾「更新」日付が3日以上前の場合、1回だ�
 
 重要な意思決定（技術選定、設計判断、方針変更）があったら、1行で提案してください:
 「💡 Decision Logに記録しますか？ → {決定の要約}」
-承認されたら `_ai-context/decision_log/YYYY-MM-DD_topic.md` をTEMPLATEに従い作成。
+承認されたら `_ai-context/context/decision_log/YYYY-MM-DD_topic.md` をTEMPLATEに従い作成。
 1セッションで最大3回まで。断られたらそれ以上勧めない。
 
 ### 作業の区切り
@@ -119,7 +121,8 @@ CLAUDE.md が存在しない場合は新規作成。
 ```
 ✅ Context Compression Layer 導入完了
 
-作成: _ai-context/project_summary.md, current_focus.md, decision_log/
+作成: _ai-context/context/project_summary.md, current_focus.md, decision_log/
+      (実態は Box/Obsidian-Vault/.../ai-context/ に保存、context/ junction 経由でアクセス)
 CLAUDE.md に自動読み込み指示を追記済み。
 
 次回からAIが自動でコンテキストを読み込みます。

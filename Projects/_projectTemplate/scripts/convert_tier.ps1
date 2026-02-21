@@ -232,6 +232,9 @@ Remove-LinkSafely -Path $sharedLink -Label "shared/ junction"
 $obsLink = Join-Path $srcLocal "_ai-context\obsidian_notes"
 Remove-LinkSafely -Path $obsLink -Label "obsidian_notes/ junction"
 
+$contextLink = Join-Path $srcLocal "_ai-context\context"
+Remove-LinkSafely -Path $contextLink -Label "context/ junction"
+
 # Remove skill junctions (.claude, .codex, .gemini)
 foreach ($cli in @(".claude", ".codex", ".gemini")) {
     $cliPath = Join-Path $srcLocal $cli
@@ -485,6 +488,26 @@ else {
     }
     else {
         Write-Warning "  Obsidian folder not found: $dstObsidian - junction not created"
+    }
+}
+
+# _ai-context/context/ -> Box/Obsidian-Vault/Projects/{subpath}/ai-context
+$newContextLink = Join-Path $dstLocal "_ai-context\context"
+$dstAiCtx = Join-Path $dstObsidian "ai-context"
+if ($DryRun) {
+    Write-Host "  [DRY] Would create junction: context/ -> $dstAiCtx" -ForegroundColor Magenta
+}
+else {
+    if (Test-Path $dstAiCtx) {
+        $aiContextDir = Join-Path $dstLocal "_ai-context"
+        if (-not (Test-Path $aiContextDir)) {
+            New-Item -Path $aiContextDir -ItemType Directory -Force | Out-Null
+        }
+        New-Item -ItemType Junction -Path $newContextLink -Target $dstAiCtx | Out-Null
+        Write-Host "  Created: context/ -> $dstAiCtx" -ForegroundColor Green
+    }
+    else {
+        Write-Warning "  Obsidian ai-context folder not found: $dstAiCtx - junction not created"
     }
 }
 

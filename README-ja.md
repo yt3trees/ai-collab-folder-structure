@@ -28,6 +28,16 @@ AI(Claude Code)との協働を前提とした、プロジェクトフォルダ�
 - `CLAUDE.md` - プロジェクト固有のAI指示書(Sharedフォルダからのコピー)
 - ジャンクションによる知識ベース連携
 
+### Context Compression Layer (CCL)
+
+セッション跨ぎのAIコンテキスト管理 - AIコンテキストを管理するための手法とツールセット:
+
+- **3つのスキル**: context-init, context-decision-log, context-session-end
+- **テンプレート**: project_summary.md, current_focus.md, decision_log, file_map
+- **自動読み込み**: セッション開始時にCLAUDE.mdがCCLファイルを自動読み込み
+- **意思決定追跡**: 暗黙的な決定を検出し構造化ログを記録
+- **フォーカス更新**: 作業の区切りでAI作業分の追 предложを提案
+
 ### 2種類のプロジェクト Tier
 
 | Tier | 配置先 | 用途 | 構成 |
@@ -253,9 +263,14 @@ BOX同期完了後、同じスクリプトを実行するだけでジャンク�
 | ファイル | 用途 |
 |---------|------|
 | `setup_context_layer.ps1` | プロジェクトへのContext Compression Layerセットアップ (CLAUDE.mdへのCCL指示自動追記) |
+| `save_focus_snapshot.ps1` | current_focus.mdの日次スナップショット保存 |
 | `templates/` | AIコンテキストファイルテンプレート (project_summary, current_focus, file_map, decision_log等) |
+| `templates/CLAUDE_MD_SNIPPET.md` | CLAUDE.mdに追記するCCL指示 |
 | `examples/` | 使用パターンの例 |
-| `skills/` | コンテキスト初期化、セッション終了、意思決定ログ用Agentスキル |
+| `skills/` | Claude Codeスキル for コンテキスト管理 |
+| `skills/context-init/` | プロジェクトへのCCL初期化 |
+| `skills/context-decision-log/` | 構造化意思決定ログの記録、暗黙的決定の検出 |
+| `skills/context-session-end/` | current_focus.mdへのAI作業分追提案 |
 
 ### _globalScripts/
 

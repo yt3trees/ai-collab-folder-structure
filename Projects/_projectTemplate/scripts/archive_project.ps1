@@ -222,6 +222,10 @@ Remove-JunctionSafely -Path $sharedLink -Label "shared/ junction"
 $obsidianLink = Join-Path $docRoot "_ai-context\obsidian_notes"
 Remove-JunctionSafely -Path $obsidianLink -Label "obsidian_notes/ junction"
 
+# context/ junction
+$contextLink = Join-Path $docRoot "_ai-context\context"
+Remove-JunctionSafely -Path $contextLink -Label "context/ junction"
+
 # AGENTS.md & CLAUDE.md symlinks
 $agentsLink = Join-Path $docRoot "AGENTS.md"
 Remove-SymlinkSafely -Path $agentsLink -Label "AGENTS.md symlink"

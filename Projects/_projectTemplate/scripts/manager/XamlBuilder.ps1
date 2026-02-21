@@ -153,23 +153,14 @@ $styles
                         </Grid>
 
                         <!-- Bottom bar -->
-                        <Grid Grid.Row="2" Margin="0,8,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
                             <Button x:Name="btnEditorSave" Content="Save (Ctrl+S)"
-                                    Grid.Column="0" Style="{StaticResource SmallButton}"
+                                    Style="{StaticResource SmallButton}"
                                     Margin="0,0,8,0" IsEnabled="False"/>
                             <Button x:Name="btnEditorReload" Content="Reload"
-                                    Grid.Column="1" Style="{StaticResource SmallButton}"
+                                    Style="{StaticResource SmallButton}"
                                     IsEnabled="False"/>
-                            <TextBlock x:Name="editorStatusText" Grid.Column="3"
-                                       Foreground="#6c7086" FontSize="11"
-                                       VerticalAlignment="Center" Text="No file open"/>
-                        </Grid>
+                        </StackPanel>
                     </Grid>
                 </TabItem>
 

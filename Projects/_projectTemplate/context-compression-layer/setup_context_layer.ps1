@@ -28,8 +28,9 @@ if (-not (Test-Path $configPath)) {
 }
 
 $config = Get-Content $configPath -Raw | ConvertFrom-Json
-$projectsRoot = Join-Path $env:USERPROFILE $config.localProjectsRoot
+$projectsRoot    = Join-Path $env:USERPROFILE $config.localProjectsRoot
 $boxProjectsRoot = Join-Path $env:USERPROFILE $config.boxProjectsRoot
+$obsidianVaultRoot = Join-Path $env:USERPROFILE $config.obsidianVaultRoot
 
 if (-not $TemplateDir) {
     $TemplateDir = Join-Path $PSScriptRoot "templates"
@@ -74,9 +75,11 @@ function Setup-Project {
 
     if ($IsMini) {
         $dir = Join-Path $projectsRoot "_mini\$Name"
+        $obsidianSubPath = "_mini\$Name"
     }
     else {
         $dir = Join-Path $projectsRoot $Name
+        $obsidianSubPath = $Name
     }
 
     if (-not (Test-Path $dir)) {
@@ -85,17 +88,34 @@ function Setup-Project {
     }
 
     Write-Host "`n=== Project: $Name ===" -ForegroundColor Cyan
-    $aiCtx = Join-Path $dir "_ai-context"
-    $dlDir = Join-Path $aiCtx "decision_log"
-    $fhDir = Join-Path $aiCtx "focus_history"
-    Ensure-Dir $aiCtx
+
+    # Files live in Obsidian ai-context/ folder (BOX-synced, accessed via context/ junction)
+    $obsAiCtx = Join-Path $obsidianVaultRoot "Projects\$obsidianSubPath\ai-context"
+    $dlDir    = Join-Path $obsAiCtx "decision_log"
+    $fhDir    = Join-Path $obsAiCtx "focus_history"
+    Ensure-Dir $obsAiCtx
     Ensure-Dir $dlDir
     Ensure-Dir $fhDir
 
-    Copy-IfNotExists (Join-Path $TemplateDir "project_summary.md") (Join-Path $aiCtx "project_summary.md")
-    Copy-IfNotExists (Join-Path $TemplateDir "current_focus.md") (Join-Path $aiCtx "current_focus.md")
+    Copy-IfNotExists (Join-Path $TemplateDir "project_summary.md")    (Join-Path $obsAiCtx "project_summary.md")
+    Copy-IfNotExists (Join-Path $TemplateDir "current_focus.md")      (Join-Path $obsAiCtx "current_focus.md")
     Copy-IfNotExists (Join-Path $TemplateDir "decision_log_TEMPLATE.md") (Join-Path $dlDir "TEMPLATE.md")
-    Copy-IfNotExists (Join-Path $TemplateDir "file_map.md") (Join-Path $aiCtx "file_map.md")
+    Copy-IfNotExists (Join-Path $TemplateDir "file_map.md")           (Join-Path $obsAiCtx "file_map.md")
+
+    # Ensure context/ junction exists (_ai-context/context/ -> Obsidian ai-context/)
+    $aiContextDir  = Join-Path $dir "_ai-context"
+    $contextJunction = Join-Path $aiContextDir "context"
+    Ensure-Dir $aiContextDir
+    if (Test-Path $contextJunction) {
+        Write-Host "  [SKIP]   context/ junction (already exists)" -ForegroundColor Yellow
+    }
+    elseif (Test-Path $obsAiCtx) {
+        cmd /c mklink /J "$contextJunction" "$obsAiCtx" | Out-Null
+        Write-Host "  [CREATE] context/ -> $obsAiCtx (junction)" -ForegroundColor Green
+    }
+    else {
+        Write-Host "  [WARN]   context/ junction not created (Obsidian ai-context not found)" -ForegroundColor Yellow
+    }
 
     # Auto-append CCL instructions to CLAUDE.md
     $claudeMdPath = Join-Path $dir "CLAUDE.md"

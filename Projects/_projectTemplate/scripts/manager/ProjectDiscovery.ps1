@@ -7,7 +7,7 @@ function Get-ProjectNameList {
 
     # Regular (full-tier) projects: top-level dirs not starting with _ or .
     $dirs = Get-ChildItem -Path $root -Directory -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -notmatch '^[_\.]' -and $_.Name -ne 'test' }
+            Where-Object { $_.Name -notmatch '^[_\.]'  }
     foreach ($d in $dirs) { $projects += $d.Name }
 
     # Mini-tier projects under _mini/
@@ -58,7 +58,8 @@ function Get-ProjectInfoList {
     # Helper: count decision log files
     function Get-DecisionLogCount {
         param([string]$AiContextPath)
-        $logDir = Join-Path $AiContextPath "decision_log"
+        # Files live in context/decision_log/ (via junction)
+        $logDir = Join-Path $AiContextPath "context\decision_log"
         if (-not (Test-Path $logDir)) { return 0 }
         $mdFiles = Get-ChildItem $logDir -Filter "*.md" -ErrorAction SilentlyContinue |
                    Where-Object { $_.Name -ne "TEMPLATE.md" }
@@ -69,23 +70,26 @@ function Get-ProjectInfoList {
     function New-ProjectInfo {
         param([string]$Name, [string]$Path, [string]$Tier)
 
-        $aiCtx = Join-Path $Path "_ai-context"
+        $aiCtx        = Join-Path $Path "_ai-context"
+        $aiCtxContent = Join-Path $aiCtx "context"  # junction to Obsidian ai-context/
 
-        # AI file paths
-        $focusFile   = Join-Path $aiCtx "current_focus.md"
-        $summaryFile = Join-Path $aiCtx "project_summary.md"
-        $fileMapFile = Join-Path $aiCtx "file_map.md"
+        # AI file paths (via context/ junction)
+        $focusFile   = Join-Path $aiCtxContent "current_focus.md"
+        $summaryFile = Join-Path $aiCtxContent "project_summary.md"
+        $fileMapFile = Join-Path $aiCtxContent "file_map.md"
         $agentsFile  = Join-Path $Path "AGENTS.md"
         $claudeFile  = Join-Path $Path "CLAUDE.md"
 
         $info = @{
-            Name             = $Name
-            Tier             = $Tier
-            Path             = $Path
-            AiContextPath    = $aiCtx
+            Name                = $Name
+            Tier                = $Tier
+            Path                = $Path
+            AiContextPath       = $aiCtx
+            AiContextContentPath = $aiCtxContent
             # Junction status
             JunctionShared   = Get-JunctionStatus (Join-Path $Path "shared")
             JunctionObsidian = Get-JunctionStatus (Join-Path $aiCtx "obsidian_notes")
+            JunctionContext  = Get-JunctionStatus $aiCtxContent
             # AI file paths (null if missing)
             FocusFile        = if (Test-Path $focusFile)   { $focusFile }   else { $null }
             SummaryFile      = if (Test-Path $summaryFile) { $summaryFile } else { $null }
@@ -103,7 +107,7 @@ function Get-ProjectInfoList {
 
     # Full-tier projects
     $dirs = Get-ChildItem -Path $root -Directory -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -notmatch '^[_\.]' -and $_.Name -ne 'test' }
+            Where-Object { $_.Name -notmatch '^[_\.]'  }
     foreach ($d in $dirs) {
         $projects += New-ProjectInfo -Name $d.Name -Path $d.FullName -Tier "full"
     }

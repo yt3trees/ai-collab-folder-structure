@@ -57,7 +57,7 @@ description: Structure and record decision logs. This applies to decisions made 
 
 ## ファイル名規則
 
-`_ai-context/decision_log/YYYY-MM-DD_{topic}.md`
+`_ai-context/context/decision_log/YYYY-MM-DD_{topic}.md`
 
 - topic: 英語snake_case（例: `db_schema_choice`, `api_framework_selection`）
 - 同日複数: `_a`, `_b` をつける

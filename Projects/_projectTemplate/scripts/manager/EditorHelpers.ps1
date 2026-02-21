@@ -73,7 +73,6 @@ function Save-FileContent {
 function Open-FileInEditor {
     param(
         [string]$FilePath,
-        [System.Windows.Controls.TextBlock]$StatusText,
         [System.Windows.Window]$Window
     )
 
@@ -117,7 +116,6 @@ function Open-FileInEditor {
         if ($null -ne $btnEditorReload) { $btnEditorReload.IsEnabled = $true }
 
         $fileName = [System.IO.Path]::GetFileName($FilePath)
-        $StatusText.Text = $fileName
 
         # Update status bar
         Update-StatusBar -Window $Window `
@@ -163,11 +161,6 @@ function Save-EditorFile {
 
         $state.OriginalContent = $editor.Text
         $state.IsDirty = $false
-
-        $statusText = $Window.FindName("editorStatusText")
-        if ($null -ne $statusText) {
-            $statusText.Text = [System.IO.Path]::GetFileName($state.CurrentFile)
-        }
 
         Update-StatusBar -Window $Window `
             -File ([System.IO.Path]::GetFileName($state.CurrentFile)) `
@@ -250,7 +243,7 @@ function New-DecisionLog {
     $safeTopic = $topic.Trim() -replace '[^\w\-]', '_'
     $date = Get-Date -Format "yyyy-MM-dd"
     $filename = "${date}_${safeTopic}.md"
-    $logDir = Join-Path $AiContextPath "decision_log"
+    $logDir = Join-Path $AiContextPath "context\decision_log"
     $newPath = Join-Path $logDir $filename
 
     if (-not (Test-Path $logDir)) {

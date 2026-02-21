@@ -6,14 +6,15 @@
 function Get-ProjectAIFiles {
     param([hashtable]$ProjectInfo)
 
-    $aiCtx = $ProjectInfo.AiContextPath
-    $projPath = $ProjectInfo.Path
+    $aiCtx        = $ProjectInfo.AiContextPath
+    $aiCtxContent = Join-Path $aiCtx "context"
+    $projPath     = $ProjectInfo.Path
     $files = [System.Collections.Generic.List[hashtable]]::new()
 
     $candidates = @(
-        @{ Label = "current_focus.md"; Path = Join-Path $aiCtx "current_focus.md" }
-        @{ Label = "project_summary.md"; Path = Join-Path $aiCtx "project_summary.md" }
-        @{ Label = "file_map.md"; Path = Join-Path $aiCtx "file_map.md" }
+        @{ Label = "current_focus.md"; Path = Join-Path $aiCtxContent "current_focus.md" }
+        @{ Label = "project_summary.md"; Path = Join-Path $aiCtxContent "project_summary.md" }
+        @{ Label = "file_map.md"; Path = Join-Path $aiCtxContent "file_map.md" }
         @{ Label = "AGENTS.md"; Path = Join-Path $projPath "AGENTS.md" }
         @{ Label = "CLAUDE.md"; Path = Join-Path $projPath "CLAUDE.md" }
     )
@@ -31,7 +32,7 @@ function Get-ProjectAIFiles {
 function Get-DecisionLogFiles {
     param([hashtable]$ProjectInfo)
 
-    $logDir = Join-Path $ProjectInfo.AiContextPath "decision_log"
+    $logDir = Join-Path $ProjectInfo.AiContextPath "context\decision_log"
     $files = [System.Collections.Generic.List[hashtable]]::new()
 
     if (Test-Path $logDir) {
@@ -135,7 +136,7 @@ function Populate-FileTree {
     }
 
     # --- Focus History ---
-    $fhDir = Join-Path $ProjectInfo.AiContextPath "focus_history"
+    $fhDir = Join-Path $ProjectInfo.AiContextPath "context\focus_history"
     if (Test-Path $fhDir) {
         $fhFiles = Get-ChildItem $fhDir -Filter "*.md" -ErrorAction SilentlyContinue |
         Sort-Object Name -Descending
@@ -276,10 +277,7 @@ function Initialize-TabEditor {
         param($s, $e)
         $selected = $s.SelectedItem
         if ($null -ne $selected -and $null -ne $selected.Tag) {
-            $st = $Window.FindName("editorStatusText")
-            Open-FileInEditor -FilePath $selected.Tag `
-                -StatusText $st `
-                -Window $Window
+            Open-FileInEditor -FilePath $selected.Tag -Window $Window
         }
     }
     $fileTree.Add_SelectedItemChanged($openFile)
@@ -314,8 +312,6 @@ function Initialize-TabEditor {
                 $ed.Text = ""
                 $ed.IsReadOnly = $true
                 $script:AppState.EditorState.SuppressChangeEvent = $false
-                $Window.FindName("editorStatusText").Text = "No file open"
-
                 $btnSave = $Window.FindName("btnEditorSave")
                 if ($null -ne $btnSave) { $btnSave.IsEnabled = $false }
 
@@ -351,10 +347,7 @@ function Initialize-TabEditor {
 
             # Auto-open current_focus.md if available
             if ($null -ne $proj.FocusFile) {
-                $st = $Window.FindName("editorStatusText")
-                Open-FileInEditor -FilePath $proj.FocusFile `
-                    -StatusText $st `
-                    -Window $Window
+                Open-FileInEditor -FilePath $proj.FocusFile -Window $Window
             }
         })
 
@@ -368,11 +361,6 @@ function Initialize-TabEditor {
             $ed = $script:AppState.EditorControl
             $isDirty = ($ed.Text -ne $script:AppState.EditorState.OriginalContent)
             $script:AppState.EditorState.IsDirty = $isDirty
-
-            $statusText = $Window.FindName("editorStatusText")
-            $fileName = [System.IO.Path]::GetFileName($currentFile)
-            $dispText = if ($isDirty) { "$fileName *" } else { $fileName }
-            $statusText.Text = $dispText
 
             Update-StatusBar -Window $Window `
                 -Dirty $isDirty
@@ -412,6 +400,16 @@ function Initialize-TabEditor {
     # Save button
     $Window.FindName("btnEditorSave").Add_Click({
             Save-EditorFile -Window $Window
+            # Refresh tree so focus_history snapshots appear immediately after save
+            $proj = $script:AppState.SelectedProject
+            if ($null -ne $proj) {
+                Populate-FileTree `
+                    -Tree          $Window.FindName("editorFileTree") `
+                    -WorkspaceTree $Window.FindName("editorWorkspaceTree") `
+                    -ProjectInfo   $proj `
+                    -WorkspaceRoot $script:AppState.WorkspaceRoot `
+                    -Window        $Window
+            }
         })
 
     # Reload button
@@ -427,12 +425,22 @@ function Initialize-TabEditor {
                     [System.Windows.MessageBoxImage]::Question
                 )
                 if ($result -ne [System.Windows.MessageBoxResult]::Yes) { return }
+                # Clear dirty flag so Open-FileInEditor skips its own IsDirty prompt
+                $script:AppState.EditorState.IsDirty = $false
             }
 
-            $statusText = $Window.FindName("editorStatusText")
-            Open-FileInEditor -FilePath $currentFile `
-                -StatusText $statusText `
-                -Window $Window
+            Open-FileInEditor -FilePath $currentFile -Window $Window
+
+            # Refresh tree to reflect any filesystem changes
+            $proj = $script:AppState.SelectedProject
+            if ($null -ne $proj) {
+                Populate-FileTree `
+                    -Tree          $Window.FindName("editorFileTree") `
+                    -WorkspaceTree $Window.FindName("editorWorkspaceTree") `
+                    -ProjectInfo   $proj `
+                    -WorkspaceRoot $script:AppState.WorkspaceRoot `
+                    -Window        $Window
+            }
         })
 
     # New Decision Log button
@@ -452,8 +460,6 @@ function Initialize-TabEditor {
 
             $newFile = New-DecisionLog -AiContextPath $proj.AiContextPath -Window $Window
             if ($null -ne $newFile) {
-                $statusText = $Window.FindName("editorStatusText")
-
                 # Refresh tree and open new file
                 Populate-FileTree `
                     -Tree            $Window.FindName("editorFileTree") `
@@ -462,9 +468,7 @@ function Initialize-TabEditor {
                     -WorkspaceRoot   $script:AppState.WorkspaceRoot `
                     -Window          $Window
 
-                Open-FileInEditor -FilePath $newFile `
-                    -StatusText $statusText `
-                    -Window $Window
+                Open-FileInEditor -FilePath $newFile -Window $Window
             }
         })
 

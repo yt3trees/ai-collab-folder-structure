@@ -8,46 +8,46 @@ function Invoke-ScriptWithOutput {
         [System.Windows.Window]$WindowRef
     )
 
-    $OutputBox.Text = ""
-    $OutputBox.AppendText(">>> $ScriptPath $ArgumentString`r`n")
-    $OutputBox.AppendText("---`r`n")
+    if ($null -eq $OutputBox) { return }
 
-    # Force UI repaint before blocking
-    if ($null -ne $WindowRef) {
-        $WindowRef.Dispatcher.Invoke(
-            [Action] {},
-            [System.Windows.Threading.DispatcherPriority]::Background
-        )
-    }
+    $OutputBox.Text = ""
 
     try {
-        $cmd = "& '$ScriptPath' $ArgumentString"
+        $OutputBox.AppendText(">>> $ScriptPath $ArgumentString`r`n")
+        $OutputBox.AppendText("---`r`n")
+
+        # Force UI repaint before blocking
+        if ($null -ne $WindowRef) {
+            $WindowRef.Dispatcher.Invoke(
+                [Action] {},
+                [System.Windows.Threading.DispatcherPriority]::Background
+            )
+        }
+
+        # Merge all streams (*>&1) so Write-Host/Write-Error are captured without
+        # spawning a background-thread ScriptBlock (which causes runspace conflicts)
+        $cmd = "& '$ScriptPath' $ArgumentString *>&1"
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $psi.FileName = "powershell.exe"
         $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -Command `"$cmd`""
         $psi.RedirectStandardOutput = $true
-        $psi.RedirectStandardError = $true
         $psi.UseShellExecute = $false
         $psi.CreateNoWindow = $true
         $psi.StandardOutputEncoding = [System.Text.Encoding]::UTF8
-        $psi.StandardErrorEncoding = [System.Text.Encoding]::UTF8
 
         $process = [System.Diagnostics.Process]::Start($psi)
-        $sbErr = [System.Text.StringBuilder]::new()
-        $process.add_ErrorDataReceived({ if ($null -ne $EventArgs.Data) { $sbErr.AppendLine($EventArgs.Data) } })
-        $process.BeginErrorReadLine()
-        $stdout = $process.StandardOutput.ReadToEnd()
+        $output = $process.StandardOutput.ReadToEnd()
         $process.WaitForExit()
-        $stderr = $sbErr.ToString()
 
-        if ($stdout) { $OutputBox.AppendText($stdout) }
-        if ($stderr) { $OutputBox.AppendText($stderr) }
+        if ($output) { $OutputBox.AppendText($output) }
+        $OutputBox.AppendText("`r`n--- Done (exit: $($process.ExitCode)) ---`r`n")
     }
     catch {
         $OutputBox.AppendText("`r`n[ERROR] $($_.Exception.Message)`r`n")
+        $OutputBox.AppendText("$($_.ScriptStackTrace)`r`n")
+        $OutputBox.AppendText("`r`n--- Done (error) ---`r`n")
     }
 
-    $OutputBox.AppendText("`r`n--- Done ---`r`n")
     $OutputBox.ScrollToEnd()
 }
 

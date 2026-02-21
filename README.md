@@ -30,6 +30,16 @@ A three-layer workspace structure for organizing multiple projects and optimizin
 - `CLAUDE.md` - Project-specific AI instructions (Copy from shared folder)
 - Knowledge base linkage via junction points
 
+### Context Compression Layer (CCL)
+
+AI context management across sessions - a methodology and toolset for managing AI context:
+
+- **3 Skills**: context-init, context-decision-log, context-session-end
+- **Templates**: project_summary.md, current_focus.md, decision_log, file_map
+- **Auto-loading**: CLAUDE.md automatically reads CCL files at session start
+- **Decision tracking**: Detect implicit decisions and record structured logs
+- **Focus updates**: AI proposes appending its contributions at work boundaries
+
 ### Two Project Tiers
 
 | Tier | Location | Purpose | Structure |
@@ -254,9 +264,14 @@ After BOX sync is complete, simply run the same script to create junctions and s
 | File | Purpose |
 |------|---------|
 | `setup_context_layer.ps1` | Set up Context Compression Layer for a project (auto-appends CCL instructions to CLAUDE.md) |
+| `save_focus_snapshot.ps1` | Save daily snapshot of current_focus.md |
 | `templates/` | Template files for AI context (project_summary, current_focus, file_map, decision_log, etc.) |
+| `templates/CLAUDE_MD_SNIPPET.md` | CCL instructions to append to CLAUDE.md |
 | `examples/` | Example files showing usage patterns |
-| `skills/` | Agent skills for context initialization, session end, decision logging |
+| `skills/` | Claude Code skills for context management |
+| `skills/context-init/` | Initialize CCL in a project |
+| `skills/context-decision-log/` | Record structured decision logs, detect implicit decisions |
+| `skills/context-session-end/` | Propose appending AI contributions to current_focus.md |
 
 ### _globalScripts/
 

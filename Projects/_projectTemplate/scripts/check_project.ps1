@@ -112,6 +112,25 @@ if (Test-Path $obsLink) {
     Write-Warning "  obsidian_notes/ missing - run setup_project.ps1"
 }
 
+# context/
+$contextLink   = "$docRoot\_ai-context\context"
+$obsidianAiCtx = "$obsidianProject\ai-context"
+if (Test-Path $contextLink) {
+    $item = Get-Item $contextLink -Force
+    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+        $target = $item.Target
+        if ($target -eq $obsidianAiCtx) {
+            Write-Host "  OK: context/ -> $obsidianAiCtx" -ForegroundColor Green
+        } else {
+            Write-Warning "  context/ points to: $target"
+        }
+    } else {
+        Write-Warning "  context/ is a regular folder (not junction)"
+    }
+} else {
+    Write-Warning "  context/ missing - run setup_project.ps1"
+}
+
 # [AI Instruction Files]
 Write-Host ""
 Write-Host "[AI Instruction Files]" -ForegroundColor Yellow
@@ -210,33 +229,41 @@ if (Test-Path $boxShared) {
 
 Write-Host ""
 Write-Host "[CCL Files]" -ForegroundColor Yellow
-$aiCtxPath = Join-Path $docRoot "_ai-context"
+$aiCtxContent = Join-Path $docRoot "_ai-context\context"
 $today = Get-Date
 
-$summaryFile = Join-Path $aiCtxPath "project_summary.md"
+$summaryFile = Join-Path $aiCtxContent "project_summary.md"
 if (Test-Path $summaryFile) {
     $lastWrite = (Get-Item $summaryFile).LastWriteTime
     $daysSince = ($today - $lastWrite).Days
     if ($daysSince -ge 14) {
-        Write-Host "  WARN: project_summary.md ($daysSince days old - consider updating)" -ForegroundColor Yellow
+        Write-Host "  WARN: context/project_summary.md ($daysSince days old - consider updating)" -ForegroundColor Yellow
     } else {
-        Write-Host "  OK: project_summary.md (${daysSince}d ago)" -ForegroundColor Green
+        Write-Host "  OK: context/project_summary.md (${daysSince}d ago)" -ForegroundColor Green
     }
 } else {
-    Write-Host "  INFO: project_summary.md not found (run setup_context_layer.ps1?)" -ForegroundColor Gray
+    Write-Host "  INFO: context/project_summary.md not found (run setup_context_layer.ps1?)" -ForegroundColor Gray
 }
 
-$focusFile = Join-Path $aiCtxPath "current_focus.md"
+$focusFile = Join-Path $aiCtxContent "current_focus.md"
 if (Test-Path $focusFile) {
     $lastWrite = (Get-Item $focusFile).LastWriteTime
     $daysSince = ($today - $lastWrite).Days
     if ($daysSince -ge 7) {
-        Write-Host "  WARN: current_focus.md ($daysSince days old - consider updating)" -ForegroundColor Yellow
+        Write-Host "  WARN: context/current_focus.md ($daysSince days old - consider updating)" -ForegroundColor Yellow
     } else {
-        Write-Host "  OK: current_focus.md (${daysSince}d ago)" -ForegroundColor Green
+        Write-Host "  OK: context/current_focus.md (${daysSince}d ago)" -ForegroundColor Green
     }
 } else {
-    Write-Host "  INFO: current_focus.md not found (run setup_context_layer.ps1?)" -ForegroundColor Gray
+    Write-Host "  INFO: context/current_focus.md not found (run setup_context_layer.ps1?)" -ForegroundColor Gray
+}
+
+$decisionLogDir = Join-Path $aiCtxContent "decision_log"
+if (Test-Path $decisionLogDir) {
+    $dlCount = (Get-ChildItem $decisionLogDir -Filter "*.md" -Exclude "TEMPLATE.md" -ErrorAction SilentlyContinue).Count
+    Write-Host "  OK: context/decision_log/ ($dlCount entries)" -ForegroundColor Green
+} else {
+    Write-Host "  INFO: context/decision_log/ not found (run setup_context_layer.ps1?)" -ForegroundColor Gray
 }
 
 Write-Host ""
