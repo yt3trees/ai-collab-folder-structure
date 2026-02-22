@@ -24,7 +24,6 @@ function Initialize-TabConvert {
     $btnConvert.Add_Click({
             $combo = $Window.FindName("convertProjectCombo")
             $toTierCombo = $Window.FindName("convertToTier")
-            $structureCombo = $Window.FindName("convertStructure")
             $dryRun = $Window.FindName("convertDryRun")
 
             # Parse project name (strip [Mini] prefix if present)
@@ -40,7 +39,6 @@ function Initialize-TabConvert {
             }
 
             $toTier = ($toTierCombo.SelectedItem).Content
-            $structure = ($structureCombo.SelectedItem).Content
 
             # Confirm when not DryRun
             if (-not $dryRun.IsChecked) {
@@ -54,7 +52,7 @@ function Initialize-TabConvert {
             }
 
             $safeName = $params.Name -replace "'", "''"
-            $argStr = "-ProjectName '$safeName' -To $toTier -Structure $structure -Force"
+            $argStr = "-ProjectName '$safeName' -To $toTier -Force"
             if ($dryRun.IsChecked) { $argStr += " -DryRun" }
 
             $scriptPath = Join-Path $ScriptDir "convert_tier.ps1"

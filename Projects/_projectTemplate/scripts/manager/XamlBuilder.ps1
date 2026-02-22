@@ -173,30 +173,26 @@ $styles
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="280">
+                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="300">
                             <StackPanel Margin="16">
                                 <Label Content="Project Name (required)"/>
                                 <TextBox x:Name="setupProjectName"/>
-                                <Label Content="Structure"/>
-                                <ComboBox x:Name="setupStructure" SelectedIndex="0">
-                                    <ComboBoxItem Content="new"/>
-                                    <ComboBoxItem Content="legacy"/>
-                                </ComboBox>
+
                                 <Label Content="Tier"/>
                                 <ComboBox x:Name="setupTier" SelectedIndex="0">
                                     <ComboBoxItem Content="full"/>
                                     <ComboBoxItem Content="mini"/>
                                 </ComboBox>
-                                <Label Content="Team Shared Folders (Optional, one path per line)"/>
+                                <Label Content="External Shared Folders (Optional, one path per line)"/>
                                 <Grid Margin="0,0,0,10">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBox x:Name="setupTeamShared" Grid.Column="0" Margin="0,0,8,0"
+                                    <TextBox x:Name="setupExternalShared" Grid.Column="0" Margin="0,0,8,0"
                                              AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44" MaxHeight="88"
                                              VerticalScrollBarVisibility="Auto"/>
-                                    <Button x:Name="btnSetupBrowseTeamShared" Grid.Column="1" Content="Add..." Width="40" Height="22" VerticalAlignment="Top" Background="#313244" Foreground="#cdd6f4" BorderBrush="#45475a"/>
+                                    <Button x:Name="btnSetupBrowseExternalShared" Grid.Column="1" Content="Add..." Width="40" Height="22" VerticalAlignment="Top" Background="#313244" Foreground="#cdd6f4" BorderBrush="#45475a"/>
                                 </Grid>
                                 <Button x:Name="btnSetup" Content="Run Setup"
                                         Style="{StaticResource RunButton}"/>
@@ -360,11 +356,7 @@ $styles
                                     <ComboBoxItem Content="full"/>
                                     <ComboBoxItem Content="mini"/>
                                 </ComboBox>
-                                <Label Content="Structure (mini to full only)"/>
-                                <ComboBox x:Name="convertStructure" SelectedIndex="0">
-                                    <ComboBoxItem Content="new"/>
-                                    <ComboBoxItem Content="legacy"/>
-                                </ComboBox>
+
                                 <CheckBox x:Name="convertDryRun"
                                           Content="Dry Run (preview only, no changes)"
                                           IsChecked="True" Margin="0,10,0,0"/>

@@ -63,7 +63,7 @@ powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_proj
 Alternatively, right-click `project_launcher.ps1` in the `_projectTemplate/scripts/` folder and select "Run with PowerShell".
 
 Features:
-- Setup tab: Select project name, Structure, and Tier to run setup
+- Setup tab: Select project name and Tier to run setup
 - Check tab: Choose an existing project from a dropdown to run health checks
 - Archive tab: Execute archiving with DryRun preview
 - Output area displays script execution results in real-time
@@ -76,11 +76,8 @@ Open PowerShell and run the following commands:
 # Navigate to the template directory
 cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
-# Setup a main project (full tier) with new structure (recommended)
+# Setup a main project (full tier)
 .\setup_project.ps1 -ProjectName "MyNewProject"
-
-# Or use the legacy structure
-.\setup_project.ps1 -ProjectName "MyNewProject" -Structure legacy
 
 # Setup a support project (mini tier)
 .\setup_project.ps1 -ProjectName "SupportProject" -Tier mini
@@ -88,7 +85,6 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
 Parameters:
 - `-ProjectName` (required): Project name
-- `-Structure` (optional): `new` (default) or `legacy` (only effective for full tier)
 - `-Tier` (optional): `full` (default, main projects) or `mini` (support/lightweight projects)
 
 What the script does (full tier):
@@ -188,7 +184,6 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 Parameters:
 - `-ProjectName` (required): Project name to convert
 - `-To` (required): Target tier (`full` or `mini`)
-- `-Structure` (optional): `new` (default) or `legacy` (only for mini -> full conversion)
 - `-DryRun` (optional): Only display changes without executing
 
 What the script does:
@@ -231,15 +226,14 @@ Two tier types are available based on project scale and involvement level.
 | Layer 1 (_ai-context/) | Yes | Yes |
 | Layer 1 (_ai-workspace/) | Yes | No |
 | Layer 2 (Obsidian) | daily, meetings, specs, notes, weekly | notes only |
-| Layer 3 (BOX docs/) | planning, design, testing, release (new) or 01-10 (legacy) | flat (no subfolders) |
+| Layer 3 (BOX docs/) | planning, design, testing, release | flat (no subfolders) |
 | Layer 3 (reference/) | Yes (vendor, standards, external) | No |
 | Layer 3 (records/) | Yes (minutes, reports, reviews) | No |
 | Layer 3 (_work/) | Yes | Yes |
-| Structure parameter | new / legacy | Ignored (flat only) |
 
 ## Folder Structure
 
-### full - new Structure (Recommended)
+### full Structure
 
 Organized by purpose:
 
@@ -266,26 +260,6 @@ Box/Projects/{ProjectName}/
     └── 2026/
         └── 01/
             └── 25_handling_XXX/
-```
-
-### full - legacy Structure
-
-Phase-number-based structure:
-
-```
-Box/Projects/{ProjectName}/
-├── AGENTS.md            # Project-specific AI instruction file (master copy)
-├── 01_planning/         # Planning, requirements
-├── 02_design/           # Design
-├── 03_development/      # Development
-├── 04_testing/          # Testing
-├── 05_deployment/       # Deployment
-├── 06_operation/        # Operations
-├── 07_communication/    # Communication
-├── 08_issues/           # Issue management
-├── 09_training/         # Education, training
-├── 10_reference/        # Reference materials
-└── _work/               # Working folder
 ```
 
 ### mini Structure (Support Projects)

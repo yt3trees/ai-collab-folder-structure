@@ -197,15 +197,6 @@ claude
 | full | `Projects/{案件}/` | メイン案件 | 全機能(_ai-workspace、構造化フォルダ) |
 | mini | `Projects/_mini/{案件}/` | お手伝い系 | 軽量構成(最小限のフォルダ) |
 
-### full tier の Structure オプション
-
-full tier では、BOX側(Layer 3)のドキュメント構造を2種類から選択できます。
-
-| Structure | 説明 |
-|-----------|------|
-| new (デフォルト) | 用途別分類(docs/reference/records) |
-| legacy | フェーズ番号ベース(01_planning 〜 10_reference) |
-
 ### 2PC間の同期戦略
 
 - BOX同期: Obsidian Vault、shared/ 経由の成果物
@@ -266,11 +257,11 @@ Documents/Projects/{ProjectName}/
 │   ├── config/                 # 設定ファイル
 │   └── scripts/                # 開発スクリプト
 ├── shared/                     # Junction → Box/Projects/{ProjectName}
-├── team_shared/                # (Optional) 任意のBOX共有フォルダへのジャンクションを格納するディレクトリ
+├── external_shared/            # (Optional) 任意のBOX共有フォルダへのジャンクションを格納するディレクトリ
 ├── AGENTS.md                   # Copy from shared/AGENTS.md
 └── CLAUDE.md                   # Copy from shared/AGENTS.md
 
-Box/Projects/{ProjectName}/         (new 構造)
+Box/Projects/{ProjectName}/
 ├── CLAUDE.md                   # AI指示書 (実体)
 ├── docs/                       # 作成・編集ドキュメント
 │   ├── planning/               # 企画・要件定義・提案書
@@ -313,7 +304,7 @@ Box/Projects/_mini/{ProjectName}/
 |------|-----------|-----------------|-----------|
 | Junction | shared/ | Box/Projects/{ProjectName}/ | 不要 |
 | Junction | _ai-context/obsidian_notes/ | Box/Obsidian-Vault/Projects/{ProjectName}/ | 不要 |
-| Junction | team_shared/ | 任意のBOXチーム共有フォルダ | 不要 |
+| Junction | external_shared/ | 任意のBOX外部共有フォルダ | 不要 |
 
 ## クイックスタート
 
@@ -352,11 +343,8 @@ powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_proj
 ### 3. コマンドラインで操作
 
 ```powershell
-# メイン案件 (full tier, new 構造 - デフォルト)
+# メイン案件 (full tier)
 .\_projectTemplate\scripts\setup_project.ps1 -ProjectName "NewProject"
-
-# メイン案件 (full tier, legacy 構造)
-.\_projectTemplate\scripts\setup_project.ps1 -ProjectName "NewProject" -Structure legacy
 
 # お手伝い系 (mini tier)
 .\_projectTemplate\scripts\setup_project.ps1 -ProjectName "SupportProject" -Tier mini

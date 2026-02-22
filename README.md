@@ -198,15 +198,6 @@ By working within the `_work` folder in this manner, you gain the following bene
 | full | `Projects/{Project}/` | Main projects | Full features (_ai-workspace, structured folders) |
 | mini | `Projects/_mini/{Project}/` | Support tasks | Minimal (mini folders) |
 
-### Structure Options for Full Tier
-
-For full tier, you can choose between two document structures on the BOX side (Layer 3):
-
-| Structure | Description |
-|-----------|-------------|
-| new (default) | Purpose-based classification (docs/reference/records) |
-| legacy | Phase number-based (01_planning ~ 10_reference) |
-
 ### Sync Strategy Between 2 PCs
 
 - BOX sync: Obsidian Vault, deliverables via shared/
@@ -267,11 +258,11 @@ Documents/Projects/{ProjectName}/
 │   ├── config/                 # Configuration files
 │   └── scripts/                # Development scripts
 ├── shared/                     # Junction → Box/Projects/{ProjectName}
-├── team_shared/                # (Optional) Directory containing junctions to arbitrary BOX folders
+├── external_shared/            # (Optional) Directory containing junctions to arbitrary BOX folders
 ├── AGENTS.md                   # Copy from shared/AGENTS.md
 └── CLAUDE.md                   # Copy from shared/AGENTS.md
 
-Box/Projects/{ProjectName}/         (new structure)
+Box/Projects/{ProjectName}/
 ├── CLAUDE.md                   # AI instructions (physical file)
 ├── docs/                       # Created/edited documents
 │   ├── planning/               # Planning, requirements, proposals
@@ -314,7 +305,7 @@ Box/Projects/_mini/{ProjectName}/
 |------|-----------|----------------------------|-------------|
 | Junction | shared/ | Box/Projects/{ProjectName}/ | Not required |
 | Junction | _ai-context/obsidian_notes/ | Box/Obsidian-Vault/Projects/{ProjectName}/ | Not required |
-| Junction | team_shared/ | User's specified BOX Folder | Not required |
+| Junction | external_shared/ | User's specified BOX Folder | Not required |
 
 ## Quick Start
 
@@ -353,11 +344,8 @@ Features:
 ### 3. Command Line Operation
 
 ```powershell
-# Main project (full tier, new structure - default)
+# Main project (full tier)
 .\_projectTemplate\scripts\setup_project.ps1 -ProjectName "NewProject"
-
-# Main project (full tier, legacy structure)
-.\_projectTemplate\scripts\setup_project.ps1 -ProjectName "NewProject" -Structure legacy
 
 # Support task (mini tier)
 .\_projectTemplate\scripts\setup_project.ps1 -ProjectName "SupportProject" -Tier mini

@@ -33,7 +33,7 @@
 |------|------|
 | `CLAUDE.md` | Claude 向け指示 |
 | `AGENTS.md` | 全AIエージェント向け指示 |
-| `scripts/config.json` | プロジェクト設定 (tier, structure, etc.) |
+| `scripts/config.json` | プロジェクト設定 (tier, etc.) |
 | `development/source/` | ソースコード (Git管理) |
 
 ### BOX 同期 (`shared/` junction 経由)

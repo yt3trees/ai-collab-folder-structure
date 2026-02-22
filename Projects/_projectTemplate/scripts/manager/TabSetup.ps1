@@ -8,7 +8,7 @@ function Initialize-TabSetup {
 
     $btnSetup = $Window.FindName("btnSetup")
     $btnSetupClear = $Window.FindName("btnSetupClear")
-    $btnSetupBrowse = $Window.FindName("btnSetupBrowseTeamShared")
+    $btnSetupBrowse = $Window.FindName("btnSetupBrowseExternalShared")
 
     $btnSetupClear.Add_Click({
             $out = $Window.FindName("txtSetupOutput")
@@ -18,15 +18,15 @@ function Initialize-TabSetup {
     $btnSetupBrowse.Add_Click({
             Add-Type -AssemblyName System.Windows.Forms
             $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-            $dialog.Description = "Select a Team Shared Folder in BOX"
+            $dialog.Description = "Select an External Shared Folder"
             $dialog.ShowNewFolderButton = $true
             if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-                $txtTeamShared = $Window.FindName("setupTeamShared")
-                if ([string]::IsNullOrWhiteSpace($txtTeamShared.Text)) {
-                    $txtTeamShared.Text = $dialog.SelectedPath
+                $txtExternalShared = $Window.FindName("setupExternalShared")
+                if ([string]::IsNullOrWhiteSpace($txtExternalShared.Text)) {
+                    $txtExternalShared.Text = $dialog.SelectedPath
                 }
                 else {
-                    $txtTeamShared.Text += "`r`n" + $dialog.SelectedPath
+                    $txtExternalShared.Text += "`r`n" + $dialog.SelectedPath
                 }
             }
         })
@@ -44,23 +44,21 @@ function Initialize-TabSetup {
                 return
             }
 
-            $structureCombo = $Window.FindName("setupStructure")
             $tierCombo = $Window.FindName("setupTier")
-            $structure = ($structureCombo.SelectedItem).Content
             $tier = ($tierCombo.SelectedItem).Content
             
-            $txtTeamShared = $Window.FindName("setupTeamShared")
-            $teamShared = $txtTeamShared.Text.Trim()
+            $txtExternalShared = $Window.FindName("setupExternalShared")
+            $externalShared = $txtExternalShared.Text.Trim()
             
             $safeName = $name -replace "'", "''"
-            $argStr = "-ProjectName '$safeName' -Structure $structure -Tier $tier"
+            $argStr = "-ProjectName '$safeName' -Tier $tier"
             
-            if (-not [string]::IsNullOrWhiteSpace($teamShared)) {
-                $paths = $teamShared -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+            if (-not [string]::IsNullOrWhiteSpace($externalShared)) {
+                $paths = $externalShared -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
                 if ($paths.Count -gt 0) {
                     $safePaths = $paths | ForEach-Object { "'" + ($_ -replace "'", "''") + "'" }
                     $joinedPaths = $safePaths -join ","
-                    $argStr += " -TeamSharedPaths $joinedPaths"
+                    $argStr += " -ExternalSharedPaths $joinedPaths"
                 }
             }
             

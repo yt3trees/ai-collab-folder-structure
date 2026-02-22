@@ -63,7 +63,7 @@ powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_proj
 または、`_projectTemplate/scripts/` フォルダ内の `project_launcher.ps1` を右クリック → 「PowerShell で実行」でも起動できます。
 
 機能:
-- Setup タブ: プロジェクト名、Structure、Tier を選択してセットアップ
+- Setup タブ: プロジェクト名と Tier を選択してセットアップ
 - Check タブ: 既存プロジェクトをドロップダウンから選んで健全性チェック
 - Archive タブ: DryRun プレビュー付きでアーカイブ実行
 - 出力エリアにスクリプトの実行結果をリアルタイム表示
@@ -76,11 +76,8 @@ PowerShellを開き、以下のコマンドを実行します:
 # テンプレートディレクトリに移動
 cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
-# メイン案件 (full tier) のセットアップ (new構造 - 推奨)
+# メイン案件 (full tier) のセットアップ
 .\setup_project.ps1 -ProjectName "MyNewProject"
-
-# または、legacy構造を使用する場合
-.\setup_project.ps1 -ProjectName "MyNewProject" -Structure legacy
 
 # お手伝い系プロジェクト (mini tier) のセットアップ
 .\setup_project.ps1 -ProjectName "SupportProject" -Tier mini
@@ -88,7 +85,6 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
 パラメータ:
 - `-ProjectName` (必須): プロジェクト名
-- `-Structure` (オプション): `new` (デフォルト) または `legacy` (full tierのみ有効)
 - `-Tier` (オプション): `full` (デフォルト、メイン案件) または `mini` (お手伝い系)
 
 スクリプトが実行する内容 (full tier):
@@ -188,7 +184,6 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 パラメータ:
 - `-ProjectName` (必須): 変換するプロジェクト名
 - `-To` (必須): 変換先 Tier (`full` or `mini`)
-- `-Structure` (オプション): `new` (デフォルト) または `legacy` (mini → full 変換時のみ有効)
 - `-DryRun` (オプション): 変更内容を表示するだけで実行しない
 
 スクリプトが実行する内容:
@@ -231,15 +226,14 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 | Layer 1 (_ai-context/) | あり | あり |
 | Layer 1 (_ai-workspace/) | あり | なし |
 | Layer 2 (Obsidian) | daily, meetings, specs, notes, weekly | notes のみ |
-| Layer 3 (BOX docs/) | planning, design, testing, release (new) または 01-10 (legacy) | flat (サブフォルダなし) |
+| Layer 3 (BOX docs/) | planning, design, testing, release | flat (サブフォルダなし) |
 | Layer 3 (reference/) | あり (vendor, standards, external) | なし |
 | Layer 3 (records/) | あり (minutes, reports, reviews) | なし |
 | Layer 3 (_work/) | あり | あり |
-| Structure パラメータ | new / legacy | 無視 (flat のみ) |
 
 ## フォルダ構造
 
-### full - new 構造 (推奨)
+### full 構造
 
 用途別に分類された構造です:
 
@@ -266,26 +260,6 @@ Box/Projects/{ProjectName}/
     └── 2026/
         └── 01/
             └── 25_XXXの件対応/
-```
-
-### full - legacy 構造
-
-フェーズ番号ベースの構造です:
-
-```
-Box/Projects/{ProjectName}/
-├── AGENTS.md            # プロジェクト固有AI指示書 (実体 - Master)
-├── 01_planning/         # 企画・要件定義
-├── 02_design/           # 設計
-├── 03_development/      # 開発
-├── 04_testing/          # テスト
-├── 05_deployment/       # デプロイ
-├── 06_operation/        # 運用
-├── 07_communication/    # コミュニケーション
-├── 08_issues/           # 課題管理
-├── 09_training/         # 教育・トレーニング
-├── 10_reference/        # 参考資料
-└── _work/               # 作業フォルダ
 ```
 
 ### mini 構造 (お手伝い系)

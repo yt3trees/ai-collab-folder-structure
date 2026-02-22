@@ -1,6 +1,6 @@
 # Project Tier Conversion Script
 # Converts a project between mini and full tiers
-# Usage: .\convert_tier.ps1 -ProjectName "ProjectName" -To full|mini [-Structure new|legacy] [-DryRun]
+# Usage: .\convert_tier.ps1 -ProjectName "ProjectName" -To full|mini [-DryRun]
 
 param(
     [Parameter(Mandatory = $true)]
@@ -9,10 +9,6 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("full", "mini")]
     [string]$To,
-
-    [Parameter(Mandatory = $false)]
-    [ValidateSet("new", "legacy")]
-    [string]$Structure = "new",
 
     [Parameter(Mandatory = $false)]
     [switch]$DryRun,
@@ -67,9 +63,6 @@ else {
     Write-Host "=== $ProjectName Tier Conversion ===" -ForegroundColor Cyan
 }
 Write-Host "From: $fromTier -> To: $toTier" -ForegroundColor DarkGray
-if ($To -eq "full") {
-    Write-Host "Structure: $Structure" -ForegroundColor DarkGray
-}
 Write-Host "Paths config: $pathsConfigFile" -ForegroundColor DarkGray
 Write-Host ""
 
@@ -361,20 +354,11 @@ if ($To -eq "full") {
     }
 
     # BOX: structured folders
-    if ($Structure -eq 'legacy') {
-        $boxFolders = @(
-            '01_planning', '02_design', '03_development', '04_testing',
-            '05_deployment', '06_operation', '07_communication',
-            '08_issues', '09_training', '10_reference', '_work'
-        )
-    }
-    else {
-        $boxFolders = @(
-            'docs\planning', 'docs\design', 'docs\testing', 'docs\release',
-            'reference\vendor', 'reference\standards', 'reference\external',
-            'records\minutes', 'records\reports', 'records\reviews', '_work'
-        )
-    }
+    $boxFolders = @(
+        'docs\planning', 'docs\design', 'docs\testing', 'docs\release',
+        'reference\vendor', 'reference\standards', 'reference\external',
+        'records\minutes', 'records\reports', 'records\reviews', '_work'
+    )
     foreach ($folder in $boxFolders) {
         $path = Join-Path $dstBox $folder
         if ($DryRun) {

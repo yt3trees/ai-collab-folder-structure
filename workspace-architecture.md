@@ -39,7 +39,7 @@ Layer 1のローカルフォルダ内にジャンクションを作成し、Laye
 1. `shared/` → Box/Projects/ProjectA (Layer 3: 成果物・参照)
 2. `_ai-context/obsidian_notes/` → Box/Obsidian-Vault/Projects/ProjectA (Layer 2: 全Obsidianノート参照)
 3. `_ai-context/context/` → Box/Obsidian-Vault/Projects/ProjectA/ai-context (Layer 2: AIコンテキストファイル)
-4. `team_shared/` (任意) → 複数のBOX共有フォルダへのジャンクションを格納するディレクトリ
+4. `external_shared/` (任意) → 複数のBOX共有フォルダへのジャンクションを格納するディレクトリ
 
 ローカル専用領域とBOX同期領域の分離:
 - `shared/` の外 = 原則ローカル専用 (BOX非同期)
@@ -81,7 +81,7 @@ Layer 1のローカルフォルダ内にジャンクションを作成し、Laye
 │           │   ├── config\
 │           │   └── scripts\
 │           ├── shared\                    ← Junction 1本 → Box/Projects/ProjectA
-│           ├── team_shared\               (Optional) ← Junction → Box内の任意のフォルダ
+│           ├── external_shared\           (Optional) ← Junction → Box内の任意のフォルダ
 │           │   ├── AGENTS.md              (Master AI Instruction) [BOX Sync]
 │           │   └── ...
 │           ├── AGENTS.md                  (Master AI Instruction - Copy from shared)
@@ -160,7 +160,7 @@ Layer 1のローカルフォルダ内にジャンクションを作成し、Laye
     - `AGENTS.md` / `CLAUDE.md`: shared配下のマスターファイルからのコピー (BOX同期外)。
     - `development/source`: Git管理。BOX同期しない(容量・競合回避)。
 - `shared/`: BOX共有フォルダ全体をジャンクションでマウント。
-- `team_shared/` (任意): BOX内の任意のフォルダへのジャンクションを複数格納するディレクトリ。PC間でパスを再現するため、`shared/.team_shared_paths` を経由して設定を同期する。
+- `external_shared/` (任意): BOX内の任意のフォルダへのジャンクションを複数格納するディレクトリ。PC間でパスを再現するため、`shared/.external_shared_paths` を経由して設定を同期する。
 
 #### Layer 2: Knowledge (思考の場)
 - 場所: BOX内 Obsidian Vault
@@ -250,11 +250,8 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 # 既存プロジェクトのセットアップ / PC-Bへの同期
 .\setup_project.ps1 -ProjectName "ProjectA"
 
-# 新規プロジェクトを作成 (new構造 - デフォルト)
+# 新規プロジェクトを作成
 .\setup_project.ps1 -ProjectName "MyNewProject"
-
-# legacy構造を使用する場合
-.\setup_project.ps1 -ProjectName "MyNewProject" -Structure legacy
 ```
 
 `setup_project.ps1` が自動的にローカルフォルダ、BOX共有フォルダ、ジャンクション、およびAI指示書のコピーを構成する。
@@ -263,11 +260,10 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 1. `shared/` → Box/Projects/ProjectA (Layer 3: Artifact)
 2. `_ai-context/obsidian_notes/` → Box/Obsidian-Vault/Projects/ProjectA (Layer 2: 全Obsidianノート)
 3. `_ai-context/context/` → Box/Obsidian-Vault/Projects/ProjectA/ai-context (Layer 2: AIコンテキスト)
-4. `team_shared/` (任意) → 複数のBOX共有フォルダへのジャンクション群 (`shared/.team_shared_paths`でPC間同期)
+4. `external_shared/` (任意) → 複数のBOX共有フォルダへのジャンクション群 (`shared/.external_shared_paths`でPC間同期)
 
 テンプレートの利点:
 - プロジェクト名を指定するだけで、フォルダ構造とジャンクションが自動作成される
-- new/legacy の2種類の構造から選択可能
 - Obsidian Vault との連携も自動設定 (Indexファイル自動作成含む)
 - 健全性チェック・アーカイブスクリプトも同梱
 - テンプレートの場所: `%USERPROFILE%\Documents\Projects\_projectTemplate\`

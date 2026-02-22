@@ -48,13 +48,7 @@ if (-not (Test-Path $docRoot)) {
     exit 1
 }
 
-# Detect structure
-$hasLegacy = Test-Path "$boxShared\01_planning"
-$hasNew = Test-Path "$boxShared\docs"
-if ($hasLegacy) { $structure = 'legacy' }
-elseif ($hasNew) { $structure = 'new' }
-else { $structure = 'none' }
-Write-Host "Structure: $structure" -ForegroundColor DarkGray
+# Structure detection removed
 Write-Host ""
 
 # Check Junctions
@@ -81,15 +75,15 @@ else {
     Write-Host "  [!] shared/ missing - run setup_project.ps1" -ForegroundColor Yellow
 }
 
-# team_shared/ (Optional)
-$teamSharedDir = "$docRoot\team_shared"
-$teamSharedConfig = "$boxShared\.team_shared_paths"
+# external_shared/ (Optional)
+$externalSharedDir = "$docRoot\external_shared"
+$externalSharedConfig = "$boxShared\.external_shared_paths"
 
-if (Test-Path $teamSharedConfig) {
-    $paths = Get-Content -Path $teamSharedConfig
+if (Test-Path $externalSharedConfig) {
+    $paths = Get-Content -Path $externalSharedConfig
     
-    if ($paths.Count -gt 0 -and -not (Test-Path $teamSharedDir)) {
-        Write-Host "  [!] team_shared/ directory missing - run setup_project.ps1" -ForegroundColor Yellow
+    if ($paths.Count -gt 0 -and -not (Test-Path $externalSharedDir)) {
+        Write-Host "  [!] external_shared/ directory missing - run setup_project.ps1" -ForegroundColor Yellow
     }
     elseif ($paths.Count -gt 0) {
         foreach ($savedPath in $paths) {
@@ -100,25 +94,25 @@ if (Test-Path $teamSharedConfig) {
             
             if ([string]::IsNullOrWhiteSpace($folderName)) { continue }
             
-            $teamSharedLink = "$teamSharedDir\$folderName"
+            $externalSharedLink = "$externalSharedDir\$folderName"
             
-            if (Test-Path $teamSharedLink) {
-                $item = Get-Item $teamSharedLink -Force
+            if (Test-Path $externalSharedLink) {
+                $item = Get-Item $externalSharedLink -Force
                 if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
                     $target = $item.Target
                     if ($target -eq $expandedPath) {
-                        Write-Host "  OK: team_shared/$folderName/ -> $expandedPath" -ForegroundColor Green
+                        Write-Host "  OK: external_shared/$folderName/ -> $expandedPath" -ForegroundColor Green
                     }
                     else {
-                        Write-Host "  [!] team_shared/$folderName/ points to: $target" -ForegroundColor Yellow
+                        Write-Host "  [!] external_shared/$folderName/ points to: $target" -ForegroundColor Yellow
                     }
                 }
                 else {
-                    Write-Host "  [!] team_shared/$folderName/ is a regular folder (not junction)" -ForegroundColor Yellow
+                    Write-Host "  [!] external_shared/$folderName/ is a regular folder (not junction)" -ForegroundColor Yellow
                 }
             }
             else {
-                Write-Host "  [!] team_shared/$folderName/ missing - run setup_project.ps1" -ForegroundColor Yellow
+                Write-Host "  [!] external_shared/$folderName/ missing - run setup_project.ps1" -ForegroundColor Yellow
             }
         }
     }

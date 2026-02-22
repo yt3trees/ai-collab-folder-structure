@@ -1,21 +1,17 @@
 # Project Setup Script (Idempotent & Generic)
 # Creates local folders, BOX shared folders, junctions, and CLAUDE.md symlink
-# Usage: .\setup_project.ps1 -ProjectName "NewProject" [-Structure new|legacy] [-Tier full|mini]
+# Usage: .\setup_project.ps1 -ProjectName "NewProject" [-Tier full|mini]
 
 param(
     [Parameter(Mandatory = $true)]
     [string]$ProjectName,
 
     [Parameter(Mandatory = $false)]
-    [ValidateSet("new", "legacy")]
-    [string]$Structure = "new",
-
-    [Parameter(Mandatory = $false)]
     [ValidateSet("full", "mini")]
     [string]$Tier = "full",
 
     [Parameter(Mandatory = $false)]
-    [string[]]$TeamSharedPaths = @()
+    [string[]]$ExternalSharedPaths = @()
 )
 
 # Load workspace paths config
@@ -46,7 +42,6 @@ $obsidianProject = Join-Path $obsidianVaultRoot "Projects\$projectSubPath"
 
 Write-Host "=== $ProjectName Setup ===" -ForegroundColor Cyan
 Write-Host "Tier: $Tier" -ForegroundColor DarkGray
-Write-Host "Structure: $Structure" -ForegroundColor DarkGray
 Write-Host "Paths config: $pathsConfigFile" -ForegroundColor DarkGray
 Write-Host ""
 
@@ -82,7 +77,7 @@ foreach ($folder in $localFolders) {
     }
 }
 
-# Create BOX shared folders based on Tier and Structure
+# Create BOX shared folders based on Tier
 Write-Host ""
 Write-Host "[BOX Shared Folders]" -ForegroundColor Yellow
 if (-not (Test-Path $boxShared)) {
@@ -91,7 +86,7 @@ if (-not (Test-Path $boxShared)) {
 }
 
 if ($Tier -eq "mini") {
-    # Mini tier: minimal folders (Structure parameter ignored)
+    # Mini tier: minimal folders
     $miniFolders = @(
         'docs',
         '_work'
@@ -108,56 +103,28 @@ if ($Tier -eq "mini") {
     }
 }
 else {
-    # Full tier: structured folders based on Structure parameter
-    if ($Structure -eq 'legacy') {
-        $legacyFolders = @(
-            '01_planning',
-            '02_design',
-            '03_development',
-            '04_testing',
-            '05_deployment',
-            '06_operation',
-            '07_communication',
-            '08_issues',
-            '09_training',
-            '10_reference',
-            '_work'
-        )
-        foreach ($folder in $legacyFolders) {
-            $path = "$boxShared\$folder"
-            if (-not (Test-Path $path)) {
-                New-Item -Path $path -ItemType Directory -Force | Out-Null
-                Write-Host "  Created: $folder" -ForegroundColor Green
-            }
-            else {
-                Write-Host "  Exists: $folder" -ForegroundColor Gray
-            }
+    # Full tier: structured folders
+    $newFolders = @(
+        'docs\planning',
+        'docs\design',
+        'docs\testing',
+        'docs\release',
+        'reference\vendor',
+        'reference\standards',
+        'reference\external',
+        'records\minutes',
+        'records\reports',
+        'records\reviews',
+        '_work'
+    )
+    foreach ($folder in $newFolders) {
+        $path = "$boxShared\$folder"
+        if (-not (Test-Path $path)) {
+            New-Item -Path $path -ItemType Directory -Force | Out-Null
+            Write-Host "  Created: $folder" -ForegroundColor Green
         }
-    }
-    else {
-        # new structure (default)
-        $newFolders = @(
-            'docs\planning',
-            'docs\design',
-            'docs\testing',
-            'docs\release',
-            'reference\vendor',
-            'reference\standards',
-            'reference\external',
-            'records\minutes',
-            'records\reports',
-            'records\reviews',
-            '_work'
-        )
-        foreach ($folder in $newFolders) {
-            $path = "$boxShared\$folder"
-            if (-not (Test-Path $path)) {
-                New-Item -Path $path -ItemType Directory -Force | Out-Null
-                Write-Host "  Created: $folder" -ForegroundColor Green
-            }
-            else {
-                Write-Host "  Exists: $folder" -ForegroundColor Gray
-            }
+        else {
+            Write-Host "  Exists: $folder" -ForegroundColor Gray
         }
     }
 }
@@ -264,17 +231,17 @@ else {
     Write-Host "  Created: shared/ -> $boxShared" -ForegroundColor Green
 }
 
-# 1.5 team_shared/ -> User Provided Box Paths (Optional)
-$teamSharedDir = "$docRoot\team_shared"
-$teamSharedConfig = "$boxShared\.team_shared_paths"
+# 1.5 external_shared/ -> User Provided Box Paths (Optional)
+$externalSharedDir = "$docRoot\external_shared"
+$externalSharedConfig = "$boxShared\.external_shared_paths"
 
 # Collect all paths to process (from args or config file)
 $pathsToProcess = @()
 
 # First get from arguments (will overwrite config later)
-if ($TeamSharedPaths -and $TeamSharedPaths.Count -gt 0) {
+if ($ExternalSharedPaths -and $ExternalSharedPaths.Count -gt 0) {
     # Escape user profile properly to make path cross-PC compatible
-    foreach ($p in $TeamSharedPaths) {
+    foreach ($p in $ExternalSharedPaths) {
         if (-not [string]::IsNullOrWhiteSpace($p)) {
             $normalizedPath = $p -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%'
             $pathsToProcess += $normalizedPath
@@ -282,23 +249,23 @@ if ($TeamSharedPaths -and $TeamSharedPaths.Count -gt 0) {
     }
     # Save the updated list to config file
     if ($pathsToProcess.Count -gt 0) {
-        Set-Content -Path $teamSharedConfig -Value $pathsToProcess -Encoding UTF8
-        Write-Host "  Saved Team Shared Paths to: .team_shared_paths" -ForegroundColor Green
+        Set-Content -Path $externalSharedConfig -Value $pathsToProcess -Encoding UTF8
+        Write-Host "  Saved External Shared Paths to: .external_shared_paths" -ForegroundColor Green
     }
 }
-elseif (Test-Path $teamSharedConfig) {
+elseif (Test-Path $externalSharedConfig) {
     # If no arguments provided, read from config
-    $pathsToProcess = Get-Content -Path $teamSharedConfig
+    $pathsToProcess = Get-Content -Path $externalSharedConfig
 }
 
 if ($pathsToProcess.Count -gt 0) {
-    # Ensure team_shared directory exists
-    if (-not (Test-Path $teamSharedDir)) {
-        New-Item -Path $teamSharedDir -ItemType Directory -Force | Out-Null
-        Write-Host "  Created: team_shared/ (Directory)" -ForegroundColor Green
+    # Ensure external_shared directory exists
+    if (-not (Test-Path $externalSharedDir)) {
+        New-Item -Path $externalSharedDir -ItemType Directory -Force | Out-Null
+        Write-Host "  Created: external_shared/ (Directory)" -ForegroundColor Green
     }
-    elseif ((Get-Item $teamSharedDir).Attributes -band [IO.FileAttributes]::ReparsePoint) {
-        Write-Warning "  team_shared/ exists but is a junction from older version."
+    elseif ((Get-Item $externalSharedDir).Attributes -band [IO.FileAttributes]::ReparsePoint) {
+        Write-Warning "  external_shared/ exists but is a junction from older version."
         Write-Host "    Please remove it and rerun." -ForegroundColor DarkYellow
     }
 
@@ -313,29 +280,29 @@ if ($pathsToProcess.Count -gt 0) {
             continue
         }
         
-        $teamSharedLink = "$teamSharedDir\$folderName"
+        $externalSharedLink = "$externalSharedDir\$folderName"
         
-        if (Test-Path $teamSharedLink) {
-            $item = Get-Item $teamSharedLink -Force
+        if (Test-Path $externalSharedLink) {
+            $item = Get-Item $externalSharedLink -Force
             if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
                 $existingTarget = $item.Target
                 if ($existingTarget -eq $expandedPath) {
-                    Write-Host "  OK: team_shared/$folderName/ -> $expandedPath" -ForegroundColor Gray
+                    Write-Host "  OK: external_shared/$folderName/ -> $expandedPath" -ForegroundColor Gray
                 }
                 else {
-                    Write-Warning "  team_shared/$folderName/ points to $existingTarget instead of $expandedPath"
+                    Write-Warning "  external_shared/$folderName/ points to $existingTarget instead of $expandedPath"
                 }
             }
             else {
-                Write-Warning "  team_shared/$folderName/ exists but is not a junction"
+                Write-Warning "  external_shared/$folderName/ exists but is not a junction"
             }
         }
         elseif (Test-Path $expandedPath) {
-            New-Item -ItemType Junction -Path $teamSharedLink -Target $expandedPath | Out-Null
-            Write-Host "  Created: team_shared/$folderName/ -> $expandedPath" -ForegroundColor Green
+            New-Item -ItemType Junction -Path $externalSharedLink -Target $expandedPath | Out-Null
+            Write-Host "  Created: external_shared/$folderName/ -> $expandedPath" -ForegroundColor Green
         }
         else {
-            Write-Warning "  Team Shared Folder not found: $expandedPath"
+            Write-Warning "  External Shared Folder not found: $expandedPath"
             Write-Host "    Please check Box sync status or create manually" -ForegroundColor DarkYellow
         }
     }
@@ -412,7 +379,6 @@ if (-not (Test-Path $boxAgents)) {
         $creationDate = (Get-Date).ToString("yyyy-MM-dd")
         $defaultContent = (Get-Content $templateAgentsPath -Raw -Encoding UTF8) `
             -replace '\{\{PROJECT_NAME\}\}', $ProjectName `
-            -replace '\{\{STRUCTURE_TYPE\}\}', $Structure `
             -replace '\{\{CREATION_DATE\}\}', $creationDate
     }
     else {
@@ -454,7 +420,6 @@ Write-Host ""
 Write-Host "Setup complete!" -ForegroundColor Green
 Write-Host "Project: $ProjectName" -ForegroundColor Cyan
 Write-Host "Tier: $Tier" -ForegroundColor DarkGray
-Write-Host "Structure: $Structure" -ForegroundColor DarkGray
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
 if ($Tier -eq "mini") {
