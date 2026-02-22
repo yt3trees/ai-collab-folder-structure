@@ -12,7 +12,10 @@ param(
 
     [Parameter(Mandatory = $false)]
     [ValidateSet("full", "mini")]
-    [string]$Tier = "full"
+    [string]$Tier = "full",
+
+    [Parameter(Mandatory = $false)]
+    [string[]]$TeamSharedPaths = @()
 )
 
 # Load workspace paths config
@@ -199,11 +202,11 @@ foreach ($folder in $obsidianFolders) {
 Write-Host ""
 Write-Host "[AI Context Templates]" -ForegroundColor Yellow
 $templateDir = Join-Path $PSScriptRoot "..\context-compression-layer\templates"
-$obsAiCtx    = "$obsidianProject\ai-context"
+$obsAiCtx = "$obsidianProject\ai-context"
 $templateFiles = @(
-    @{ Src = "project_summary.md";        Dst = "$obsAiCtx\project_summary.md" }
-    @{ Src = "current_focus.md";          Dst = "$obsAiCtx\current_focus.md" }
-    @{ Src = "file_map.md";               Dst = "$obsAiCtx\file_map.md" }
+    @{ Src = "project_summary.md"; Dst = "$obsAiCtx\project_summary.md" }
+    @{ Src = "current_focus.md"; Dst = "$obsAiCtx\current_focus.md" }
+    @{ Src = "file_map.md"; Dst = "$obsAiCtx\file_map.md" }
 )
 foreach ($t in $templateFiles) {
     $src = Join-Path $templateDir $t.Src
@@ -261,6 +264,84 @@ else {
     Write-Host "  Created: shared/ -> $boxShared" -ForegroundColor Green
 }
 
+# 1.5 team_shared/ -> User Provided Box Paths (Optional)
+$teamSharedDir = "$docRoot\team_shared"
+$teamSharedConfig = "$boxShared\.team_shared_paths"
+
+# Collect all paths to process (from args or config file)
+$pathsToProcess = @()
+
+# First get from arguments (will overwrite config later)
+if ($TeamSharedPaths -and $TeamSharedPaths.Count -gt 0) {
+    # Escape user profile properly to make path cross-PC compatible
+    foreach ($p in $TeamSharedPaths) {
+        if (-not [string]::IsNullOrWhiteSpace($p)) {
+            $normalizedPath = $p -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%'
+            $pathsToProcess += $normalizedPath
+        }
+    }
+    # Save the updated list to config file
+    if ($pathsToProcess.Count -gt 0) {
+        Set-Content -Path $teamSharedConfig -Value $pathsToProcess -Encoding UTF8
+        Write-Host "  Saved Team Shared Paths to: .team_shared_paths" -ForegroundColor Green
+    }
+}
+elseif (Test-Path $teamSharedConfig) {
+    # If no arguments provided, read from config
+    $pathsToProcess = Get-Content -Path $teamSharedConfig
+}
+
+if ($pathsToProcess.Count -gt 0) {
+    # Ensure team_shared directory exists
+    if (-not (Test-Path $teamSharedDir)) {
+        New-Item -Path $teamSharedDir -ItemType Directory -Force | Out-Null
+        Write-Host "  Created: team_shared/ (Directory)" -ForegroundColor Green
+    }
+    elseif ((Get-Item $teamSharedDir).Attributes -band [IO.FileAttributes]::ReparsePoint) {
+        Write-Warning "  team_shared/ exists but is a junction from older version."
+        Write-Host "    Please remove it and rerun." -ForegroundColor DarkYellow
+    }
+
+    foreach ($savedPath in $pathsToProcess) {
+        if ([string]::IsNullOrWhiteSpace($savedPath)) { continue }
+        
+        $expandedPath = [System.Environment]::ExpandEnvironmentVariables($savedPath.Trim())
+        $folderName = Split-Path $expandedPath -Leaf
+        
+        if ([string]::IsNullOrWhiteSpace($folderName)) {
+            Write-Warning "  Could not determine folder name for: $expandedPath"
+            continue
+        }
+        
+        $teamSharedLink = "$teamSharedDir\$folderName"
+        
+        if (Test-Path $teamSharedLink) {
+            $item = Get-Item $teamSharedLink -Force
+            if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+                $existingTarget = $item.Target
+                if ($existingTarget -eq $expandedPath) {
+                    Write-Host "  OK: team_shared/$folderName/ -> $expandedPath" -ForegroundColor Gray
+                }
+                else {
+                    Write-Warning "  team_shared/$folderName/ points to $existingTarget instead of $expandedPath"
+                }
+            }
+            else {
+                Write-Warning "  team_shared/$folderName/ exists but is not a junction"
+            }
+        }
+        elseif (Test-Path $expandedPath) {
+            New-Item -ItemType Junction -Path $teamSharedLink -Target $expandedPath | Out-Null
+            Write-Host "  Created: team_shared/$folderName/ -> $expandedPath" -ForegroundColor Green
+        }
+        else {
+            Write-Warning "  Team Shared Folder not found: $expandedPath"
+            Write-Host "    Please check Box sync status or create manually" -ForegroundColor DarkYellow
+        }
+    }
+}
+
+
 # 2. _ai-context/obsidian_notes/ -> Box/Obsidian-Vault/Projects/{ProjectName}
 $obsLink = "$docRoot\_ai-context\obsidian_notes"
 if (Test-Path $obsLink) {
@@ -289,7 +370,7 @@ else {
 }
 
 # 3. _ai-context/context/ -> Box/Obsidian-Vault/Projects/{ProjectName}/ai-context
-$contextLink   = "$docRoot\_ai-context\context"
+$contextLink = "$docRoot\_ai-context\context"
 $obsidianAiCtx = "$obsidianProject\ai-context"
 if (Test-Path $contextLink) {
     $item = Get-Item $contextLink -Force

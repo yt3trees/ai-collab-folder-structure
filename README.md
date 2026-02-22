@@ -267,6 +267,7 @@ Documents/Projects/{ProjectName}/
 │   ├── config/                 # Configuration files
 │   └── scripts/                # Development scripts
 ├── shared/                     # Junction → Box/Projects/{ProjectName}
+├── team_shared/                # (Optional) Directory containing junctions to arbitrary BOX folders
 ├── AGENTS.md                   # Copy from shared/AGENTS.md
 └── CLAUDE.md                   # Copy from shared/AGENTS.md
 
@@ -313,6 +314,7 @@ Box/Projects/_mini/{ProjectName}/
 |------|-----------|----------------------------|-------------|
 | Junction | shared/ | Box/Projects/{ProjectName}/ | Not required |
 | Junction | _ai-context/obsidian_notes/ | Box/Obsidian-Vault/Projects/{ProjectName}/ | Not required |
+| Junction | team_shared/ | User's specified BOX Folder | Not required |
 
 ## Quick Start
 

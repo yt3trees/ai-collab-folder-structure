@@ -3,10 +3,10 @@
 # Usage: .\check_project.ps1 -ProjectName "ProjectName" [-Mini]
 
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [string]$ProjectName,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$Mini
 )
 
@@ -27,7 +27,8 @@ $obsidianVaultRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConf
 # Determine project subpath based on Support flag
 if ($Mini) {
     $projectSubPath = "_mini\$ProjectName"
-} else {
+}
+else {
     $projectSubPath = $ProjectName
 }
 
@@ -67,14 +68,60 @@ if (Test-Path $link) {
         $target = $item.Target
         if ($target -eq $boxShared) {
             Write-Host "  OK: shared/ -> $boxShared" -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host "  [!] shared/ points to: $target" -ForegroundColor Yellow
         }
-    } else {
+    }
+    else {
         Write-Host "  [!] shared/ is a regular folder (not junction)" -ForegroundColor Yellow
     }
-} else {
+}
+else {
     Write-Host "  [!] shared/ missing - run setup_project.ps1" -ForegroundColor Yellow
+}
+
+# team_shared/ (Optional)
+$teamSharedDir = "$docRoot\team_shared"
+$teamSharedConfig = "$boxShared\.team_shared_paths"
+
+if (Test-Path $teamSharedConfig) {
+    $paths = Get-Content -Path $teamSharedConfig
+    
+    if ($paths.Count -gt 0 -and -not (Test-Path $teamSharedDir)) {
+        Write-Host "  [!] team_shared/ directory missing - run setup_project.ps1" -ForegroundColor Yellow
+    }
+    elseif ($paths.Count -gt 0) {
+        foreach ($savedPath in $paths) {
+            if ([string]::IsNullOrWhiteSpace($savedPath)) { continue }
+            
+            $expandedPath = [System.Environment]::ExpandEnvironmentVariables($savedPath.Trim())
+            $folderName = Split-Path $expandedPath -Leaf
+            
+            if ([string]::IsNullOrWhiteSpace($folderName)) { continue }
+            
+            $teamSharedLink = "$teamSharedDir\$folderName"
+            
+            if (Test-Path $teamSharedLink) {
+                $item = Get-Item $teamSharedLink -Force
+                if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+                    $target = $item.Target
+                    if ($target -eq $expandedPath) {
+                        Write-Host "  OK: team_shared/$folderName/ -> $expandedPath" -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "  [!] team_shared/$folderName/ points to: $target" -ForegroundColor Yellow
+                    }
+                }
+                else {
+                    Write-Host "  [!] team_shared/$folderName/ is a regular folder (not junction)" -ForegroundColor Yellow
+                }
+            }
+            else {
+                Write-Host "  [!] team_shared/$folderName/ missing - run setup_project.ps1" -ForegroundColor Yellow
+            }
+        }
+    }
 }
 
 # obsidian_notes/
@@ -85,18 +132,21 @@ if (Test-Path $obsLink) {
         $target = $item.Target
         if ($target -eq $obsidianProject) {
             Write-Host "  OK: obsidian_notes/ -> $obsidianProject" -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host "  [!] obsidian_notes/ points to: $target" -ForegroundColor Yellow
         }
-    } else {
+    }
+    else {
         Write-Host "  [!] obsidian_notes/ is a regular folder (not junction)" -ForegroundColor Yellow
     }
-} else {
+}
+else {
     Write-Host "  [!] obsidian_notes/ missing - run setup_project.ps1" -ForegroundColor Yellow
 }
 
 # context/
-$contextLink   = "$docRoot\_ai-context\context"
+$contextLink = "$docRoot\_ai-context\context"
 $obsidianAiCtx = "$obsidianProject\ai-context"
 if (Test-Path $contextLink) {
     $item = Get-Item $contextLink -Force
@@ -104,13 +154,16 @@ if (Test-Path $contextLink) {
         $target = $item.Target
         if ($target -eq $obsidianAiCtx) {
             Write-Host "  OK: context/ -> $obsidianAiCtx" -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host "  [!] context/ points to: $target" -ForegroundColor Yellow
         }
-    } else {
+    }
+    else {
         Write-Host "  [!] context/ is a regular folder (not junction)" -ForegroundColor Yellow
     }
-} else {
+}
+else {
     Write-Host "  [!] context/ missing - run setup_project.ps1" -ForegroundColor Yellow
 }
 
@@ -127,7 +180,8 @@ if (Test-Path $localAgents) {
     if (-not (Test-Path $boxAgents)) {
         Write-Host "  [!] Master AGENTS.md missing on BOX" -ForegroundColor Yellow
     }
-} else {
+}
+else {
     Write-Host "  [!] AGENTS.md missing locally - run setup_project.ps1" -ForegroundColor Yellow
 }
 
@@ -136,7 +190,8 @@ $localClaude = "$docRoot\CLAUDE.md"
 
 if (Test-Path $localClaude) {
     Write-Host "  OK: CLAUDE.md (Local Copy)" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "  [!] CLAUDE.md missing locally - run setup_project.ps1" -ForegroundColor Yellow
 }
 
@@ -150,10 +205,12 @@ if (Test-Path $boxShared) {
         foreach ($dir in $subdirs) {
             Write-Host "    - $($dir.Name)" -ForegroundColor Gray
         }
-    } else {
+    }
+    else {
         Write-Host "  [!] BOX shared folder is empty" -ForegroundColor Yellow
     }
-} else {
+}
+else {
     Write-Host "  [!] BOX shared folder not found" -ForegroundColor Yellow
 }
 
@@ -175,13 +232,16 @@ if (Test-Path $boxShared) {
         }
         if ($broken -eq 0) {
             Write-Host "  All shortcuts valid" -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host "  Broken: $broken" -ForegroundColor Red
         }
-    } else {
+    }
+    else {
         Write-Host "  (No .lnk files)" -ForegroundColor Gray
     }
-} else {
+}
+else {
     Write-Host "  (Skipped)" -ForegroundColor Gray
 }
 
@@ -196,10 +256,12 @@ if (Test-Path $summaryFile) {
     $daysSince = ($today - $lastWrite).Days
     if ($daysSince -ge 14) {
         Write-Host "  WARN: context/project_summary.md ($daysSince days old - consider updating)" -ForegroundColor Yellow
-    } else {
+    }
+    else {
         Write-Host "  OK: context/project_summary.md (${daysSince}d ago)" -ForegroundColor Green
     }
-} else {
+}
+else {
     Write-Host "  INFO: context/project_summary.md not found (run setup_context_layer.ps1?)" -ForegroundColor Gray
 }
 
@@ -209,10 +271,12 @@ if (Test-Path $focusFile) {
     $daysSince = ($today - $lastWrite).Days
     if ($daysSince -ge 7) {
         Write-Host "  WARN: context/current_focus.md ($daysSince days old - consider updating)" -ForegroundColor Yellow
-    } else {
+    }
+    else {
         Write-Host "  OK: context/current_focus.md (${daysSince}d ago)" -ForegroundColor Green
     }
-} else {
+}
+else {
     Write-Host "  INFO: context/current_focus.md not found (run setup_context_layer.ps1?)" -ForegroundColor Gray
 }
 
@@ -220,7 +284,8 @@ $decisionLogDir = Join-Path $aiCtxContent "decision_log"
 if (Test-Path $decisionLogDir) {
     $dlCount = (Get-ChildItem $decisionLogDir -Filter "*.md" -Exclude "TEMPLATE.md" -ErrorAction SilentlyContinue).Count
     Write-Host "  OK: context/decision_log/ ($dlCount entries)" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "  INFO: context/decision_log/ not found (run setup_context_layer.ps1?)" -ForegroundColor Gray
 }
 

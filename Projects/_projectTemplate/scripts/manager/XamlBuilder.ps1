@@ -187,6 +187,17 @@ $styles
                                     <ComboBoxItem Content="full"/>
                                     <ComboBoxItem Content="mini"/>
                                 </ComboBox>
+                                <Label Content="Team Shared Folders (Optional, one path per line)"/>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="setupTeamShared" Grid.Column="0" Margin="0,0,8,0"
+                                             AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44" MaxHeight="88"
+                                             VerticalScrollBarVisibility="Auto"/>
+                                    <Button x:Name="btnSetupBrowseTeamShared" Grid.Column="1" Content="Add..." Width="40" Height="22" VerticalAlignment="Top" Background="#313244" Foreground="#cdd6f4" BorderBrush="#45475a"/>
+                                </Grid>
                                 <Button x:Name="btnSetup" Content="Run Setup"
                                         Style="{StaticResource RunButton}"/>
                             </StackPanel>

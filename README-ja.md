@@ -266,6 +266,7 @@ Documents/Projects/{ProjectName}/
 │   ├── config/                 # 設定ファイル
 │   └── scripts/                # 開発スクリプト
 ├── shared/                     # Junction → Box/Projects/{ProjectName}
+├── team_shared/                # (Optional) 任意のBOX共有フォルダへのジャンクションを格納するディレクトリ
 ├── AGENTS.md                   # Copy from shared/AGENTS.md
 └── CLAUDE.md                   # Copy from shared/AGENTS.md
 
@@ -312,6 +313,7 @@ Box/Projects/_mini/{ProjectName}/
 |------|-----------|-----------------|-----------|
 | Junction | shared/ | Box/Projects/{ProjectName}/ | 不要 |
 | Junction | _ai-context/obsidian_notes/ | Box/Obsidian-Vault/Projects/{ProjectName}/ | 不要 |
+| Junction | team_shared/ | 任意のBOXチーム共有フォルダ | 不要 |
 
 ## クイックスタート
 
