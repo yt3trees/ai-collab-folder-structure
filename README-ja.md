@@ -322,7 +322,7 @@ Box/Projects/_mini/{ProjectName}/
 
 各値はフルパスで記述します。`%USERPROFILE%` などの環境変数は自動的に展開されます。
 
-### 2. GUIマネージャーで操作 (推奨)
+### 2. GUIマネージャーで操作
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_manager.ps1"
@@ -333,58 +333,20 @@ powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_proj
 機能:
 - Dashboard タブ: プロジェクト概要とクイックアクション
 - Editor タブ: プロジェクトファイルの閲覧・編集
-- Setup タブ: プロジェクト名、Structure、Tier を選択してセットアップ
+- Setup タブ: プロジェクト名と Tier を選択してセットアップ
 - AI Context タブ: プロジェクトへのContext Compression Layerセットアップ
 - Check タブ: 既存プロジェクトの健全性チェック
 - Archive タブ: DryRun プレビュー付きでアーカイブ実行
+- アーカイブは3層すべてを `_archive/` に移動します。mini tier は `_archive/_mini/` 配下に移動されます。
 - 出力エリアにスクリプトの実行結果をリアルタイム表示
 - カスタムダークテーマタイトルバー (Catppuccin Mocha)
 
-### 3. コマンドラインで操作
+### 3. PC-B でのセットアップ
 
-```powershell
-# メイン案件 (full tier)
-.\_projectTemplate\scripts\setup_project.ps1 -ProjectName "NewProject"
-
-# お手伝い系 (mini tier)
-.\_projectTemplate\scripts\setup_project.ps1 -ProjectName "SupportProject" -Tier mini
-```
-
-### 4. 健全性チェック
-
-```powershell
-# メイン案件
-.\_projectTemplate\scripts\check_project.ps1 -ProjectName "NewProject"
-
-# お手伝い系
-.\_projectTemplate\scripts\check_project.ps1 -ProjectName "SupportProject" -Mini
-```
-
-### 5. プロジェクトのアーカイブ
-
-```powershell
-# DryRun で確認 (実際には何も変更しない)
-.\_projectTemplate\scripts\archive_project.ps1 -ProjectName "MyProject" -DryRun
-
-# 実行
-.\_projectTemplate\scripts\archive_project.ps1 -ProjectName "MyProject"
-
-# お手伝い系
-.\_projectTemplate\scripts\archive_project.ps1 -ProjectName "SupportProject" -Mini -DryRun
-```
-
-アーカイブは3層すべてを `_archive/` に移動します。mini tier は `_archive/_mini/` 配下に移動されます。
-
-### 6. PC-B でのセットアップ
-
-BOX同期完了後、同じスクリプトを実行するだけでジャンクションとシンボリックリンクが作成されます:
-
-```powershell
-.\_projectTemplate\scripts\setup_project.ps1 -ProjectName "NewProject"
-```
+BOX同期完了後、GUIマネージャーの Setup タブから再度セットアップを実行するだけでジャンクションが作成されます。
 
 - `_config/paths.json` は各PCで個別に作成が必要(BOX非同期)
-- CLAUDE.md/AGENTS.md はスクリプトにより自動的にコピーされます。
+- CLAUDE.md/AGENTS.md は自動的にコピーされます。
 
 ## スクリプト一覧
 
@@ -432,8 +394,6 @@ BOX同期完了後、同じスクリプトを実行するだけでジャンク�
 - Windows専用(ジャンクション・PowerShellスクリプト)
 - BOX Driveが必要(Layer 2/3の同期)
 - 同一ボリューム内でのみジャンクションが有効
-- .ps1 スクリプトは Shift_JIS (cp932) で記述、出力は UTF-8
-- Obsidian Vault は2台のPCで同時に開かない(データ上書き防止)
 
 ## License
 

@@ -323,7 +323,7 @@ Create `Documents/Projects/_config/paths.json`:
 
 Each value is a full path. Environment variables such as `%USERPROFILE%` are expanded automatically.
 
-### 2. Using GUI Manager (Recommended)
+### 2. Using GUI Manager
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_manager.ps1"
@@ -334,57 +334,20 @@ Or double-click `exec_project_manager.cmd` in the Projects root to launch.
 Features:
 - Dashboard tab: Project overview with quick actions
 - Editor tab: Built-in file viewer/editor for project files
-- Setup tab: Select project name, Structure, and Tier for setup
+- Setup tab: Select project name and Tier for setup
 - AI Context tab: Set up Context Compression Layer for projects
 - Check tab: Health check for existing projects
 - Archive tab: Archive with DryRun preview
+- Archiving moves all three layers to `_archive/`. Mini tier projects are moved under `_archive/_mini/`.
 - Real-time display of script output
 - Custom dark-themed title bar (Catppuccin Mocha)
 
-### 3. Command Line Operation
+### 3. Setup on PC-B
 
-```powershell
-# Main project (full tier)
-.\_projectTemplate\scripts\setup_project.ps1 -ProjectName "NewProject"
+After BOX sync is complete, simply run the setup from the GUI Manager's Setup tab again to create junctions.
 
-# Support task (mini tier)
-.\_projectTemplate\scripts\setup_project.ps1 -ProjectName "SupportProject" -Tier mini
-```
-
-### 4. Health Check
-
-```powershell
-# Main project
-.\_projectTemplate\scripts\check_project.ps1 -ProjectName "NewProject"
-
-# Support task
-.\_projectTemplate\scripts\check_project.ps1 -ProjectName "SupportProject" -Mini
-```
-
-### 5. Archiving Projects
-
-```powershell
-# Check with DryRun (no actual changes)
-.\_projectTemplate\scripts\archive_project.ps1 -ProjectName "MyProject" -DryRun
-
-# Execute
-.\_projectTemplate\scripts\archive_project.ps1 -ProjectName "MyProject"
-
-# Support task
-.\_projectTemplate\scripts\archive_project.ps1 -ProjectName "SupportProject" -Mini -DryRun
-```
-
-Archiving moves all three layers to `_archive/`. Mini tier projects are moved under `_archive/_mini/`.
-
-### 6. Setup on PC-B
-
-After BOX sync is complete, simply run the same script to create junctions and symbolic links:
-
-```powershell
-.\_projectTemplate\scripts\setup_project.ps1 -ProjectName "NewProject"
-```
-
-- CLAUDE.md/AGENTS.md copies are created automatically by the script.
+- The `_config/paths.json` file needs to be created on each PC individually (Not synced via BOX).
+- CLAUDE.md/AGENTS.md copies are created automatically.
 
 ## Script List
 
@@ -432,8 +395,6 @@ After BOX sync is complete, simply run the same script to create junctions and s
 - Windows only (junctions and PowerShell scripts)
 - BOX Drive required (Layer 2/3 sync)
 - Junctions only work within the same volume
-- .ps1 scripts are written in Shift_JIS (cp932), output is UTF-8
-- Obsidian Vault should not be opened on two PCs simultaneously (to prevent data overwrite)
 
 ## License
 
