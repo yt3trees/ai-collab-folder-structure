@@ -16,17 +16,24 @@ function Initialize-TabSetup {
         })
 
     $btnSetupBrowse.Add_Click({
-            Add-Type -AssemblyName System.Windows.Forms
-            $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
-            $dialog.Description = "Select an External Shared Folder"
-            $dialog.ShowNewFolderButton = $true
-            if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-                $txtExternalShared = $Window.FindName("setupExternalShared")
-                if ([string]::IsNullOrWhiteSpace($txtExternalShared.Text)) {
-                    $txtExternalShared.Text = $dialog.SelectedPath
-                }
-                else {
-                    $txtExternalShared.Text += "`r`n" + $dialog.SelectedPath
+            Add-Type -AssemblyName PresentationFramework
+            $dialog = New-Object Microsoft.Win32.OpenFileDialog
+            $dialog.Title = "Select a Folder (Click 'Open' to confirm)"
+            $dialog.ValidateNames = $false
+            $dialog.CheckFileExists = $false
+            $dialog.CheckPathExists = $true
+            $dialog.FileName = "Folder Selection."
+
+            if ($dialog.ShowDialog() -eq $true) {
+                $selectedPath = [System.IO.Path]::GetDirectoryName($dialog.FileName)
+                if (-not [string]::IsNullOrWhiteSpace($selectedPath)) {
+                    $txtExternalShared = $Window.FindName("setupExternalShared")
+                    if ([string]::IsNullOrWhiteSpace($txtExternalShared.Text)) {
+                        $txtExternalShared.Text = $selectedPath
+                    }
+                    else {
+                        $txtExternalShared.Text += "`r`n" + $selectedPath
+                    }
                 }
             }
         })
