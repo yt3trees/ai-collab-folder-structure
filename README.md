@@ -14,6 +14,11 @@ A three-layer workspace structure for organizing multiple projects and optimizin
 - Layer 2 (Knowledge): Obsidian Vault (accumulation of thoughts and insights, BOX sync)
 - Layer 3 (Artifact): Deliverables and reference materials (file backup and cross-PC sync, BOX sync)
 
+## Requirements & Limitations
+
+- Windows only (junctions and PowerShell scripts)
+- BOX Drive required (Layer 2/3 sync)
+
 ## Three-Layer Structure
 
 ```mermaid
@@ -96,6 +101,7 @@ The AI autonomously manages context according to its behavioral guidelines, so u
 
 ```mermaid
 sequenceDiagram
+    autonumber
     actor User
     participant Work as _work/2026/...
     participant Claude
@@ -140,65 +146,65 @@ claude
 
 Users simply proceed with their normal work, and the AI evaluates the situation to propose recording at appropriate moments.
 
-👨‍💻 User:
-Improve the login process in `src/api/auth.ts`. Let's add a token refresh mechanism when the token expires.
-
-🤖 Claude:
-(After modifying the code...)
-The updates are complete.
-💡 Record in Decision Log? → Added token refresh to authentication flow
-
-👨‍💻 User:
-Yes, please.
-
-🤖 Claude:
-Recorded in `decision_log.md`.
-
-👨‍💻 User:
-That's all for today.
-
-🤖 Claude:
-📝 Append to current_focus.md?
-
-Add to [Recent events]:
-  + [AI] Implemented token refresh in auth.ts
-  + [AI] Recorded auth flow change in Decision Log
-
-(Yes / Modify / Not needed)
+> 👨‍💻 User:
+> Improve the login process in `src/api/auth.ts`. Let's add a token refresh mechanism when the token expires.
+> 
+> 🤖 Claude:
+> (After modifying the code...)
+> The updates are complete.
+> 💡 Record in Decision Log? → Added token refresh to authentication flow
+> 
+> 👨‍💻 User:
+> Yes, please.
+> 
+> 🤖 Claude:
+> Recorded in `decision_log.md`.
+> 
+> 👨‍💻 User:
+> That's all for today.
+> 
+> 🤖 Claude:
+> 📝 Append to current_focus.md?
+> 
+> Add to [Recent events]:
+>   + [AI] Implemented token refresh in auth.ts
+>   + [AI] Recorded auth flow change in Decision Log
+> 
+> (Yes / Modify / Not needed)
 
 #### 3. Obsidian Knowledge Integration (AI and Vault in Sync)
 
 The AI reads and writes to the Obsidian Vault through `_ai-context/obsidian_notes/`, accumulating technical insights and session outcomes.
 
-👨‍💻 User:
-How did we configure the DB connection timeout when we fixed that issue previously in this project?
-
-🤖 Claude:
-Searched `obsidian_notes/notes/`.
-According to `db_timeout_config.md` recorded in Jan 2026, the connection pool settings were...
-
-👨‍💻 User:
-I see, thanks. I'd like to implement the token refresh based on what we decided in last week's authentication review meeting.
-
-🤖 Claude:
-Let me check `obsidian_notes/meetings/`.
-Found `2026-02-17_authentication-review.md`. Key decisions were...
-(Proposes implementation approach based on the notes)
-
-👨‍💻 User:
-Perfect, let's go with that. That's all for today.
-
-🤖 Claude:
-📝 Append to current_focus.md?
-
-Add to [Recent events]:
-  + [AI] Implemented token refresh in auth.ts
-
-📓 The Redis caching strategy from this session seems worth referencing in the future. Save to Obsidian?
-→ notes/redis-cache-strategy.md
-  Redis cache strategy: TTL design and key naming conventions
-
-(Yes / Modify / Not needed)
+> 👨‍💻 User:
+> How did we configure the DB connection timeout when we fixed that issue previously in this project?
+> 
+> 🤖 Claude:
+> Searched `obsidian_notes/notes/`.
+> According to `db_timeout_config.md` recorded in Jan 2026, the connection pool settings were...
+> 
+> 👨‍💻 User:
+> I see, thanks. I'd like to implement the token refresh based on what we decided in last week's authentication review meeting.
+> 
+> 🤖 Claude:
+> Let me check `obsidian_notes/meetings/`.
+> Found `2026-02-17_authentication-review.md`. Key decisions were...
+> (Proposes implementation approach based on the notes)
+> 
+> 👨‍💻 User:
+> Perfect, let's go with that. That's all for today.
+> 
+> 🤖 Claude:
+> 📝 Append to current_focus.md?
+> 
+> Add to [Recent events]:
+>   + [AI] Implemented token refresh in auth.ts
+> 
+> 📓 The Redis caching strategy from this session seems worth referencing in the future. Save to Obsidian?
+> → notes/redis-cache-strategy.md
+>   Redis cache strategy: TTL design and key naming conventions
+> 
+> (Yes / Modify / Not needed)
 
 #### 4. Benefits of this Workflow
 
@@ -413,12 +419,6 @@ After BOX sync is complete, simply run the setup from the GUI Manager's Setup ta
 - [workspace-architecture.md](./workspace-architecture.md) - Detailed design documentation
 - [_projectTemplate/README.md](./Projects/_projectTemplate/README.md) - Template detailed documentation
 - [CLAUDE.md](./Projects/CLAUDE.md) - AI instructions for entire workspace
-
-## Limitations
-
-- Windows only (junctions and PowerShell scripts)
-- BOX Drive required (Layer 2/3 sync)
-- Junctions only work within the same volume
 
 ## License
 

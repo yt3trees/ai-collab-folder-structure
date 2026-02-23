@@ -12,6 +12,11 @@ AI(Claude Code)との協働を前提とした、プロジェクトフォルダ�
 - Layer 2 (Knowledge): Obsidian Vault(思考・知見の蓄積、BOX同期)
 - Layer 3 (Artifact): 成果物・参照資料(ファイルバックアップ・PC間同期、BOX同期)
 
+## 必須要件・制約事項
+
+- Windows専用(ジャンクション・PowerShellスクリプト)
+- BOX Driveが必要(Layer 2/3の同期)
+
 ## 3層レイヤー構造
 
 ```mermaid
@@ -94,6 +99,7 @@ AIは行動規範に従って自律的にコンテキスト管理を行うため
 
 ```mermaid
 sequenceDiagram
+    autonumber
     actor User
     participant Work as _work/2026/...
     participant Claude
@@ -138,65 +144,65 @@ claude
 
 ユーザーは通常の作業を進めるだけで、AIが状況を判断して適切なタイミングで記録を提案します。
 
-👨‍💻 User:
-`src/api/auth.ts` のログイン処理を改善して。トークンの有効期限切れエラー時にはリフレッシュ処理を挟むようにしたい。
-
-🤖 Claude:
-（コードの修正後...）
-修正が完了しました。
-💡 Decision Logに記録しますか？ → 認証フローにトークンリフレッシュ処理を追加
-
-👨‍💻 User:
-お願い。
-
-🤖 Claude:
-`decision_log.md` に記録しました。
-
-👨‍💻 User:
-今日の作業はここまで。
-
-🤖 Claude:
-📝 current_focus.md に追記しますか？
-
-【最近あったこと】に追加:
-  + [AI] auth.ts のトークンリフレッシュ処理を実装
-  + [AI] 認証フロー変更をDecision Logに記録
-
-（はい / 修正あり / 不要）
+> 👨‍💻 User:
+> `src/api/auth.ts` のログイン処理を改善して。トークンの有効期限切れエラー時にはリフレッシュ処理を挟むようにしたい。
+> 
+> 🤖 Claude:
+> （コードの修正後...）
+> 修正が完了しました。
+> 💡 Decision Logに記録しますか？ → 認証フローにトークンリフレッシュ処理を追加
+> 
+> 👨‍💻 User:
+> お願い。
+> 
+> 🤖 Claude:
+> `decision_log.md` に記録しました。
+> 
+> 👨‍💻 User:
+> 今日の作業はここまで。
+> 
+> 🤖 Claude:
+> 📝 current_focus.md に追記しますか？
+> 
+> 【最近あったこと】に追加:
+>   + [AI] auth.ts のトークンリフレッシュ処理を実装
+>   + [AI] 認証フロー変更をDecision Logに記録
+> 
+> （はい / 修正あり / 不要）
 
 #### 3. Obsidian ナレッジ連携（AIがVaultと双方向に連携・知見の蓄積）
 
 AIは `_ai-context/obsidian_notes/` を通じてObsidian Vaultを参照し、作業の成果や技術的な知見を蓄積します。
 
-👨‍💻 User:
-以前、このプロジェクトでDB接続のタイムアウト問題に対処した時の構成ってどうなってたっけ？
-
-🤖 Claude:
-`obsidian_notes/notes/` を検索しました。
-2026年1月に記録された `db_timeout_config.md` によると、コネクションプールの設定値を...
-
-👨‍💻 User:
-なるほど、ありがとう。それを踏まえて、先週の認証フロー見直し会議の決定事項はどうだっけ？
-
-🤖 Claude:
-`obsidian_notes/meetings/` を確認します。
-`2026-02-17_authentication-review.md` に議事録がありました。主な決定事項は...
-（内容を踏まえて実装の方針を提案）
-
-👨‍💻 User:
-完璧、その方針で進めて。今日はここまで。
-
-🤖 Claude:
-📝 current_focus.md に追記しますか？
-
-【最近あったこと】に追加:
-  + [AI] auth.ts のトークンリフレッシュ処理を実装
-
-📓 今回のRedisキャッシュ戦略は今後も参照価値がありそうです。Obsidianにも記録しておきますか？
-→ notes/redis-cache-strategy.md
-  Redis キャッシュ戦略: TTL設計とキー命名規則
-
-（はい / 修正あり / 不要）
+> 👨‍💻 User:
+> 以前、このプロジェクトでDB接続のタイムアウト問題に対処した時の構成ってどうなってたっけ？
+> 
+> 🤖 Claude:
+> `obsidian_notes/notes/` を検索しました。
+> 2026年1月に記録された `db_timeout_config.md` によると、コネクションプールの設定値を...
+> 
+> 👨‍💻 User:
+> なるほど、ありがとう。それを踏まえて、先週の認証フロー見直し会議の決定事項はどうだっけ？
+> 
+> 🤖 Claude:
+> `obsidian_notes/meetings/` を確認します。
+> `2026-02-17_authentication-review.md` に議事録がありました。主な決定事項は...
+> （内容を踏まえて実装の方針を提案）
+> 
+> 👨‍💻 User:
+> 完璧、その方針で進めて。今日はここまで。
+> 
+> 🤖 Claude:
+> 📝 current_focus.md に追記しますか？
+> 
+> 【最近あったこと】に追加:
+>   + [AI] auth.ts のトークンリフレッシュ処理を実装
+> 
+> 📓 今回のRedisキャッシュ戦略は今後も参照価値がありそうです。Obsidianにも記録しておきますか？
+> → notes/redis-cache-strategy.md
+>   Redis キャッシュ戦略: TTL設計とキー命名規則
+> 
+> （はい / 修正あり / 不要）
 
 #### 4. このワークフローの利点
 
@@ -411,12 +417,6 @@ BOX同期完了後、GUIマネージャーの Setup タブから再度セット�
 - [workspace-architecture.md](./workspace-architecture.md) - 詳細設計ドキュメント
 - [_projectTemplate/README.md](./Projects/_projectTemplate/README.md) - テンプレート詳細ドキュメント
 - [CLAUDE.md](./Projects/CLAUDE.md) - ワークスペース全体のAI指示書
-
-## 制約事項
-
-- Windows専用(ジャンクション・PowerShellスクリプト)
-- BOX Driveが必要(Layer 2/3の同期)
-- 同一ボリューム内でのみジャンクションが有効
 
 ## License
 
