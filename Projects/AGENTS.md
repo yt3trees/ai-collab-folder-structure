@@ -63,6 +63,9 @@ _mini/<project>/
 - Obsidian Vault: `%USERPROFILE%\Box\Obsidian-Vault\`
 - BOX Projects: `%USERPROFILE%\Box\Projects\`
 - ProjectA: `ProjectA\development\source\`
+- Global AI Knowledge: `{obsidianVaultRoot}\ai-context\` (see paths.json)
+  - tech-patterns/: Cross-project reusable code/design patterns
+  - lessons-learned/: Failures and insights (tagged by project)
 
 ## Scripts
 

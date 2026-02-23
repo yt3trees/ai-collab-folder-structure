@@ -56,16 +56,23 @@ AIコンテキストをセッションや時間を跨いで維持・管理する
 
 AIエージェントはセッションが終了すると短期記憶（コンテキスト）を失うため、CCLが「プロジェクトの外部脳」として機能します。
 
-- **`project_summary.md`**: プロジェクト全体像（長期的視点）
-- **`current_focus.md`**: 直近のタスクと現在のフォーカス（短期的視点、人間とAIの双方向で更新する「今のスナップショット」）
+- **`project_summary.md`**: プロジェクト全体像（長期的視点、目安: 300トークン以内）
+- **`current_focus.md`**: 直近のタスクと現在のフォーカス（短期的視点、目安: 500トークン以内。超えた場合は focus_history/ にアーカイブ）
 - **`decision_log/`**: 意思決定履歴（背景・選択肢・理由を構造化したログ）
+
+### Session Start Protocol と Context Loading Priority
+
+セッション開始時のAI行動を定型化し、毎回「前回何をやったか」を確認する手間を省きます。
+
+- **Context Loading Priority**: 読み込み順序（必須→状況依存→オンデマンド）を定め、不要なファイルを読まずトークンを節約
+- **Session Start Protocol**: AIがコンテキストを読み込んだ後、未完了事項を1〜2行で自動提示。前回更新から3日以上経過した場合のみ進捗確認を1回行い、その後ユーザーの指示を待つ
 
 ### カスタム AI SKILL による自律管理
 
 CCLは単なる静的ファイル群の置き場ではありません。AI自身がプロアクティブにファイルを更新・維持するための拡張機能 (SKILL) によって支えられます。
 - **context-decision-log**: 作業中に出た「会話上の暗黙的な決定（採用技術の選択など）」を検知し、構造化して記録を提案するスキル
 - **context-session-end**: 作業セッションの終了時（会話の区切り）に、その日の進捗とAIが関与した作業結果を要約し `current_focus.md` に追記更新するスキル
-- **obsidian-knowledge**: `_ai-context/obsidian_notes/` を通じてObsidian Vaultを読み取り文脈を補完し、セッションの成果や技術的知見を `#ai-memory` タグ付きでVaultに書き戻すことを提案するスキル
+- **obsidian-knowledge**: `_ai-context/obsidian_notes/` を通じてObsidian Vaultを読み取り文脈を補完し、セッションの成果や技術的知見を `#ai-memory` タグ付きでVaultに書き戻すことを提案するスキル。プロジェクト横断で再利用できる知見はVaultルートの `ai-context/` ハブ (tech-patterns/, lessons-learned/) への振り分けを提案
 
 ---
 
@@ -105,7 +112,7 @@ CCLは単なる静的ファイル群の置き場ではありません。AI自身
 2. **プロジェクト固有ジャンクションの解除**:
    - 不要なストレージアクセスや、AIの過剰なファイルインデックス生成を防ぐため、アーカイブ時には `shared/` などのジャンクションは直ちに解除されます。
 3. **ナレッジの抽出 (Knowledge Promotion)**:
-   - アーカイブの評価プロセスにおいて、特定のプロジェクトに依存しない汎用的な技術知見は、Obsidian Vault の `TechNotes/` (案件横断・汎用技術領域) に昇格させます。
+   - アーカイブの評価プロセスにおいて、特定のプロジェクトに依存しない汎用的な技術知見は、Obsidian Vault の `ai-context/` ハブ (tech-patterns/: 再利用可能な設計パターン、lessons-learned/: 失敗・ハマり知見) に振り分けて昇格させます。
 
 ---
 

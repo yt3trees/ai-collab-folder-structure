@@ -119,6 +119,26 @@ tags: [ai-memory, tag1]
 - 1セッション最大2回まで提案する
 - 断られたら、そのセッションでは以降勧めない
 
+## グローバルナレッジへの振り分け判断
+
+Obsidian に保存する際、以下の基準で保存先を決める:
+
+### プロジェクト固有 → obsidian_notes/ 配下
+
+- そのプロジェクト特有の設計判断、要件、経緯
+
+### プロジェクト横断 → {obsidianVaultRoot}/ai-context/ (_config/paths.json 参照)
+
+- tech-patterns/: 複数プロジェクトで再利用できるコード・設計パターン
+  例: PowerShell WPF の日本語対応パターン、SJIS/UTF-8 変換のベストプラクティス
+- lessons-learned/: 失敗・ハマりから学んだこと (frontmatter にプロジェクト名タグを付与)
+  例: Junction 作成時の落とし穴、ScriptBlock クロージャの挙動
+
+グローバル保存の提案形式:
+「📓 グローバルナレッジに記録しますか？
+→ ai-context/tech-patterns/{filename}.md
+  {内容の1行サマリー}」
+
 ## CCL との連携
 
 - session-end と同時: `daily/` への書き込み提案を `current_focus.md` の追記提案と同時に行う

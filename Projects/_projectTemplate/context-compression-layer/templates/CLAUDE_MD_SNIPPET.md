@@ -9,16 +9,31 @@
 ```markdown
 ## Context Compression Layer
 
-### 初回読み込み（自動）
+### Context Loading Priority
 
-このプロジェクトで最初のタスクに取りかかる前に、以下を読んでください:
+AIはセッション開始時、以下の順序でコンテキストを読み込んでください:
 
-1. `_ai-context/context/project_summary.md` - プロジェクト全体像
-2. `_ai-context/context/current_focus.md` - 現在のフォーカス
+1. [必須] current_focus.md (目安: 500 tokens / 約400文字以内)
+2. [必須] project_summary.md (目安: 300 tokens / 約250文字以内)
+3. [状況依存] decision_log/ の最新3件
+4. [オンデマンド] file_map.md (ファイル構造の質問時のみ)
+5. [オンデマンド] obsidian_notes/ (質問に関連するものだけ検索)
 
-current_focus.md の末尾「更新」日付が3日以上前の場合、1回だけ聞いてください:
-「前回から何か進展や変更はありましたか？（なければそのまま作業に入ります）」
-回答があれば current_focus.md に反映してから作業開始。なければそのまま開始。
+ファイルが目安サイズを超えていたら整理を提案してください:
+「current_focus.md が大きくなっています。古い情報を focus_history/ にアーカイブして整理しますか？」
+
+### Session Start Protocol
+
+AIはセッション開始時（最初のユーザーメッセージに応答する前）に以下を実行:
+
+1. _ai-context/context/current_focus.md を読む
+2. _ai-context/context/project_summary.md を読む
+3. _ai-context/context/decision_log/ の最新3件を確認する
+4. 未完了・保留事項があれば、以下の形式で1〜2行のサマリーを提示する:
+   「前回は [作業内容] を行いました。[未完了事項] が保留中です。」
+5. 更新日付が3日以上前の場合のみ、1回だけ確認する:
+   「前回から進展や変更はありましたか？（なければそのまま作業に入ります）」
+6. ユーザーの指示を待つ（自発的に作業を開始しない）
 
 ### AI行動規範（自律的に従うこと）
 

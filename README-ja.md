@@ -80,9 +80,9 @@ flowchart TD
 
 セッション跨ぎのAIコンテキスト管理 - AIが過去の文脈を正しく理解し、作業の継続性を保つための仕組み:
 
-- 構成要素: project_summary.md (全体像), current_focus.md (今のフォーカス), decision_log (意思決定履歴)
-- 自動連携: セッション開始時に `AGENTS.md` がCCLの内容を読み込み、現在の状況を把握 (各CLIツール向けのエイリアスファイル `CLAUDE.md` 等も同一内容を参照)
-- AI自律行動: AIが会話の流れから意思決定や作業の区切りを検知し、自分からコンテキストファイルの更新を提案
+- 構成要素: project_summary.md (全体像、目安300トークン), current_focus.md (今のフォーカス、目安500トークン), decision_log (意思決定履歴)
+- Session Start Protocol: セッション開始時にAIがコンテキストファイルを優先順位順に読み込み、未完了作業を1〜2行でサマリー提示。前回更新が3日以上前の場合のみ進捗を1回確認
+- AI自律行動: AIが会話の流れから意思決定や作業の区切りを検知し、自分からコンテキストファイルの更新を提案。ファイルが目安サイズを超えた場合は focus_history/ へのアーカイブを提案
 
 ### AI自律行動規範
 
@@ -90,7 +90,7 @@ AIはCLAUDE.mdに記述された行動規範に従い、以下を自律的に実
 
 - 意思決定の検出と記録: 会話中の暗黙的な決定事項（技術選定、設計判断等）を検出し、構造化された意思決定ログとして記録を提案
 - セッション終了の検知: 作業の区切りを自然に検知し、AIが関与した作業内容のみを `current_focus.md` へ追記提案
-- Obsidian ナレッジ連携: `_ai-context/obsidian_notes/` を読んで文脈を補完し、作業中の発見やセッションの成果を含めて、Obsidian Vaultに `#ai-memory` タグ付きで還元することを提案
+- Obsidian ナレッジ連携: `_ai-context/obsidian_notes/` を読んで文脈を補完し、作業中の発見やセッションの成果をVaultに還元。プロジェクト横断で再利用できる知見はVaultルートの `{obsidianVaultRoot}/ai-context/` ハブ (tech-patterns/, lessons-learned/) に振り分け提案。AI生成ノートには `#ai-memory` タグを付与
 
 ### ワークフロー例 (Claude Code)
 
@@ -403,7 +403,7 @@ BOX同期完了後、GUIマネージャーの Setup タブから再度セット�
 | `skills/` | AI自律行動規範の定義 |
 | `skills/context-decision-log/` | 意思決定の自動検出と構造化記録 |
 | `skills/context-session-end/` | セッション区切りの検知とcurrent_focus.md追記 |
-| `skills/obsidian-knowledge/` | Obsidian Vaultの読み取りと書き込み提案 |
+| `skills/obsidian-knowledge/` | Obsidian Vaultの読み取りと書き込み提案、プロジェクト横断知見のグローバル ai-context/ ハブへの振り分け |
 
 ### _globalScripts/
 
