@@ -51,7 +51,7 @@ Documents/Projects/
 | current_focus.md | 主に書く(30秒で上書き更新) | 作業の区切りで `[AI]` 付き追記を提案 |
 | project_summary.md | 初期作成+大きな変更時 | マイルストーン変更時に更新提案 |
 | decision_log/*.md | 会議等で決まったことを伝える | ドラフト生成。人間が承認して保存 |
-| obsidian_notes/daily/ | 書かない(weekly/へ) | セッション終了時にサマリーを提案 |
+| obsidian_notes/daily/ | 書かない | セッション終了時にサマリーを提案 |
 | obsidian_notes/meetings/ | 書かない(recordsへ) | 会議内容共有時に構造化議事録を提案 |
 | obsidian_notes/notes/ | 主に書く | 技術的発見の記録を提案 |
 | obsidian_notes/specs/ | 主に書く | 設計提案・アーキテクチャ検討の記録を提案 |

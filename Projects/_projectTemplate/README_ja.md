@@ -90,7 +90,7 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 スクリプトが実行する内容 (full tier):
 1. ローカルフォルダの作成 (_ai-context, _ai-workspace, development)
 2. BOX共有フォルダの作成 (docs, reference, records, _work)
-3. Obsidian Vault プロジェクトフォルダの作成 (daily, meetings, specs, notes, weekly) と Indexファイルの作成
+3. Obsidian Vault プロジェクトフォルダの作成 (daily, meetings, specs, notes, troubleshooting) と Indexファイルの作成
 4. ジャンクション作成 (shared/, obsidian_notes/)
 5. AGENTS.md/CLAUDE.md コピー作成 (BOX側 → ローカル)
 
@@ -225,7 +225,7 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 |------|------|-------|
 | Layer 1 (_ai-context/) | あり | あり |
 | Layer 1 (_ai-workspace/) | あり | なし |
-| Layer 2 (Obsidian) | daily, meetings, specs, notes, weekly | notes のみ |
+| Layer 2 (Obsidian) | daily, meetings, specs, notes, troubleshooting | notes のみ |
 | Layer 3 (BOX docs/) | planning, design, testing, release | flat (サブフォルダなし) |
 | Layer 3 (reference/) | あり (vendor, standards, external) | なし |
 | Layer 3 (records/) | あり (minutes, reports, reviews) | なし |
@@ -353,7 +353,7 @@ Documents/Projects/
 
 - `shared/` → `Box/Projects/{ProjectName}/` (成果物)
 - `_ai-context/obsidian_notes/` → `Box/Obsidian-Vault/Projects/{ProjectName}/` (知識ベース)
-- Obsidian Vault 内のプロジェクトフォルダ (daily, meetings, specs, notes, weekly)
+- Obsidian Vault 内のプロジェクトフォルダ (daily, meetings, specs, notes, troubleshooting)
 - `00_{ProjectName}-Index.md`
 
 Obsidianで以下のファイルを作成してください:

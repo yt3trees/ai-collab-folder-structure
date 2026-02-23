@@ -138,7 +138,6 @@ $obsidianFolders = @(
     "meetings",
     "specs",
     "notes",
-    "weekly",
     "troubleshooting",
     "ai-context",
     "ai-context\decision_log",

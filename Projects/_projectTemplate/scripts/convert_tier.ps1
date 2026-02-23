@@ -151,7 +151,7 @@ if ($To -eq "mini") {
 
     # Check Obsidian folders
     if (Test-Path $srcObsidian) {
-        foreach ($folder in @("daily", "meetings", "specs", "weekly")) {
+        foreach ($folder in @("daily", "meetings", "specs")) {
             $folderPath = Join-Path $srcObsidian $folder
             if (Test-Path $folderPath) {
                 $files = Get-ChildItem -Path $folderPath -Recurse -File -ErrorAction SilentlyContinue
@@ -378,7 +378,7 @@ if ($To -eq "full") {
     }
 
     # Obsidian: full folders
-    $obsidianFolders = @("daily", "meetings", "specs", "notes", "weekly")
+    $obsidianFolders = @("daily", "meetings", "specs", "notes")
     foreach ($folder in $obsidianFolders) {
         $path = Join-Path $dstObsidian $folder
         if ($DryRun) {
