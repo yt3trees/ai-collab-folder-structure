@@ -82,14 +82,16 @@ This architecture integrates the Context Compression Layer (CCL) and autonomous 
 
 AI context management across sessions - ensuring the AI correctly understands past context and maintains continuous workflow:
 
-- Components: project_summary.md (overview, target: ~300 tokens), current_focus.md (current focus, target: ~500 tokens), decision_log (history of decisions)
-- Session Start Protocol: The AI reads context files in priority order at session start, presents a 1-2 line status summary of pending work, and asks about progress only if the last update was 3+ days ago
-- Autonomous behavior: The AI detects decisions and work boundaries from conversation flow and proactively proposes context file updates. When a file exceeds its token target, the AI suggests archiving old content to focus_history/
+- Components: project_summary.md (overview, target: ~300 tokens), current_focus.md (current focus, target: ~500 tokens), tensions.md (unresolved trade-offs and concerns), decision_log (history of decisions)
+- Session Start Protocol: The AI reads context files in priority order at session start (current_focus → project_summary → tensions → decision_log), presents a 1-2 line status summary of pending work, and asks about progress only if the last update was 3+ days ago
+- Approval model: Auto (appending to current_focus.md), Notify (tensions.md, low-impact decision_log), Confirm (project_summary.md, high-impact decision_log)
+- Autonomous behavior: The AI detects decisions and work boundaries from conversation flow and proactively proposes context file updates. When unresolved trade-offs are detected, the AI proposes recording them in tensions.md. When a file exceeds its token target, the AI suggests archiving old content to focus_history/
 
 ### Autonomous AI Behavioral Guidelines
 
 The AI follows behavioral guidelines defined in CLAUDE.md and autonomously executes the following. Users do not need to be aware of or explicitly invoke skill names.
 
+- Tension detection and recording: Detects unresolved trade-offs and concerns during conversation and proposes recording them in `tensions.md`. When resolved, proposes deletion and promotion to decision_log
 - Decision detection and recording: Detects implicit decisions (technology selection, design judgments, etc.) during conversation and proposes recording them as structured decision logs
 - Session boundary detection: Naturally detects work boundaries and proposes appending only AI-contributed work to `current_focus.md`
 - Obsidian knowledge integration: Reads `_ai-context/obsidian_notes/` to enrich context from past notes, and proposes writing session outcomes and valuable insights back to the Obsidian Vault. Cross-project reusable insights are routed to the global `{obsidianVaultRoot}/ai-context/` hub (tech-patterns/, lessons-learned/). AI-generated notes are tagged with `#ai-memory`.

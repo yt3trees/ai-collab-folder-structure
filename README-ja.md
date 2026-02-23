@@ -80,14 +80,16 @@ flowchart TD
 
 セッション跨ぎのAIコンテキスト管理 - AIが過去の文脈を正しく理解し、作業の継続性を保つための仕組み:
 
-- 構成要素: project_summary.md (全体像、目安300トークン), current_focus.md (今のフォーカス、目安500トークン), decision_log (意思決定履歴)
-- Session Start Protocol: セッション開始時にAIがコンテキストファイルを優先順位順に読み込み、未完了作業を1〜2行でサマリー提示。前回更新が3日以上前の場合のみ進捗を1回確認
-- AI自律行動: AIが会話の流れから意思決定や作業の区切りを検知し、自分からコンテキストファイルの更新を提案。ファイルが目安サイズを超えた場合は focus_history/ へのアーカイブを提案
+- 構成要素: project_summary.md (全体像、目安300トークン), current_focus.md (今のフォーカス、目安500トークン), tensions.md (未解決トレードオフ・懸念事項), decision_log (意思決定履歴)
+- Session Start Protocol: セッション開始時にAIがコンテキストファイルを優先順位順に読み込み (current_focus → project_summary → tensions → decision_log)、未完了作業を1〜2行でサマリー提示。前回更新が3日以上前の場合のみ進捗を1回確認
+- 承認モデル: Auto (current_focus.md への追記)、Notify (tensions.md、低影響 decision_log)、Confirm (project_summary.md、高影響 decision_log)
+- AI自律行動: AIが会話の流れから意思決定や作業の区切りを検知し、自分からコンテキストファイルの更新を提案。未解決トレードオフを検出した際は tensions.md への記録を提案。ファイルが目安サイズを超えた場合は focus_history/ へのアーカイブを提案
 
 ### AI自律行動規範
 
 AIはCLAUDE.mdに記述された行動規範に従い、以下を自律的に実行します。ユーザーがスキル名を意識して呼び出す必要はありません。
 
+- 未解決課題の検出と記録: 会話中にトレードオフや未決定事項を検出し、`tensions.md` への記録を提案。解決時は削除と decision_log への昇格を提案
 - 意思決定の検出と記録: 会話中の暗黙的な決定事項（技術選定、設計判断等）を検出し、構造化された意思決定ログとして記録を提案
 - セッション終了の検知: 作業の区切りを自然に検知し、AIが関与した作業内容のみを `current_focus.md` へ追記提案
 - Obsidian ナレッジ連携: `_ai-context/obsidian_notes/` を読んで文脈を補完し、作業中の発見やセッションの成果をVaultに還元。プロジェクト横断で再利用できる知見はVaultルートの `{obsidianVaultRoot}/ai-context/` ハブ (tech-patterns/, lessons-learned/) に振り分け提案。AI生成ノートには `#ai-memory` タグを付与

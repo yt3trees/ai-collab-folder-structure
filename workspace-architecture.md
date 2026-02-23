@@ -58,14 +58,16 @@ AIエージェントはセッションが終了すると短期記憶（コンテ
 
 - **`project_summary.md`**: プロジェクト全体像（長期的視点、目安: 300トークン以内）
 - **`current_focus.md`**: 直近のタスクと現在のフォーカス（短期的視点、目安: 500トークン以内。超えた場合は focus_history/ にアーカイブ）
+- **`tensions.md`**: 未解決のトレードオフ・懸念事項（解決したら削除、重要なものは decision_log へ昇格）
 - **`decision_log/`**: 意思決定履歴（背景・選択肢・理由を構造化したログ）
 
 ### Session Start Protocol と Context Loading Priority
 
 セッション開始時のAI行動を定型化し、毎回「前回何をやったか」を確認する手間を省きます。
 
-- **Context Loading Priority**: 読み込み順序（必須→状況依存→オンデマンド）を定め、不要なファイルを読まずトークンを節約
-- **Session Start Protocol**: AIがコンテキストを読み込んだ後、未完了事項を1〜2行で自動提示。前回更新から3日以上経過した場合のみ進捗確認を1回行い、その後ユーザーの指示を待つ
+- **Context Loading Priority**: 読み込み順序（必須→状況依存→オンデマンド）を定め、不要なファイルを読まずトークンを節約。状況依存ファイルとして tensions.md を decision_log の前に読む
+- **Session Start Protocol**: AIがコンテキストを優先順位順に読み込み (current_focus → project_summary → tensions → decision_log)、未完了事項を1〜2行で自動提示。前回更新から3日以上経過した場合のみ進捗確認を1回行い、その後ユーザーの指示を待つ
+- **承認モデル**: AIのファイル更新操作を Auto / Notify / Confirm の3段階で制御。current_focus.md 追記は自動、tensions.md 更新は報告後実行、project_summary.md 変更は必ず確認を取る
 
 ### カスタム AI SKILL による自律管理
 
@@ -73,6 +75,7 @@ CCLは単なる静的ファイル群の置き場ではありません。AI自身
 - **context-decision-log**: 作業中に出た「会話上の暗黙的な決定（採用技術の選択など）」を検知し、構造化して記録を提案するスキル
 - **context-session-end**: 作業セッションの終了時（会話の区切り）に、その日の進捗とAIが関与した作業結果を要約し `current_focus.md` に追記更新するスキル
 - **obsidian-knowledge**: `_ai-context/obsidian_notes/` を通じてObsidian Vaultを読み取り文脈を補完し、セッションの成果や技術的知見を `#ai-memory` タグ付きでVaultに書き戻すことを提案するスキル。プロジェクト横断で再利用できる知見はVaultルートの `ai-context/` ハブ (tech-patterns/, lessons-learned/) への振り分けを提案
+- **行動規範（スキル不要の自律行動）**: tensions.md の未解決課題検出と記録提案、decision_log への意思決定検出、セッション終了の検知と current_focus.md 追記提案が CLAUDE.md の指示として組み込まれており、明示的なスキル呼び出しは不要
 
 ---
 

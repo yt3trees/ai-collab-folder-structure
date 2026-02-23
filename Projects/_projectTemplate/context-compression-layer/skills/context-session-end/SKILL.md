@@ -54,7 +54,21 @@ description: AI behavioral guideline for autonomously detecting work session bou
 💡 「ページネーションをcursor方式に決定」→ Decision Logに記録しますか？
 ```
 
-### 4. 更新実行
+### 4. Tensions 更新提案（該当する場合のみ）
+
+以下のいずれかに該当する場合のみ提案する:
+
+新たな未解決課題が発生した場合:
+```
+⚠️ tensions.md に追記しますか？ → {未解決課題の要約}
+```
+
+既存の tensions.md 項目が解決した場合:
+```
+tensions.md の「{項目名}」はこのセッションで解決しました。削除しますか？
+```
+
+### 5. 更新実行
 
 承認後:
 - current_focus.md の該当セクションに追記（既存内容は触らない）

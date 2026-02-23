@@ -26,6 +26,7 @@ Layer 3: Artifact (BOX)      <- 成果物
 ├── _ai-context/
 │   ├── project_summary.md     ★ プロジェクト全体像
 │   ├── current_focus.md       ★ 今のフォーカス(人間が主に書く)
+│   ├── tensions.md            ★ 未解決トレードオフ・懸念事項
 │   ├── focus_history/         ★ current_focus.md の日次スナップショット
 │   ├── decision_log/          ★ 意思決定ログ
 │   │   └── TEMPLATE.md
@@ -46,9 +47,16 @@ Documents/Projects/
 
 ## 誰が何を書くか
 
+`tensions.md` はプロジェクト内の未解決トレードオフを集約する場所。
+解決したものは削除し、重要なものは decision_log に記録する。
+AIは未解決課題を検出したとき追記を提案し（Notifyモデル）、人間が判断・編集する。
+
+承認モデル: Auto（current_focus.md追記）/ Notify（tensions.md, decision_log低影響）/ Confirm（project_summary.md, decision_log高影響）
+
 | ファイル | 人間 | AI |
 |---------|------|-----|
 | current_focus.md | 主に書く(30秒で上書き更新) | 作業の区切りで `[AI]` 付き追記を提案 |
+| tensions.md | 懸念・トレードオフを書く | 検出時に追記提案。解決時は削除を提案 |
 | project_summary.md | 初期作成+大きな変更時 | マイルストーン変更時に更新提案 |
 | decision_log/*.md | 会議等で決まったことを伝える | ドラフト生成。人間が承認して保存 |
 | obsidian_notes/daily/ | 書かない | セッション終了時にサマリーを提案 |
@@ -119,6 +127,7 @@ context-compression-layer/
 ├── templates/
 │   ├── CLAUDE_MD_SNIPPET.md            ★最重要: CLAUDE.mdに追記する内容
 │   ├── current_focus.md                人間が書く軽量テンプレート
+│   ├── tensions.md                     未解決トレードオフ・懸念事項
 │   ├── project_summary.md             プロジェクト概要
 │   ├── decision_log_TEMPLATE.md       意思決定ログ
 │   ├── workspace_summary.md           ワークスペース概要(任意)

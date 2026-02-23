@@ -109,6 +109,7 @@ function Setup-Project {
     Copy-IfNotExists (Join-Path $TemplateDir "current_focus.md")      (Join-Path $obsAiCtx "current_focus.md")
     Copy-IfNotExists (Join-Path $TemplateDir "decision_log_TEMPLATE.md") (Join-Path $dlDir "TEMPLATE.md")
     Copy-IfNotExists (Join-Path $TemplateDir "file_map.md")           (Join-Path $obsAiCtx "file_map.md")
+    Copy-IfNotExists (Join-Path $TemplateDir "tensions.md")           (Join-Path $obsAiCtx "tensions.md")
 
     # Ensure context/ junction exists (_ai-context/context/ -> Obsidian ai-context/)
     $aiContextDir = Join-Path $dir "_ai-context"
