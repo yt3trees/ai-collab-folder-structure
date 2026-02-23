@@ -71,58 +71,57 @@ flowchart TD
 
 ## AI Collaboration Workflow
 
-This architecture integrates SKILLs (AI agent extensions) and the Context Compression Layer (CCL) to enable seamless collaboration with AI.
+This architecture integrates the Context Compression Layer (CCL) and autonomous AI behavioral guidelines as core features, enabling seamless collaboration where the AI naturally manages context without requiring explicit skill invocation from the user.
 
 ### Context Compression Layer (CCL)
 
 AI context management across sessions - ensuring the AI correctly understands past context and maintains continuous workflow:
 
-- Components: project_summary.md (overview), current_focus.md (current focus), decision_log (history of decisions), memories (project memory).
-- Auto-loading: `AGENTS.md` (or `CLAUDE.md`) is designed to automatically read CCL files at session start.
+- Components: project_summary.md (overview), current_focus.md (current focus), decision_log (history of decisions), memories (project memory)
+- Auto-loading: `AGENTS.md` loads CCL content at session start (alias files like `CLAUDE.md` for each CLI tool reference the same content)
+- Autonomous behavior: The AI detects decisions and work boundaries from conversation flow and proactively proposes context file updates
 
-### Custom AI Skills
+### Autonomous AI Behavioral Guidelines
 
-Custom Skills empower the AI to autonomously manage project context and memory.
+The AI follows behavioral guidelines defined in CLAUDE.md and autonomously executes the following. Users do not need to be aware of or explicitly invoke skill names.
 
-- `context-decision-log`: Detects implicit decisions during work and proposes recording them as structured logs.
-- `context-session-end`: Proposes appending the AI's recent contributions to `current_focus.md` at work boundaries.
-- `project-memory`: A project-specific knowledge base where the AI records and searches for valuable technical insights.
+- Decision detection and recording: Detects implicit decisions (technology selection, design judgments, etc.) during conversation and proposes recording them as structured decision logs
+- Session boundary detection: Naturally detects work boundaries and proposes appending only AI-contributed work to `current_focus.md`
+- Project knowledge management: Proactively proposes saving valuable insights discovered during work to project memory, and spontaneously searches existing knowledge when relevant
 
 ### Workflow Example (Claude Code)
 
 Daily tasks are performed within the BOX-synced `_work` folder, organized by date-based working directories.
-By leveraging Claude Code and custom AI Skills (SKILLs), you can work efficiently without losing context.
+The AI autonomously manages context according to its behavioral guidelines, so users don't need to be aware of skills during everyday work.
 
 ```mermaid
 sequenceDiagram
     actor User
     participant Work as _work/2026/...
     participant Claude
-    participant CCL as AI Skills (CCL)
+    participant CCL as CCL (Context Files)
 
     User->>Work: Create & Enter Daily Folder
-    User->>Claude: Launch `claude` (Context Loaded)
-    
+    User->>Claude: Launch claude (Context Loaded)
+
     rect rgba(128, 128, 128, 0.1)
         Note right of Claude: Interactive Session
-        
+
         User->>Claude: Discuss & Code
         Claude->>Work: Modify source code
-        
-        Claude->>CCL: Run `context-decision-log`
-        CCL-->>Work: Save decision_log.md
-        
-        User->>Claude: Ask about past configurations
-        Claude->>CCL: Run `project-memory` (Search)
-        CCL-->>Claude: Return past knowledge
-        
-        Claude->>CCL: Run `project-memory` (Save)
-        CCL-->>Work: Save new knowledge
+
+        Note right of Claude: Auto-detect decisions
+        Claude->>CCL: Propose & save decision_log.md
+
+        Note right of Claude: Proactive knowledge search
+        Claude->>CCL: Reference past insights from memories/
+
+        Note right of Claude: Detect valuable insights
+        Claude->>CCL: Propose saving to memories/
     end
 
-    User->>Claude: Finish for the day
-    Claude->>CCL: Run `context-session-end`
-    CCL-->>Work: Update current_focus.md
+    Note right of Claude: Auto-detect session boundary
+    Claude->>CCL: Propose & update current_focus.md
 ```
 
 #### 1. Create and Navigate to Work Folder
@@ -137,56 +136,60 @@ cd 2026\202602_feature_x
 claude
 ```
 
-#### 2. Working with Claude Code (Using SKILLs)
+#### 2. Working with Claude Code (AI Records Autonomously)
 
-As you work, the AI autonomously evaluates the situation and proposes executing appropriate SKILLs at the right time.
+Users simply proceed with their normal work, and the AI evaluates the situation to propose recording at appropriate moments.
 
-👨‍💻 User:  
+👨‍💻 User:
 Improve the login process in `src/api/auth.ts`. Let's add a token refresh mechanism when the token expires.
 
-🤖 Claude:  
+🤖 Claude:
 (After modifying the code...)
 The updates are complete.
-Since this implementation change affects the architecture, shall I record this in the decision log using the `context-decision-log` skill?
+💡 Record in Decision Log? → Added token refresh to authentication flow
 
-👨‍💻 User:  
+👨‍💻 User:
 Yes, please.
 
-🤖 Claude:  
-(Executes the `context-decision-log` skill and records "Added token refresh process" in `decision_log.md`)
+🤖 Claude:
+Recorded in `decision_log.md`.
 
-👨‍💻 User:  
+👨‍💻 User:
 That's all for today.
 
-🤖 Claude:  
-Understood. Before ending the session, shall I use the `context-session-end` skill to append today's progress (login process improvements) to `current_focus.md`?
+🤖 Claude:
+📝 Append to current_focus.md?
 
-👨‍💻 User:  
-Yes, go ahead.
+Add to [Recent events]:
+  + [AI] Implemented token refresh in auth.ts
+  + [AI] Recorded auth flow change in Decision Log
 
-#### 3. Leveraging Project Memory (`project-memory`)
+(Yes / Modify / Not needed)
 
-The SKILL also shines when preserving new discoveries or recalling past knowledge specifically for the project (both Search and Record).
+#### 3. Project Memory (AI Proactively Leverages)
 
-👨‍💻 User:  
+The AI spontaneously searches for relevant existing knowledge and proposes saving valuable discoveries.
+
+👨‍💻 User:
 How did we configure the DB connection timeout when we fixed that issue previously in this project?
 
-🤖 Claude:  
-(Executes the `project-memory` skill to search...)
-I found the relevant knowledge in the project memory.
+🤖 Claude:
+Searched project memory.
 According to `db_timeout_config.md` recorded in Jan 2026, the connection pool settings were...
 
-👨‍💻 User:  
-I see, thanks. By the way, the Redis caching strategy we just added seems like something we'll need to reference later. Please save it.
+👨‍💻 User:
+I see, thanks.
 
-🤖 Claude:  
-Understood. I will use the `project-memory` skill to record our new Redis caching strategy as `redis_cache_strategy.md` in the project memory.
+🤖 Claude:
+(While continuing work...)
+📝 The Redis caching strategy from this session seems worth referencing in the future. Save to project memory?
+→ Redis cache strategy: TTL design and key naming conventions
 
 #### 4. Benefits of this Workflow
 
 By working within the `_work` folder in this manner, you gain the following benefits:
 - Work-in-progress files (e.g., temporary outputs) do not clutter the formal documents in `docs`
-- Only verified, important decisions (`decision_log.md`) and progress (`current_focus.md`) are automatically extracted and recorded via AI Skills
+- Only important decisions (`decision_log.md`) and progress (`current_focus.md`) are automatically extracted and recorded through the AI's autonomous judgment
 - When you resume work next time, the AI loads the updated `current_focus.md`, allowing for a seamless restart
 
 ## Detailed Workspace Architecture
@@ -197,6 +200,10 @@ By working within the `_work` folder in this manner, you gain the following bene
 |------|----------|---------|-----------|
 | full | `Projects/{Project}/` | Main projects | Full features (_ai-workspace, structured folders) |
 | mini | `Projects/_mini/{Project}/` | Support tasks | Minimal (mini folders) |
+
+### Multi-CLI Support
+
+This architecture supports environments where multiple AI CLI agents (Claude Code, Codex CLI, Gemini CLI, etc.) coexist, with a unified approach to instructions and context. The master instruction file is maintained as a single `shared/AGENTS.md` (Layer 3), and copies are placed with the filenames required by each CLI tool (`CLAUDE.md`, etc.). See [workspace-architecture.md](./workspace-architecture.md) for details.
 
 ### Sync Strategy Between 2 PCs
 
@@ -372,10 +379,10 @@ After BOX sync is complete, simply run the setup from the GUI Manager's Setup ta
 | `templates/` | Template files for AI context (project_summary, current_focus, file_map, decision_log, etc.) |
 | `templates/CLAUDE_MD_SNIPPET.md` | CCL instructions to append to CLAUDE.md |
 | `examples/` | Example files showing usage patterns |
-| `skills/` | AI Agent skills for context management |
-| `skills/context-decision-log/` | Record structured decision logs, detect implicit decisions |
-| `skills/context-session-end/` | Propose appending AI contributions to current_focus.md |
-| `skills/project-memory/` | Project-specific memory for saving discoveries and searching |
+| `skills/` | AI autonomous behavioral guidelines |
+| `skills/context-decision-log/` | Auto-detect decisions and record structured logs |
+| `skills/context-session-end/` | Detect session boundaries and update current_focus.md |
+| `skills/project-memory/` | Proactive project knowledge saving and searching |
 
 ### _globalScripts/
 

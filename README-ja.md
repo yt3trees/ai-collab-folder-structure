@@ -69,59 +69,57 @@ flowchart TD
 
 ## AIとの協働ワークフロー
 
-本アーキテクチャでは、AIエージェントの拡張機能である「SKILL」と「Context Compression Layer (CCL)」をコア機能として統合し、シームレスな協働作業を実現します。
+本アーキテクチャでは、Context Compression Layer (CCL) とAIの自律行動規範をコア機能として統合し、ユーザーが明示的にスキルを呼び出さなくてもAIが自然に文脈管理を行うシームレスな協働作業を実現します。
 
 ### Context Compression Layer (CCL)
 
 セッション跨ぎのAIコンテキスト管理 - AIが過去の文脈を正しく理解し、作業の継続性を保つための仕組み:
 
 - 構成要素: project_summary.md (全体像), current_focus.md (今のフォーカス), decision_log (意思決定履歴), memories (プロジェクトメモリ)
-- 自動連携: セッション開始時に `AGENTS.md` (または `CLAUDE.md`) がCCLの内容を読み込み、現在の状況を把握
-- AIスキルとの統合: 後述のカスタムAIスキルを通じて、AI自身がコンテキストファイルの維持をサポート
+- 自動連携: セッション開始時に `AGENTS.md` がCCLの内容を読み込み、現在の状況を把握 (各CLIツール向けのエイリアスファイル `CLAUDE.md` 等も同一内容を参照)
+- AI自律行動: AIが会話の流れから意思決定や作業の区切りを検知し、自分からコンテキストファイルの更新を提案
 
-### カスタムAIスキル (Custom AI Skills)
+### AI自律行動規範
 
-プロジェクトのコンテキスト管理をAI自身に自律的に行わせるための拡張機能です。
+AIはCLAUDE.mdに記述された行動規範に従い、以下を自律的に実行します。ユーザーがスキル名を意識して呼び出す必要はありません。
 
-- `context-decision-log`: 作業中や会議での暗黙的な決定事項を検出し、構造化された意思決定ログとして記録を提案
-- `context-session-end`: 作業の区切りで、AIが関与した作業内容のみを `current_focus.md` へ追記提案
-- `project-memory`: プロジェクト固有の知識ベース。AIが作業中に発見した価値ある知見をプロジェクトメモリとして記録・検索
+- 意思決定の検出と記録: 会話中の暗黙的な決定事項（技術選定、設計判断等）を検出し、構造化された意思決定ログとして記録を提案
+- セッション終了の検知: 作業の区切りを自然に検知し、AIが関与した作業内容のみを `current_focus.md` へ追記提案
+- プロジェクト知見の管理: 作業中に発見した価値ある知見を先回りでプロジェクトメモリとして保存提案し、関連する既存の知見を自発的に検索
 
 ### ワークフロー例 (Claude Code)
 
 日々の作業はBOX同期対象の `_work` フォルダ内で、日付ベースの作業フォルダを作成して行います。
-Claude CodeとカスタムAIスキル（SKILL）を活用することで、作業の文脈を失わずに効率的に進めることができます。
+AIは行動規範に従って自律的にコンテキスト管理を行うため、ユーザーは普段スキルの存在を意識する必要はありません。
 
 ```mermaid
 sequenceDiagram
     actor User
     participant Work as _work/2026/...
     participant Claude
-    participant CCL as AI Skills (CCL)
+    participant CCL as CCL (Context Files)
 
     User->>Work: 日付ベースの作業専用フォルダを作って移動
-    User->>Claude: `claude` を起動 (自動コンテキスト読み込み)
-    
+    User->>Claude: claude を起動 (自動コンテキスト読み込み)
+
     rect rgba(128, 128, 128, 0.1)
         Note right of Claude: 対話的な作業セッション
-        
+
         User->>Claude: コーディング・修正の依頼
         Claude->>Work: ソースコードの更新
-        
-        Claude->>CCL: `context-decision-log` を実行 (提案・記録)
-        CCL-->>Work: decision_log.md の保存
-        
-        User->>Claude: 過去の経緯や知見を質問
-        Claude->>CCL: `project-memory` を実行 (検索)
-        CCL-->>Claude: 過去の知識を返却
-        
-        Claude->>CCL: `project-memory` を実行 (保存・提案)
-        CCL-->>Work: 新たな知見を保存
+
+        Note right of Claude: 意思決定を自動検知
+        Claude->>CCL: decision_log.md の記録を提案・保存
+
+        Note right of Claude: 関連知見を先回り検索
+        Claude->>CCL: memories/ から過去の知見を参照
+
+        Note right of Claude: 価値ある知見を検出
+        Claude->>CCL: memories/ への保存を提案
     end
 
-    User->>Claude: 今日の作業終了
-    Claude->>CCL: `context-session-end` を実行 (提案・記録)
-    CCL-->>Work: current_focus.md の更新
+    Note right of Claude: 区切りを自動検知
+    Claude->>CCL: current_focus.md の追記を提案・更新
 ```
 
 #### 1. 作業フォルダの作成と移動
@@ -136,56 +134,60 @@ cd 2026\202602_feature_x
 claude
 ```
 
-#### 2. Claude Codeとの作業（SKILLの活用）
+#### 2. Claude Codeとの作業（AIが自律的に記録）
 
-作業を進める中で、AI自身が状況を判断し、適切なタイミングでSKILLの実行を提案してくれます。
+ユーザーは通常の作業を進めるだけで、AIが状況を判断して適切なタイミングで記録を提案します。
 
-👨‍💻 User:  
+👨‍💻 User:
 `src/api/auth.ts` のログイン処理を改善して。トークンの有効期限切れエラー時にはリフレッシュ処理を挟むようにしたい。
 
-🤖 Claude:  
+🤖 Claude:
 （コードの修正後...）
 修正が完了しました。
-この実装方針の変更はアーキテクチャに影響を与えるため、`context-decision-log` スキルを使って意思決定ログに記録しておきましょうか？
+💡 Decision Logに記録しますか？ → 認証フローにトークンリフレッシュ処理を追加
 
-👨‍💻 User:  
+👨‍💻 User:
 お願い。
 
-🤖 Claude:  
-（`context-decision-log` スキルを実行し、`decision_log.md` に「トークンリフレッシュ処理の追加」を記録）
+🤖 Claude:
+`decision_log.md` に記録しました。
 
-👨‍💻 User:  
+👨‍💻 User:
 今日の作業はここまで。
 
-🤖 Claude:  
-承知しました。セッションを終了する前に、`context-session-end` スキルを使用して、本日の進捗（ログイン処理の改善）を `current_focus.md` に追記しておきますか？
+🤖 Claude:
+📝 current_focus.md に追記しますか？
 
-👨‍💻 User:  
-はい、よろしく。
+【最近あったこと】に追加:
+  + [AI] auth.ts のトークンリフレッシュ処理を実装
+  + [AI] 認証フロー変更をDecision Logに記録
 
-#### 3. プロジェクト固有メモリの活用（project-memory）
+（はい / 修正あり / 不要）
 
-作業中に得た知見や、既存の知識を引き出す際にもSKILLが活躍します（検索と記録の2つの用途）。
+#### 3. プロジェクト固有メモリ（AIが先回りで活用）
 
-👨‍💻 User:  
+AIは関連する既存の知見を自発的に検索し、価値ある発見は保存を提案します。
+
+👨‍💻 User:
 以前、このプロジェクトでDB接続のタイムアウト問題に対処した時の構成ってどうなってたっけ？
 
-🤖 Claude:  
-（`project-memory` スキルで検索を実行...）
-プロジェクトメモリから該当の知見が見つかりました。
+🤖 Claude:
+プロジェクトメモリを検索しました。
 2026年1月に記録された `db_timeout_config.md` によると、コネクションプールの設定値を...
 
-👨‍💻 User:  
-なるほど、ありがとう。ところで、今回新しく追加したRedisのキャッシュ戦略について、今後も参照しそうなので保存しておいて。
+👨‍💻 User:
+なるほど、ありがとう。
 
-🤖 Claude:  
-承知しました。`project-memory` スキルを使用して、今回のRedisキャッシュ戦略を `redis_cache_strategy.md` としてプロジェクトメモリに記録しておきます。
+🤖 Claude:
+（作業を進める中で...）
+📝 今回のRedisキャッシュ戦略は今後も参照価値がありそうです。プロジェクトメモリに保存しますか？
+→ Redis キャッシュ戦略: TTL設計とキー命名規則
 
 #### 4. このワークフローの利点
 
 このように `_work` フォルダで作業を進めることで以下のメリットがあります。
 - 作業の過程（一時ファイルなど）は `docs` などの正式なドキュメント群を汚しません
-- 重要な意思決定（`decision_log.md`）や進捗（`current_focus.md`）のみが、AIスキルによって自動的に引き上げられ記録されます
+- 重要な意思決定（`decision_log.md`）や進捗（`current_focus.md`）のみが、AIの自律的な判断によって引き上げられ記録されます
 - 次回作業時に、AIが最新の `current_focus.md` を読み込むため、すぐに作業を再開できます
 
 ## ワークスペース構成の詳細
@@ -196,6 +198,10 @@ claude
 |------|--------|------|------|
 | full | `Projects/{案件}/` | メイン案件 | 全機能(_ai-workspace、構造化フォルダ) |
 | mini | `Projects/_mini/{案件}/` | お手伝い系 | 軽量構成(最小限のフォルダ) |
+
+### Multi-CLI対応
+
+複数のAI CLIエージェント (Claude Code, Codex CLI, Gemini CLI 等) が混在する環境下でも、プロジェクト指示とコンテキストを一本化する仕組みを採用しています。マスターとなる指示書は `shared/AGENTS.md` (Layer 3) に一元管理し、各CLIが要求する固有のファイル名 (`CLAUDE.md` 等) にはそのコピーを配置します。詳細は [workspace-architecture.md](./workspace-architecture.md) を参照してください。
 
 ### 2PC間の同期戦略
 
@@ -371,10 +377,10 @@ BOX同期完了後、GUIマネージャーの Setup タブから再度セット�
 | `templates/` | AIコンテキストファイルテンプレート (project_summary, current_focus, file_map, decision_log等) |
 | `templates/CLAUDE_MD_SNIPPET.md` | CLAUDE.mdに追記するCCL指示 |
 | `examples/` | 使用パターンの例 |
-| `skills/` | AIエージェントスキル for コンテキスト管理 |
-| `skills/context-decision-log/` | 構造化意思決定ログの記録、暗黙的決定の検出 |
-| `skills/context-session-end/` | current_focus.mdへのAI作業分追記提案 |
-| `skills/project-memory/` | プロジェクト固有のメモリ - 知見の保存と検索 |
+| `skills/` | AI自律行動規範の定義 |
+| `skills/context-decision-log/` | 意思決定の自動検出と構造化記録 |
+| `skills/context-session-end/` | セッション区切りの検知とcurrent_focus.md追記 |
+| `skills/project-memory/` | プロジェクト知見の先回り保存と検索 |
 
 ### _globalScripts/
 
