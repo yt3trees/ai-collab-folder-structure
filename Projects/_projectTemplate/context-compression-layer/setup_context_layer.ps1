@@ -119,25 +119,27 @@ function Setup-Project {
         Write-Host "  [WARN]   context/ junction not created (Obsidian ai-context not found)" -ForegroundColor Yellow
     }
 
-    # Auto-append CCL instructions to CLAUDE.md
-    $claudeMdPath = Join-Path $dir "CLAUDE.md"
+    # Auto-append CCL instructions to CLAUDE.md and AGENTS.md
     $snippetPath = Join-Path $TemplateDir "CLAUDE_MD_SNIPPET.md"
-    if ((Test-Path $claudeMdPath) -and (Test-Path $snippetPath)) {
-        $claudeContent = Get-Content $claudeMdPath -Raw -Encoding UTF8
-        if ($claudeContent -notlike "*## Context Compression Layer*") {
-            $snippetContent = Get-Content $snippetPath -Raw -Encoding UTF8
-            if ($snippetContent -match '(?s)```markdown\r?\n(.*?)\r?\n```') {
-                $cclSection = $Matches[1]
-                Add-Content -Path $claudeMdPath -Value "`n$cclSection" -Encoding UTF8
-                Write-Host "  [UPDATE] CLAUDE.md <- CCL instructions appended" -ForegroundColor Green
+    foreach ($mdFile in @("CLAUDE.md", "AGENTS.md")) {
+        $mdPath = Join-Path $dir $mdFile
+        if ((Test-Path $mdPath) -and (Test-Path $snippetPath)) {
+            $mdContent = Get-Content $mdPath -Raw -Encoding UTF8
+            if ($mdContent -notlike "*## Context Compression Layer*") {
+                $snippetContent = Get-Content $snippetPath -Raw -Encoding UTF8
+                if ($snippetContent -match '(?s)```markdown\r?\n(.*?)\r?\n```') {
+                    $cclSection = $Matches[1]
+                    Add-Content -Path $mdPath -Value "`n$cclSection" -Encoding UTF8
+                    Write-Host "  [UPDATE] $mdFile <- CCL instructions appended" -ForegroundColor Green
+                }
+            }
+            else {
+                Write-Host "  [SKIP]   $mdFile (CCL already included)" -ForegroundColor Yellow
             }
         }
-        else {
-            Write-Host "  [SKIP]   CLAUDE.md (CCL already included)" -ForegroundColor Yellow
+        elseif (-not (Test-Path $mdPath)) {
+            Write-Host "  [INFO]   $mdFile not found, skipping CCL append" -ForegroundColor DarkGray
         }
-    }
-    elseif (-not (Test-Path $claudeMdPath)) {
-        Write-Host "  [INFO]   CLAUDE.md not found, skipping CCL append" -ForegroundColor DarkGray
     }
 
     # --- Skills setup (Per-Project) ---

@@ -1,19 +1,23 @@
 ---
 name: context-decision-log
-description: Structure and record decision logs. This applies to decisions made during AI-assisted work, as well as decisions made by humans in meetings or working alone. It also detects and suggests implicit decisions made during a session. Used in phrases like "record decisions" or "○○ was decided in the meeting."
+description: AI behavioral guideline for detecting and recording architectural/design decisions during work sessions. The AI autonomously detects implicit decisions in conversation and proposes structured logging without requiring explicit invocation.
 ---
 
 # Context Decision Log
 
-意思決定を構造化して記録するスキル。暗黙的な決定の検出も担う。
+AIが作業中に意思決定を自律的に検出し、構造化して記録する行動規範。
+
+## 基本方針
+
+ユーザーが明示的に「記録して」と言わなくても、AIは会話中の意思決定パターンを常に監視し、検出したら軽く提案する。提案は作業の流れを止めない1行に留める。
 
 ## 2つの記録パターン
 
-### パターンA: AIとの作業中に決まったこと
+### パターンA: AIとの作業中に決まったこと (自動検出)
 
-セッション中の会話から情報を自動抽出してドラフト生成。
+セッション中の会話から意思決定パターンを検出し、その場で提案する。
 
-### パターンB: 人間が別の場所で決めたこと
+### パターンB: 人間が別の場所で決めたこと (事後報告)
 
 「会議で○○が決まった」等の事後報告。AIが質問して情報を補完:
 
@@ -25,11 +29,11 @@ description: Structure and record decision logs. This applies to decisions made 
 （わからない項目はスキップOK）
 ```
 
-## 暗黙的な決定の検出
+## 自動検出パターン
 
-セッション中、以下のパターンを検出したら1行で提案する:
+以下のパターンを会話中に検出したら、1行で記録を提案する:
 
-### 検出するパターン
+### 検出するもの
 
 | パターン | 例 |
 |---------|---|
@@ -45,13 +49,13 @@ description: Structure and record decision logs. This applies to decisions made 
 - 仮定の話（「もし○○なら」）
 - 既知の事実の確認
 
-### 提案
+### 提案のルール
 
 ```
 💡 Decision Logに記録しますか？ → {決定の要約}
 ```
 
-- 1セッション最大3回
+- 1セッション最大3回まで
 - 断られたら引き下がる
 - 作業の流れを止めない（1行で済ませる）
 
@@ -89,7 +93,7 @@ TEMPLATE.md に従って生成:
 
 ## Chosen（選択）
 
-**→ Option {X}: {名前}**
+→ Option {X}: {名前}
 
 ## Why（理由）
 
@@ -106,7 +110,7 @@ TEMPLATE.md に従って生成:
 
 ## 手順
 
-1. 決定内容の把握（会話から抽出 or ユーザーに質問）
+1. 決定内容の把握（会話から自動抽出 or ユーザーに質問）
 2. ドラフト生成してユーザーに提示
 3. ステータス（確定/仮決定）と内容を確認
 4. 承認後にファイル保存

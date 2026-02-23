@@ -1,21 +1,25 @@
 ---
 name: context-session-end
-description: At natural breakpoints in the work, such as "Thank you," "That's all for now," or "Finished," the AI proposes appending its contributions to `current_focus.md`. It only appends the AI's work, without overwriting human records.
+description: AI behavioral guideline for autonomously detecting work session boundaries and proposing updates to current_focus.md. The AI monitors conversation flow for natural breakpoints and acts without explicit invocation.
 ---
 
 # Context Session End
 
-作業の区切りで、AIが関与した分だけ current_focus.md に追記提案するスキル。
+作業の自然な区切りをAIが自律的に検知し、current_focus.md への追記を提案する行動規範。
 
-## トリガー
+## 基本方針
 
-明示的コマンド不要。以下の自然な区切りで発動:
+ユーザーが「セッション終了スキルを実行して」と言う必要はない。AIは会話の流れから作業の区切りを自然に検知し、記録すべき内容があれば自分から提案する。
+
+## 検知パターン
+
+以下の自然な区切りを検知したら自動的に追記を提案する:
 
 - 「ありがとう」「助かった」
 - 「一旦ここまで」「今日はこれで」
 - まとまった作業（複数ステップ）が一段落したとき
 
-**発動しない**: 短い質問応答（「このSQL正しい？」→「OK」）程度の場合。
+提案しない場合: 短い質問応答（「このSQL正しい？」→「OK」）程度の場合。
 
 ## 手順
 
@@ -49,8 +53,6 @@ description: At natural breakpoints in the work, such as "Thank you," "That's al
 ```
 💡 「ページネーションをcursor方式に決定」→ Decision Logに記録しますか？
 ```
-
-承認されたら `context-decision-log` スキルに委譲。
 
 ### 4. 更新実行
 
