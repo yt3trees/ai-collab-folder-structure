@@ -31,6 +31,30 @@ function New-ColorBrush {
     )
 }
 
+function Open-TerminalAtPath {
+    param([string]$Path)
+    if (-not (Test-Path $Path)) { return }
+    if (Get-Command wt.exe -ErrorAction SilentlyContinue) {
+        Start-Process wt.exe -ArgumentList "-d `"$Path`""
+    } elseif (Get-Command pwsh.exe -ErrorAction SilentlyContinue) {
+        Start-Process pwsh.exe -ArgumentList "-NoExit -Command `"Set-Location '$Path'`""
+    } else {
+        Start-Process powershell.exe -ArgumentList "-NoExit -Command `"Set-Location '$Path'`""
+    }
+}
+
+function Open-AgentAtPath {
+    param([string]$Path, [string]$Agent)
+    if (-not (Test-Path $Path)) { return }
+    if (Get-Command wt.exe -ErrorAction SilentlyContinue) {
+        Start-Process wt.exe -ArgumentList "-d `"$Path`" -- pwsh.exe -NoExit -Command `"$Agent`""
+    } elseif (Get-Command pwsh.exe -ErrorAction SilentlyContinue) {
+        Start-Process pwsh.exe -ArgumentList "-NoExit -Command `"Set-Location '$Path'; $Agent`""
+    } else {
+        Start-Process powershell.exe -ArgumentList "-NoExit -Command `"Set-Location '$Path'; $Agent`""
+    }
+}
+
 # ---- Build one project card ----
 
 function New-ProjectCard {
@@ -145,6 +169,7 @@ function New-ProjectCard {
     # Store project info in variables for the closures
     $localProjName = $Info.Name
     $localIsMini = ($Info.Tier -eq "mini")
+    $localProjPath = $Info.Path
 
     # [Check] button
     $btnCheck = New-Object System.Windows.Controls.Button
@@ -210,8 +235,82 @@ function New-ProjectCard {
             }
         })
 
+    # [Term] button
+    $btnTerm = New-Object System.Windows.Controls.Button
+    $btnTerm.Content = "Term"
+    $btnTerm.FontSize = 11
+    $btnTerm.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
+    $btnTerm.Margin = New-Object System.Windows.Thickness(6, 0, 0, 0)
+    $btnTerm.Background = New-ColorBrush "#45475a"
+    $btnTerm.Foreground = New-ColorBrush "#cdd6f4"
+    $btnTerm.BorderThickness = New-Object System.Windows.Thickness(0)
+    $btnTerm.Cursor = [System.Windows.Input.Cursors]::Hand
+    $btnTerm.Tag = $localProjPath
+
+    $btnTerm.Add_Click({
+        param($sender, $e)
+        Open-TerminalAtPath -Path $sender.Tag
+    })
+
+    # Right-click: custom popup menu (avoids default MenuItem icon column)
+    $btnTerm.Add_MouseRightButtonUp({
+        param($sender, $e)
+        $e.Handled = $true
+        $termPath = $sender.Tag
+
+        if ($null -ne $script:currentTermPopup) {
+            $script:currentTermPopup.IsOpen = $false
+            $script:currentTermPopup = $null
+        }
+
+        $popup = New-Object System.Windows.Controls.Primitives.Popup
+        $popup.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Mouse
+        $popup.PlacementTarget = $sender
+        $popup.StaysOpen = $false
+        $popup.AllowsTransparency = $true
+
+        $border = New-Object System.Windows.Controls.Border
+        $border.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244"))
+        $border.BorderBrush = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#45475a"))
+        $border.BorderThickness = New-Object System.Windows.Thickness(1)
+        $border.Padding = New-Object System.Windows.Thickness(2)
+
+        $menuStack = New-Object System.Windows.Controls.StackPanel
+
+        foreach ($agentDef in @(
+            @{ Label = "Claude"; Cmd = "claude" },
+            @{ Label = "Gemini"; Cmd = "gemini" },
+            @{ Label = "Codex";  Cmd = "codex"  }
+        )) {
+            $menuItem = New-Object System.Windows.Controls.TextBlock
+            $menuItem.Text = $agentDef.Label
+            $menuItem.Foreground = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#cdd6f4"))
+            $menuItem.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244"))
+            $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5)
+            $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
+            $menuItem.Tag = @{ Path = $termPath; Cmd = $agentDef.Cmd; Popup = $popup }
+            $menuItem.Add_MouseEnter({ $this.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#45475a")) })
+            $menuItem.Add_MouseLeave({ $this.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244")) })
+            $menuItem.Add_MouseLeftButtonDown({
+                param($sender, $e)
+                $e.Handled = $true
+                $d = $sender.Tag
+                $d.Popup.IsOpen = $false
+                $script:currentTermPopup = $null
+                Open-AgentAtPath -Path $d.Path -Agent $d.Cmd
+            })
+            $menuStack.Children.Add($menuItem) | Out-Null
+        }
+
+        $border.Child = $menuStack
+        $popup.Child = $border
+        $script:currentTermPopup = $popup
+        $popup.IsOpen = $true
+    })
+
     $btnPanel.Children.Add($btnCheck) | Out-Null
     $btnPanel.Children.Add($btnEdit)  | Out-Null
+    $btnPanel.Children.Add($btnTerm)  | Out-Null
     $stack.Children.Add($btnPanel)    | Out-Null
 
     $card.Child = $stack
