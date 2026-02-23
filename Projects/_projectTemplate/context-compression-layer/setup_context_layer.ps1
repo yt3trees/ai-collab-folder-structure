@@ -28,7 +28,7 @@ if (-not (Test-Path $configPath)) {
 }
 
 $config = Get-Content $configPath -Raw | ConvertFrom-Json
-$projectsRoot    = [System.Environment]::ExpandEnvironmentVariables($config.localProjectsRoot)
+$projectsRoot = [System.Environment]::ExpandEnvironmentVariables($config.localProjectsRoot)
 $boxProjectsRoot = [System.Environment]::ExpandEnvironmentVariables($config.boxProjectsRoot)
 $obsidianVaultRoot = [System.Environment]::ExpandEnvironmentVariables($config.obsidianVaultRoot)
 
@@ -91,8 +91,8 @@ function Setup-Project {
 
     # Files live in Obsidian ai-context/ folder (BOX-synced, accessed via context/ junction)
     $obsAiCtx = Join-Path $obsidianVaultRoot "Projects\$obsidianSubPath\ai-context"
-    $dlDir    = Join-Path $obsAiCtx "decision_log"
-    $fhDir    = Join-Path $obsAiCtx "focus_history"
+    $dlDir = Join-Path $obsAiCtx "decision_log"
+    $fhDir = Join-Path $obsAiCtx "focus_history"
     Ensure-Dir $obsAiCtx
     Ensure-Dir $dlDir
     Ensure-Dir $fhDir
@@ -103,7 +103,7 @@ function Setup-Project {
     Copy-IfNotExists (Join-Path $TemplateDir "file_map.md")           (Join-Path $obsAiCtx "file_map.md")
 
     # Ensure context/ junction exists (_ai-context/context/ -> Obsidian ai-context/)
-    $aiContextDir  = Join-Path $dir "_ai-context"
+    $aiContextDir = Join-Path $dir "_ai-context"
     $contextJunction = Join-Path $aiContextDir "context"
     Ensure-Dir $aiContextDir
     if (Test-Path $contextJunction) {
@@ -120,23 +120,30 @@ function Setup-Project {
     # Auto-append CCL instructions to CLAUDE.md and AGENTS.md
     $snippetPath = Join-Path $TemplateDir "CLAUDE_MD_SNIPPET.md"
     foreach ($mdFile in @("CLAUDE.md", "AGENTS.md")) {
-        $mdPath = Join-Path $dir $mdFile
-        if ((Test-Path $mdPath) -and (Test-Path $snippetPath)) {
-            $mdContent = Get-Content $mdPath -Raw -Encoding UTF8
-            if ($mdContent -notlike "*## Context Compression Layer*") {
-                $snippetContent = Get-Content $snippetPath -Raw -Encoding UTF8
-                if ($snippetContent -match '(?s)```markdown\r?\n(.*?)\r?\n```') {
-                    $cclSection = $Matches[1]
-                    Add-Content -Path $mdPath -Value "`n$cclSection" -Encoding UTF8
-                    Write-Host "  [UPDATE] $mdFile <- CCL instructions appended" -ForegroundColor Green
+        $pathsToCheck = @(
+            (Join-Path $dir $mdFile),
+            (Join-Path $dir "shared\$mdFile")
+        )
+        foreach ($mdPath in $pathsToCheck) {
+            $displayPath = if ($mdPath -match 'shared\\') { "shared\$mdFile" } else { $mdFile }
+            
+            if ((Test-Path $mdPath) -and (Test-Path $snippetPath)) {
+                $mdContent = Get-Content $mdPath -Raw -Encoding UTF8
+                if ($mdContent -notlike "*## Context Compression Layer*") {
+                    $snippetContent = Get-Content $snippetPath -Raw -Encoding UTF8
+                    if ($snippetContent -match '(?s)```markdown\r?\n(.*?)\r?\n```') {
+                        $cclSection = $Matches[1]
+                        Add-Content -Path $mdPath -Value "`n$cclSection" -Encoding UTF8
+                        Write-Host "  [UPDATE] $displayPath <- CCL instructions appended" -ForegroundColor Green
+                    }
+                }
+                else {
+                    Write-Host "  [SKIP]   $displayPath (CCL already included)" -ForegroundColor Yellow
                 }
             }
-            else {
-                Write-Host "  [SKIP]   $mdFile (CCL already included)" -ForegroundColor Yellow
+            elseif (-not (Test-Path $mdPath)) {
+                Write-Host "  [INFO]   $displayPath not found, skipping CCL append" -ForegroundColor DarkGray
             }
-        }
-        elseif (-not (Test-Path $mdPath)) {
-            Write-Host "  [INFO]   $mdFile not found, skipping CCL append" -ForegroundColor DarkGray
         }
     }
 
