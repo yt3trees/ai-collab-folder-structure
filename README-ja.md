@@ -75,7 +75,7 @@ flowchart TD
 
 セッション跨ぎのAIコンテキスト管理 - AIが過去の文脈を正しく理解し、作業の継続性を保つための仕組み:
 
-- 構成要素: project_summary.md (全体像), current_focus.md (今のフォーカス), decision_log (意思決定履歴), memories (プロジェクトメモリ)
+- 構成要素: project_summary.md (全体像), current_focus.md (今のフォーカス), decision_log (意思決定履歴)
 - 自動連携: セッション開始時に `AGENTS.md` がCCLの内容を読み込み、現在の状況を把握 (各CLIツール向けのエイリアスファイル `CLAUDE.md` 等も同一内容を参照)
 - AI自律行動: AIが会話の流れから意思決定や作業の区切りを検知し、自分からコンテキストファイルの更新を提案
 
@@ -85,7 +85,7 @@ AIはCLAUDE.mdに記述された行動規範に従い、以下を自律的に実
 
 - 意思決定の検出と記録: 会話中の暗黙的な決定事項（技術選定、設計判断等）を検出し、構造化された意思決定ログとして記録を提案
 - セッション終了の検知: 作業の区切りを自然に検知し、AIが関与した作業内容のみを `current_focus.md` へ追記提案
-- プロジェクト知見の管理: 作業中に発見した価値ある知見を先回りでプロジェクトメモリとして保存提案し、関連する既存の知見を自発的に検索
+- Obsidian ナレッジ連携: `_ai-context/obsidian_notes/` を読んで文脈を補完し、作業中の発見やセッションの成果を含めて、Obsidian Vaultに `#ai-memory` タグ付きで還元することを提案
 
 ### ワークフロー例 (Claude Code)
 
@@ -98,6 +98,7 @@ sequenceDiagram
     participant Work as _work/2026/...
     participant Claude
     participant CCL as CCL (Context Files)
+    participant Obsidian as Obsidian Notes
 
     User->>Work: 日付ベースの作業専用フォルダを作って移動
     User->>Claude: claude を起動 (自動コンテキスト読み込み)
@@ -106,20 +107,19 @@ sequenceDiagram
         Note right of Claude: 対話的な作業セッション
 
         User->>Claude: コーディング・修正の依頼
+        Claude->>Obsidian: トピック関連ノートを検索して文脈補完
         Claude->>Work: ソースコードの更新
 
         Note right of Claude: 意思決定を自動検知
         Claude->>CCL: decision_log.md の記録を提案・保存
 
-        Note right of Claude: 関連知見を先回り検索
-        Claude->>CCL: memories/ から過去の知見を参照
-
         Note right of Claude: 価値ある知見を検出
-        Claude->>CCL: memories/ への保存を提案
+        Claude->>Obsidian: notes/ への保存を提案
     end
 
     Note right of Claude: 区切りを自動検知
     Claude->>CCL: current_focus.md の追記を提案・更新
+    Claude->>Obsidian: daily/ai-session.md への記録を提案
 ```
 
 #### 1. 作業フォルダの作成と移動
@@ -164,24 +164,39 @@ claude
 
 （はい / 修正あり / 不要）
 
-#### 3. プロジェクト固有メモリ（AIが先回りで活用）
+#### 3. Obsidian ナレッジ連携（AIがVaultと双方向に連携・知見の蓄積）
 
-AIは関連する既存の知見を自発的に検索し、価値ある発見は保存を提案します。
+AIは `_ai-context/obsidian_notes/` を通じてObsidian Vaultを参照し、作業の成果や技術的な知見を蓄積します。
 
 👨‍💻 User:
 以前、このプロジェクトでDB接続のタイムアウト問題に対処した時の構成ってどうなってたっけ？
 
 🤖 Claude:
-プロジェクトメモリを検索しました。
+`obsidian_notes/notes/` を検索しました。
 2026年1月に記録された `db_timeout_config.md` によると、コネクションプールの設定値を...
 
 👨‍💻 User:
-なるほど、ありがとう。
+なるほど、ありがとう。それを踏まえて、先週の認証フロー見直し会議の決定事項はどうだっけ？
 
 🤖 Claude:
-（作業を進める中で...）
-📝 今回のRedisキャッシュ戦略は今後も参照価値がありそうです。プロジェクトメモリに保存しますか？
-→ Redis キャッシュ戦略: TTL設計とキー命名規則
+`obsidian_notes/meetings/` を確認します。
+`2026-02-17_authentication-review.md` に議事録がありました。主な決定事項は...
+（内容を踏まえて実装の方針を提案）
+
+👨‍💻 User:
+完璧、その方針で進めて。今日はここまで。
+
+🤖 Claude:
+📝 current_focus.md に追記しますか？
+
+【最近あったこと】に追加:
+  + [AI] auth.ts のトークンリフレッシュ処理を実装
+
+📓 今回のRedisキャッシュ戦略は今後も参照価値がありそうです。Obsidianにも記録しておきますか？
+→ notes/redis-cache-strategy.md
+  Redis キャッシュ戦略: TTL設計とキー命名規則
+
+（はい / 修正あり / 不要）
 
 #### 4. このワークフローの利点
 
@@ -189,6 +204,8 @@ AIは関連する既存の知見を自発的に検索し、価値ある発見は
 - 作業の過程（一時ファイルなど）は `docs` などの正式なドキュメント群を汚しません
 - 重要な意思決定（`decision_log.md`）や進捗（`current_focus.md`）のみが、AIの自律的な判断によって引き上げられ記録されます
 - 次回作業時に、AIが最新の `current_focus.md` を読み込むため、すぐに作業を再開できます
+- AIがObsidian Vaultの過去の会議メモや知見を参照して文脈補完するため、背景説明の手間が減ります
+- AI作業の成果がObsidian Vaultに蓄積され、プロジェクトのナレッジベースが育ちます
 
 ## ワークスペース構成の詳細
 
@@ -380,7 +397,7 @@ BOX同期完了後、GUIマネージャーの Setup タブから再度セット�
 | `skills/` | AI自律行動規範の定義 |
 | `skills/context-decision-log/` | 意思決定の自動検出と構造化記録 |
 | `skills/context-session-end/` | セッション区切りの検知とcurrent_focus.md追記 |
-| `skills/project-memory/` | プロジェクト知見の先回り保存と検索 |
+| `skills/obsidian-knowledge/` | Obsidian Vaultの読み取りと書き込み提案 |
 
 ### _globalScripts/
 

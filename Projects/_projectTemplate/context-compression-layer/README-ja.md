@@ -51,6 +51,10 @@ Documents/Projects/
 | current_focus.md | 主に書く(30秒で上書き更新) | 作業の区切りで `[AI]` 付き追記を提案 |
 | project_summary.md | 初期作成+大きな変更時 | マイルストーン変更時に更新提案 |
 | decision_log/*.md | 会議等で決まったことを伝える | ドラフト生成。人間が承認して保存 |
+| obsidian_notes/daily/ | 書かない(weekly/へ) | セッション終了時にサマリーを提案 |
+| obsidian_notes/meetings/ | 書かない(recordsへ) | 会議内容共有時に構造化議事録を提案 |
+| obsidian_notes/notes/ | 主に書く | 技術的発見の記録を提案 |
+| obsidian_notes/specs/ | 主に書く | 設計提案・アーキテクチャ検討の記録を提案 |
 
 ### current_focus.md の運用
 
@@ -100,6 +104,7 @@ Step 1-2だけで基本機能は動く。スキルは便利機能の追加。
 |--------|------|---------|
 | context-session-end | 作業区切りでAI作業分を追記提案 | 自然な区切り(「ありがとう」「一旦ここまで」等) |
 | context-decision-log | 意思決定の構造化記録+暗黙的決定の検出 | 決定時 or 検出時 |
+| obsidian-knowledge | Obsidian Vaultの読み取りと書き込み提案(技術的な知見を含む) | トピック関連ノートの参照時、セッション終了時 |
 
 スキルにしなかったもの:
 - セッション開始の読み込み -> CLAUDE.mdの指示で十分
@@ -124,7 +129,8 @@ context-compression-layer/
 │   └── decision_log_example.md
 ├── skills/
 │   ├── context-session-end/SKILL.md
-│   └── context-decision-log/SKILL.md
+│   ├── context-decision-log/SKILL.md
+│   └── obsidian-knowledge/SKILL.md
 ├── setup_context_layer.ps1            Setup script
 └── save_focus_snapshot.ps1            current_focus.md の日次スナップショット保存
 ```

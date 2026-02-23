@@ -90,14 +90,14 @@ Parameters:
 What the script does (full tier):
 1. Create local folders (_ai-context, _ai-workspace, development)
 2. Create BOX shared folders (docs, reference, records, _work)
-3. Create Obsidian Vault project folders (daily, meetings, specs, notes, weekly) and Index files
+3. Create Obsidian Vault project folders (daily, meetings, specs, notes, weekly, troubleshooting) and Index files
 4. Create junctions (shared/, obsidian_notes/)
 5. Copy AGENTS.md/CLAUDE.md (BOX side -> local)
 
 What the script does (mini tier):
 1. Create local folders (_ai-context, development) - no _ai-workspace
 2. Create BOX shared folders (docs, _work) - lightweight configuration
-3. Create Obsidian Vault project folders (notes only) and Index files
+3. Create Obsidian Vault project folders and Index files
 4. Create junctions (shared/, obsidian_notes/)
 5. Copy AGENTS.md/CLAUDE.md (BOX side -> local)
 
@@ -225,7 +225,7 @@ Two tier types are available based on project scale and involvement level.
 |---------|------|------|
 | Layer 1 (_ai-context/) | Yes | Yes |
 | Layer 1 (_ai-workspace/) | Yes | No |
-| Layer 2 (Obsidian) | daily, meetings, specs, notes, weekly | notes only |
+| Layer 2 (Obsidian) | daily, meetings, specs, notes, weekly, troubleshooting | Same as full |
 | Layer 3 (BOX docs/) | planning, design, testing, release | flat (no subfolders) |
 | Layer 3 (reference/) | Yes (vendor, standards, external) | No |
 | Layer 3 (records/) | Yes (minutes, reports, reviews) | No |
@@ -284,7 +284,13 @@ Box/Projects/_mini/{ProjectName}/
 └── _work/                      # Working folder
 
 Box/Obsidian-Vault/Projects/_mini/{ProjectName}/
-├── notes/                      # Notes
+├── daily/
+├── meetings/
+├── notes/
+├── specs/
+├── troubleshooting/
+├── weekly/
+├── ai-context/
 └── 00_{ProjectName}-Index.md   # Project index
 ```
 
@@ -353,7 +359,7 @@ The following are automatically created during setup:
 
 - `shared/` -> `Box/Projects/{ProjectName}/` (deliverables)
 - `_ai-context/obsidian_notes/` -> `Box/Obsidian-Vault/Projects/{ProjectName}/` (knowledge base)
-- Project folders within Obsidian Vault (daily, meetings, specs, notes, weekly)
+- Project folders within Obsidian Vault (daily, meetings, specs, notes, weekly, troubleshooting)
 - `00_{ProjectName}-Index.md`
 
 Create the following files in Obsidian:

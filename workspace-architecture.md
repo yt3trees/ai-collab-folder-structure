@@ -59,14 +59,13 @@ AIエージェントはセッションが終了すると短期記憶（コンテ
 - **`project_summary.md`**: プロジェクト全体像（長期的視点）
 - **`current_focus.md`**: 直近のタスクと現在のフォーカス（短期的視点、人間とAIの双方向で更新する「今のスナップショット」）
 - **`decision_log/`**: 意思決定履歴（背景・選択肢・理由を構造化したログ）
-- **`memories/`**: プロジェクトメモリ（AIが自律的に発見・蓄積・検索する個別の知見ベース）
 
 ### カスタム AI SKILL による自律管理
 
 CCLは単なる静的ファイル群の置き場ではありません。AI自身がプロアクティブにファイルを更新・維持するための拡張機能 (SKILL) によって支えられます。
 - **context-decision-log**: 作業中に出た「会話上の暗黙的な決定（採用技術の選択など）」を検知し、構造化して記録を提案するスキル
 - **context-session-end**: 作業セッションの終了時（会話の区切り）に、その日の進捗とAIが関与した作業結果を要約し `current_focus.md` に追記更新するスキル
-- **project-memory**: エラーの原因追求やコードリーディングを通じてAIが得た知見を、後日再利用できるようタグ付けして保存・検索するスキル
+- **obsidian-knowledge**: `_ai-context/obsidian_notes/` を通じてObsidian Vaultを読み取り文脈を補完し、セッションの成果や技術的知見を `#ai-memory` タグ付きでVaultに書き戻すことを提案するスキル
 
 ---
 
@@ -89,7 +88,7 @@ CCLは単なる静的ファイル群の置き場ではありません。AI自身
 | :--- | :--- | :--- |
 | **ユースケース** | 長期、複雑、ドキュメント重視 | 短期、シンプル、ファイル数が少ない |
 | **Layer 3 (Artifact)** | 構造化 (`docs/planning`, `reference/` 等) | フラット構造 (`docs/` のみ) |
-| **Layer 2 (Knowledge)** | `daily/`, `meetings/`, `specs/` と細分化 | `notes/` フォルダのみ |
+| **Layer 2 (Knowledge)** | `daily/`, `meetings/`, `specs/`, `troubleshooting/` と細分化 | 同左 |
 | **Layer 1 (Local)** | AI作業用 (`_ai-workspace/`) を含むフル機能 | 開発(`development/`)と最小構成 |
 | **CCL** | 全機能セットアップ | `current_focus.md` などの最小構成に縮退可能 |
 

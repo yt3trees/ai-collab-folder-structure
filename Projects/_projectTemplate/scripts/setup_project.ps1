@@ -132,28 +132,18 @@ else {
 # Create Obsidian Vault project folders
 Write-Host ""
 Write-Host "[Obsidian Vault Folders]" -ForegroundColor Yellow
-if ($Tier -eq "mini") {
-    # Mini tier: notes + ai-context
-    $obsidianFolders = @(
-        "notes",
-        "ai-context",
-        "ai-context\decision_log",
-        "ai-context\focus_history"
-    )
-}
-else {
-    # Full tier: all folders
-    $obsidianFolders = @(
-        "daily",
-        "meetings",
-        "specs",
-        "notes",
-        "weekly",
-        "ai-context",
-        "ai-context\decision_log",
-        "ai-context\focus_history"
-    )
-}
+# Create same folders for all tiers
+$obsidianFolders = @(
+    "daily",
+    "meetings",
+    "specs",
+    "notes",
+    "weekly",
+    "troubleshooting",
+    "ai-context",
+    "ai-context\decision_log",
+    "ai-context\focus_history"
+)
 foreach ($folder in $obsidianFolders) {
     $path = "$obsidianProject\$folder"
     if (-not (Test-Path $path)) {
@@ -194,9 +184,6 @@ foreach ($t in $templateFiles) {
 $indexFile = "$obsidianProject\00_$ProjectName-Index.md"
 if (-not (Test-Path $indexFile)) {
     $indexContent = "# $ProjectName`n`n## Status`n- [ ] Active`n`n## Overview`n`n## Links`n- [[daily/]]`n- [[meetings/]]`n- [[specs/]]`n- [[notes/]]"
-    if ($Tier -eq "mini") {
-        $indexContent = "# $ProjectName`n`n## Status`n- [ ] Active`n`n## Overview`n`n## Links`n- [[notes/]]"
-    }
     Set-Content -Path $indexFile -Value $indexContent -Encoding UTF8
     Write-Host "  Created: 00_$ProjectName-Index.md" -ForegroundColor Green
 }

@@ -37,11 +37,16 @@ current_focus.md の末尾「更新」日付が3日以上前の場合、1回だ�
 - 既存の内容は触らない。AIが追記する行には [AI] をつける
 - 3-5行以内で簡潔に。短い質問応答だけの場合は提案不要
 
-#### プロジェクト知見の保存と検索
+#### Obsidian ナレッジ連携
 
-- 作業中に再利用価値のある知見（デバッグ結果、環境設定、設計理由等）を発見したら、`_ai-context/context/memories/` への保存を提案する
-- 関連しそうな既存の知見があれば、自分から検索して参照する
-- 「覚えておいて」「メモリに保存して」等の明示的な指示があった場合は、確認を挟まず即座に保存する
+- 作業中に再利用価値のある知見（デバッグ結果、環境設定、設計理由等）を発見したら、`_ai-context/obsidian_notes/notes/` 等への保存を提案する
+- トピックに関連するノートがありそうな場合、`_ai-context/obsidian_notes/` 内を自発的に検索して文脈を補完する
+- まとまった作業セッション終了時 -> `obsidian_notes/daily/YYYY-MM-DD_ai-session.md` にセッションサマリーを提案
+- 会議内容の共有時 -> `obsidian_notes/meetings/YYYY-MM-DD_{topic}.md` に構造化議事録を提案
+- 技術的な発見・設計検討 -> `obsidian_notes/notes/` or `specs/` への記録を提案
+- AI生成ノートには frontmatter に `author: ai` と `#ai-memory` タグ（`tags: [ai-memory]`）を含める
+- `weekly/` には書き込まない（人間のリフレクション用）
+- 1セッション最大2回まで。断られたら勧めない
 ```
 
 ---
