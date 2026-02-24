@@ -8,7 +8,7 @@ function Build-MainWindowXaml {
     return @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Project Manager" Height="800" Width="1100"
+        Title="Project Manager" Height="800" Width="1150"
         MinHeight="600" MinWidth="900"
         WindowStartupLocation="CenterScreen" ResizeMode="CanResizeWithGrip"
         WindowStyle="None" AllowsTransparency="True"
