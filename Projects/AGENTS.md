@@ -10,14 +10,17 @@ This file provides guidance to Claude Code when working with code in this reposi
 - **Layer 2 (Knowledge)**: `Box/Obsidian-Vault/` - Obsidian, thoughts & insights (BOX sync)
 - **Layer 3 (Artifact)**: `Box/Projects/<project>/` - Deliverables & references (BOX sync)
 
-## Project Tiers
+## Project Tiers and Categories
 
-| Tier | Location | Purpose | Structure |
-|------|----------|---------|-----------|
-| full | `Projects/<project>/` | Main projects (full setup) | All folders, all features |
-| mini | `Projects/_mini/<project>/` | Support tasks (lightweight) | Minimal folders |
+| Tier | Category | Location | Purpose | Structure |
+|------|----------|----------|---------|-----------|
+| full | project | `Projects/<project>/` | Main projects (full setup) | All folders, all features |
+| mini | project | `Projects/_mini/<project>/` | Support tasks (lightweight) | Minimal folders |
+| full | domain | `Projects/_domains/<project>/` | Ongoing technical domains | All folders, all features |
+| mini | domain | `Projects/_domains/_mini/<project>/` | Lightweight domain tasks | Minimal folders |
 
 Mini tier projects are placed under `_mini/`, with `_ai-workspace/` and some Layer 2/3 folders omitted.
+Domain category is for ongoing technical areas (e.g., GenAI tooling, shared platform) that are not time-bound projects.
 
 ### Junctions (3) - full tier
 
@@ -39,6 +42,17 @@ _mini/<project>/
 ├── shared/                          → Box/Projects/_mini/<project>/
 └── development/source/              (Git-managed, not BOX-synced)
 (note: no _ai-workspace/)
+```
+
+### Junctions (3) - domain (full tier example)
+
+```
+_domains/<project>/
+├── _ai-context/context/             → Box/Obsidian-Vault/Projects/_domains/<project>/ai-context/
+├── _ai-context/obsidian_notes/      → Box/Obsidian-Vault/Projects/_domains/<project>/
+├── shared/                          → Box/Projects/_domains/<project>/
+├── development/source/              (Git-managed, not BOX-synced)
+└── _ai-workspace/                   (local workspace)
 ```
 
 ## File Placement Rules
@@ -63,7 +77,7 @@ _mini/<project>/
 - Obsidian Vault: `%USERPROFILE%\Box\Obsidian-Vault\`
 - BOX Projects: `%USERPROFILE%\Box\Projects\`
 - ProjectA: `ProjectA\development\source\`
-- Global AI Knowledge: `{obsidianVaultRoot}\ai-context\` (see paths.json)
+- Global AI Knowledge: `{obsidianVaultRoot}\ai-context\` (paths.json 参照)
   - tech-patterns/: Cross-project reusable code/design patterns
   - lessons-learned/: Failures and insights (tagged by project)
 
@@ -77,6 +91,12 @@ _projectTemplate/scripts/setup_project.ps1 -ProjectName "NewProject"
 
 # Support task (mini tier)
 _projectTemplate/scripts/setup_project.ps1 -ProjectName "SupportProject" -Tier mini
+
+# Domain project (ongoing technical area)
+_projectTemplate/scripts/setup_project.ps1 -ProjectName "GenAI-Tools" -Category domain
+
+# Domain mini
+_projectTemplate/scripts/setup_project.ps1 -ProjectName "SmallDomain" -Tier mini -Category domain
 ```
 
 ## 2PC Sync Strategy

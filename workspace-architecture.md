@@ -90,7 +90,7 @@ CCLは単なる静的ファイル群の置き場ではありません。AI自身
 
 ---
 
-## 6. プロジェクト規模の階層化 (Tier Architecture)
+## 6. プロジェクト規模の階層化 (Tier Architecture) と Category
 
 案件の性質や規模に応じて、構成ファイルの煩雑さやオーバーヘッドを最小化するために2つのTier(階層)を設けています。
 
@@ -103,6 +103,26 @@ CCLは単なる静的ファイル群の置き場ではありません。AI自身
 | **CCL** | 全機能セットアップ | `current_focus.md` などの最小構成に縮退可能 |
 
 ※ プロジェクトの成長に合わせて、Mini Tier から Full Tier への変換 (Tier Promotion) がツールによってサポートされます。
+
+### Category: project と domain
+
+Tier とは独立した「Category」軸として `project` (デフォルト) と `domain` を導入しています。
+
+| Category | 配置先 | 用途 |
+| :--- | :--- | :--- |
+| **project** | `Projects/{Name}/` (full), `Projects/_mini/{Name}/` (mini) | 期間限定の案件・タスク |
+| **domain** | `Projects/_domains/{Name}/` (full), `Projects/_domains/_mini/{Name}/` (mini) | 継続的な技術領域 (例: 生成AI関連ツール開発、Pleasanter共通基盤) |
+
+Domain カテゴリのパス構成:
+
+| Layer | full | mini |
+| :--- | :--- | :--- |
+| Layer 1 (Local) | `Projects/_domains/{Name}/` | `Projects/_domains/_mini/{Name}/` |
+| Layer 2 (Obsidian) | `Obsidian-Vault/Projects/_domains/{Name}/` | `Obsidian-Vault/Projects/_domains/_mini/{Name}/` |
+| Layer 3 (BOX) | `Box/Projects/_domains/{Name}/` | `Box/Projects/_domains/_mini/{Name}/` |
+| Archive | `_archive/_domains/{Name}/` | `_archive/_domains/_mini/{Name}/` |
+
+Domain はフォルダ構成(Tier)には影響せず、配置場所のプレフィックスのみを変更します。Tier 変換時も `_domains/` 内に留まります。
 
 ---
 

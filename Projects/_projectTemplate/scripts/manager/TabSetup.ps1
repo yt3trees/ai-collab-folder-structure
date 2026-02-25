@@ -53,12 +53,15 @@ function Initialize-TabSetup {
 
             $tierCombo = $Window.FindName("setupTier")
             $tier = ($tierCombo.SelectedItem).Content
-            
+
+            $categoryCombo = $Window.FindName("setupCategory")
+            $category = ($categoryCombo.SelectedItem).Content
+
             $txtExternalShared = $Window.FindName("setupExternalShared")
             $externalShared = $txtExternalShared.Text.Trim()
-            
+
             $safeName = $name -replace "'", "''"
-            $argStr = "-ProjectName '$safeName' -Tier $tier"
+            $argStr = "-ProjectName '$safeName' -Tier $tier -Category $category"
             
             if (-not [string]::IsNullOrWhiteSpace($externalShared)) {
                 $paths = $externalShared -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }

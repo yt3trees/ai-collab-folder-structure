@@ -81,11 +81,18 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 
 # Setup a support project (mini tier)
 .\setup_project.ps1 -ProjectName "SupportProject" -Tier mini
+
+# Setup a domain project (ongoing technical area)
+.\setup_project.ps1 -ProjectName "GenAI-Tools" -Category domain
+
+# Setup a domain mini project
+.\setup_project.ps1 -ProjectName "SmallDomain" -Tier mini -Category domain
 ```
 
 Parameters:
 - `-ProjectName` (required): Project name
 - `-Tier` (optional): `full` (default, main projects) or `mini` (support/lightweight projects)
+- `-Category` (optional): `project` (default, time-bound projects) or `domain` (ongoing technical domains placed under `_domains/`)
 
 What the script does (full tier):
 1. Create local folders (_ai-context, _ai-workspace, development)
@@ -152,6 +159,7 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 Parameters:
 - `-ProjectName` (required): Name of the project to archive
 - `-Mini` (optional): Specify for mini tier projects (under _mini/)
+- `-Category` (optional): `project` (default) or `domain` (for projects under _domains/)
 - `-DryRun` (optional): Only display changes without executing
 - `-Force` (optional): Skip confirmation prompt
 
@@ -184,6 +192,7 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 Parameters:
 - `-ProjectName` (required): Project name to convert
 - `-To` (required): Target tier (`full` or `mini`)
+- `-Category` (optional): `project` (default) or `domain` (for projects under _domains/)
 - `-DryRun` (optional): Only display changes without executing
 
 What the script does:
@@ -210,14 +219,16 @@ cd %USERPROFILE%\Documents\Projects\_projectTemplate\scripts
 - AGENTS.md is already synced via BOX, so only symbolic links are created
 - Junctions are local-only, so they must be created on each PC
 
-## Project Tiers
+## Project Tiers and Categories
 
-Two tier types are available based on project scale and involvement level.
+Two tier types are available based on project scale, and two categories based on project nature.
 
-| Tier | Location | Purpose | Configuration |
-|------|----------|---------|---------------|
-| full | `Projects/{Project}/` | Main projects (full features) | All folders, all features |
-| mini | `Projects/_mini/{Project}/` | Support projects (lightweight) | Minimal folders, simple |
+| Tier | Category | Location | Purpose | Configuration |
+|------|----------|----------|---------|---------------|
+| full | project | `Projects/{Project}/` | Main projects (full features) | All folders, all features |
+| mini | project | `Projects/_mini/{Project}/` | Support projects (lightweight) | Minimal folders, simple |
+| full | domain | `Projects/_domains/{Project}/` | Ongoing technical domains | All folders, all features |
+| mini | domain | `Projects/_domains/_mini/{Project}/` | Lightweight domain tasks | Minimal folders, simple |
 
 ### Folder Structure Differences by Tier
 

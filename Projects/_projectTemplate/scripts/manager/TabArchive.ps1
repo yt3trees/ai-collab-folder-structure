@@ -51,6 +51,7 @@ function Initialize-TabArchive {
             $safeName = $params.Name -replace "'", "''"
             $argStr = "-ProjectName '$safeName' -Force"
             if ($params.IsMini) { $argStr += " -Mini" }
+            if ($params.IsDomain) { $argStr += " -Category domain" }
             if ($dryRun.IsChecked) { $argStr += " -DryRun" }
 
             $scriptPath = Join-Path $ScriptDir "archive_project.ps1"

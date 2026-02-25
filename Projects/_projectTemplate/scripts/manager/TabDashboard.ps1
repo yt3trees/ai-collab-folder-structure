@@ -87,10 +87,14 @@ function New-ProjectCard {
     $titleBlock.Text = $Info.Name
     $titleBlock.FontSize = 14
     $titleBlock.FontWeight = [System.Windows.FontWeights]::SemiBold
-    $titleBlock.Foreground = New-ColorBrush "#cba6f7"
+    $titleColor = if ($Info.Category -eq "domain") { "#94e2d5" } else { "#cba6f7" }
+    $titleBlock.Foreground = New-ColorBrush $titleColor
 
     $tierBadge = New-Object System.Windows.Controls.TextBlock
-    $badgeText = if ($Info.Tier -eq "mini") { " [M]" } else { " [F]" }
+    $badgeText = if ($Info.Category -eq "domain" -and $Info.Tier -eq "mini") { " [DM]" }
+                 elseif ($Info.Category -eq "domain") { " [D]" }
+                 elseif ($Info.Tier -eq "mini") { " [M]" }
+                 else { " [F]" }
     $tierBadge.Text = $badgeText
     $tierBadge.FontSize = 11
     $tierBadge.Foreground = New-ColorBrush "#a6adc8"
@@ -169,6 +173,7 @@ function New-ProjectCard {
     # Store project info in variables for the closures
     $localProjName = $Info.Name
     $localIsMini = ($Info.Tier -eq "mini")
+    $localIsDomain = ($Info.Category -eq "domain")
     $localProjPath = $Info.Path
 
     # [Check] button
@@ -182,17 +187,22 @@ function New-ProjectCard {
     $btnCheck.BorderThickness = New-Object System.Windows.Thickness(0)
     $btnCheck.Cursor = [System.Windows.Input.Cursors]::Hand
     # Store data in Tag property
-    $btnCheck.Tag = @{ ProjName = $localProjName; IsMini = $localIsMini }
+    $btnCheck.Tag = @{ ProjName = $localProjName; IsMini = $localIsMini; IsDomain = $localIsDomain }
 
     $btnCheck.Add_Click({
             param($sender, $e)
             $data = $sender.Tag
-            
+
             $tabMain = $Window.FindName("tabMain")
             $tabMain.SelectedIndex = 4  # Check tab
 
             $checkCombo = $Window.FindName("checkProjectCombo")
-            $checkCombo.Text = $data.ProjName
+            # Build display name with appropriate suffix
+            $suffix = if ($data.IsDomain -and $data.IsMini) { " [Domain][Mini]" }
+                      elseif ($data.IsDomain) { " [Domain]" }
+                      elseif ($data.IsMini) { " [Mini]" }
+                      else { "" }
+            $checkCombo.Text = "$($data.ProjName)$suffix"
 
             $checkMiniBox = $Window.FindName("checkMini")
             $checkMiniBox.IsChecked = $data.IsMini
@@ -209,18 +219,22 @@ function New-ProjectCard {
     $btnEdit.BorderThickness = New-Object System.Windows.Thickness(0)
     $btnEdit.Cursor = [System.Windows.Input.Cursors]::Hand
     # Store data in Tag property
-    $btnEdit.Tag = @{ ProjName = $localProjName; IsMini = $localIsMini }
+    $btnEdit.Tag = @{ ProjName = $localProjName; IsMini = $localIsMini; IsDomain = $localIsDomain }
 
     $btnEdit.Add_Click({
             param($sender, $e)
             $data = $sender.Tag
-            
+
             $tabMain = $Window.FindName("tabMain")
             $tabMain.SelectedIndex = 1  # Editor tab
 
             $editorCombo = $Window.FindName("editorProjectCombo")
-            # Build display name matching the combo format ([Mini] suffix for mini projects)
-            $displayName = if ($data.IsMini) { "$($data.ProjName) [Mini]" } else { $data.ProjName }
+            # Build display name matching the combo format
+            $suffix = if ($data.IsDomain -and $data.IsMini) { " [Domain][Mini]" }
+                      elseif ($data.IsDomain) { " [Domain]" }
+                      elseif ($data.IsMini) { " [Mini]" }
+                      else { "" }
+            $displayName = "$($data.ProjName)$suffix"
             
             for ($i = 0; $i -lt $editorCombo.Items.Count; $i++) {
                 $itemText = $editorCombo.Items[$i].ToString()

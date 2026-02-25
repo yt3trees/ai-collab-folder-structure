@@ -7,7 +7,11 @@ param(
     [string]$ProjectName,
 
     [Parameter(Mandatory = $false)]
-    [switch]$Mini
+    [switch]$Mini,
+
+    [Parameter(Mandatory = $false)]
+    [ValidateSet("project", "domain")]
+    [string]$Category = "project"
 )
 
 # Load workspace paths config
@@ -24,12 +28,13 @@ $localProjectsRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConf
 $boxProjectsRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConfig.boxProjectsRoot)
 $obsidianVaultRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConfig.obsidianVaultRoot)
 
-# Determine project subpath based on Support flag
+# Determine project subpath based on Category and Tier
+$categoryPrefix = if ($Category -eq "domain") { "_domains\" } else { "" }
 if ($Mini) {
-    $projectSubPath = "_mini\$ProjectName"
+    $projectSubPath = "${categoryPrefix}_mini\$ProjectName"
 }
 else {
-    $projectSubPath = $ProjectName
+    $projectSubPath = "${categoryPrefix}$ProjectName"
 }
 
 $docRoot = Join-Path $localProjectsRoot $projectSubPath
@@ -39,6 +44,9 @@ $obsidianProject = Join-Path $obsidianVaultRoot "Projects\$projectSubPath"
 Write-Host "=== $ProjectName Health Check ===" -ForegroundColor Cyan
 if ($Mini) {
     Write-Host "Tier: mini" -ForegroundColor DarkGray
+}
+if ($Category -eq "domain") {
+    Write-Host "Category: domain" -ForegroundColor DarkGray
 }
 Write-Host "Paths config: $pathsConfigFile" -ForegroundColor DarkGray
 

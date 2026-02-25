@@ -31,6 +31,7 @@ function Initialize-TabContextSetup {
             if (-not [string]::IsNullOrEmpty($params.Name)) {
                 $argStr = "-ProjectName '$($params.Name)'"
                 if ($params.IsMini) { $argStr += " -Mini" }
+                if ($params.IsDomain) { $argStr += " -Category domain" }
             }
 
             # context-compression-layer setup script is two levels up from scripts/

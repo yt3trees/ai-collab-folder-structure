@@ -219,12 +219,16 @@ By working within the `_work` folder in this manner, you gain the following bene
 
 ## Detailed Workspace Architecture
 
-### Two Project Tiers
+### Project Tiers and Categories
 
-| Tier | Location | Purpose | Structure |
-|------|----------|---------|-----------|
-| full | `Projects/{Project}/` | Main projects | Full features (_ai-workspace, structured folders) |
-| mini | `Projects/_mini/{Project}/` | Support tasks | Minimal (mini folders) |
+| Tier | Category | Location | Purpose | Structure |
+|------|----------|----------|---------|-----------|
+| full | project | `Projects/{Project}/` | Main projects | Full features (_ai-workspace, structured folders) |
+| mini | project | `Projects/_mini/{Project}/` | Support tasks | Minimal (mini folders) |
+| full | domain | `Projects/_domains/{Project}/` | Ongoing technical domains | Full features (_ai-workspace, structured folders) |
+| mini | domain | `Projects/_domains/_mini/{Project}/` | Lightweight domain tasks | Minimal (mini folders) |
+
+Category is an axis independent of tier (folder layout). The `domain` category separates ongoing technical areas (e.g., GenAI tooling, shared platform) into `_domains/` for dedicated management.
 
 ### Multi-CLI Support
 
@@ -265,8 +269,11 @@ Documents/Projects/
 │   ├── sync_from_asana.py      # Asana → Markdown sync
 │   └── config.json.example     # Asana sync config example
 ├── _archive/                   # Archived projects
-│   └── _mini/               # Archived mini tier projects
+│   ├── _mini/               # Archived mini tier projects
+│   └── _domains/            # Archived domain projects
 ├── _mini/                   # Mini tier projects
+├── _domains/                # Domain category projects
+│   └── _mini/               # Domain mini tier projects
 ├── .context/                   # Workspace-level AI context
 │   └── active_projects.md      # Active projects list
 ├── _ai-workspace/              # AI analysis and experimentation for entire workspace

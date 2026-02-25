@@ -11,6 +11,10 @@ param(
     [string]$To,
 
     [Parameter(Mandatory = $false)]
+    [ValidateSet("project", "domain")]
+    [string]$Category = "project",
+
+    [Parameter(Mandatory = $false)]
     [switch]$DryRun,
 
     [Parameter(Mandatory = $false)]
@@ -32,17 +36,18 @@ $boxProjectsRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConfig
 $obsidianVaultRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConfig.obsidianVaultRoot)
 
 # Determine source and destination paths
+$categoryPrefix = if ($Category -eq "domain") { "_domains\" } else { "" }
 if ($To -eq "full") {
     # Mini -> Full
-    $srcSubPath = "_mini\$ProjectName"
-    $dstSubPath = $ProjectName
+    $srcSubPath = "${categoryPrefix}_mini\$ProjectName"
+    $dstSubPath = "${categoryPrefix}$ProjectName"
     $fromTier = "mini"
     $toTier = "full"
 }
 else {
     # Full -> Mini
-    $srcSubPath = $ProjectName
-    $dstSubPath = "_mini\$ProjectName"
+    $srcSubPath = "${categoryPrefix}$ProjectName"
+    $dstSubPath = "${categoryPrefix}_mini\$ProjectName"
     $fromTier = "full"
     $toTier = "mini"
 }
@@ -566,11 +571,12 @@ else {
     Write-Host "  Layer 2: $dstObsidian" -ForegroundColor Gray
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Yellow
+    $categoryArg = if ($Category -eq "domain") { " -Category domain" } else { "" }
     if ($To -eq "mini") {
-        Write-Host "  1. Run .\check_project.ps1 -ProjectName $ProjectName -Mini"
+        Write-Host "  1. Run .\check_project.ps1 -ProjectName $ProjectName -Mini$categoryArg"
     }
     else {
-        Write-Host "  1. Run .\check_project.ps1 -ProjectName $ProjectName"
+        Write-Host "  1. Run .\check_project.ps1 -ProjectName $ProjectName$categoryArg"
     }
     Write-Host "  2. Verify project files are accessible"
     Write-Host "  3. Update 00_Projects-Index.md if needed"

@@ -183,6 +183,11 @@ $styles
                                     <ComboBoxItem Content="full"/>
                                     <ComboBoxItem Content="mini"/>
                                 </ComboBox>
+                                <Label Content="Category"/>
+                                <ComboBox x:Name="setupCategory" SelectedIndex="0">
+                                    <ComboBoxItem Content="project"/>
+                                    <ComboBoxItem Content="domain"/>
+                                </ComboBox>
                                 <Label Content="External Shared Folders (Optional, one path per line)"/>
                                 <Grid Margin="0,0,0,10">
                                     <Grid.ColumnDefinitions>

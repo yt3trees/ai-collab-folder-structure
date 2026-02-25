@@ -18,6 +18,22 @@ function Get-ProjectNameList {
         foreach ($d in $sDirs) { $projects += "$($d.Name) [Mini]" }
     }
 
+    # Domain (full-tier) projects under _domains/
+    $domainsDir = Join-Path $root "_domains"
+    if (Test-Path $domainsDir) {
+        $dDirs = Get-ChildItem -Path $domainsDir -Directory -ErrorAction SilentlyContinue |
+                 Where-Object { $_.Name -notmatch '^[_\.]' }
+        foreach ($d in $dDirs) { $projects += "$($d.Name) [Domain]" }
+
+        # Domain mini-tier projects under _domains/_mini/
+        $domainMiniDir = Join-Path $domainsDir "_mini"
+        if (Test-Path $domainMiniDir) {
+            $dmDirs = Get-ChildItem -Path $domainMiniDir -Directory -ErrorAction SilentlyContinue |
+                     Where-Object { $_.Name -notmatch '^[_\.]' }
+            foreach ($d in $dmDirs) { $projects += "$($d.Name) [Domain][Mini]" }
+        }
+    }
+
     return ($projects | Sort-Object)
 }
 
@@ -68,7 +84,7 @@ function Get-ProjectInfoList {
 
     # Process a single project directory
     function New-ProjectInfo {
-        param([string]$Name, [string]$Path, [string]$Tier)
+        param([string]$Name, [string]$Path, [string]$Tier, [string]$Category = "project")
 
         $aiCtx        = Join-Path $Path "_ai-context"
         $aiCtxContent = Join-Path $aiCtx "context"  # junction to Obsidian ai-context/
@@ -83,6 +99,7 @@ function Get-ProjectInfoList {
         $info = @{
             Name                = $Name
             Tier                = $Tier
+            Category            = $Category
             Path                = $Path
             AiContextPath       = $aiCtx
             AiContextContentPath = $aiCtxContent
@@ -119,6 +136,26 @@ function Get-ProjectInfoList {
                  Where-Object { $_.Name -notmatch '^[_\.]' }
         foreach ($d in $sDirs) {
             $projects += New-ProjectInfo -Name $d.Name -Path $d.FullName -Tier "mini"
+        }
+    }
+
+    # Domain (full-tier) projects
+    $domainsDir = Join-Path $root "_domains"
+    if (Test-Path $domainsDir) {
+        $dDirs = Get-ChildItem -Path $domainsDir -Directory -ErrorAction SilentlyContinue |
+                 Where-Object { $_.Name -notmatch '^[_\.]' }
+        foreach ($d in $dDirs) {
+            $projects += New-ProjectInfo -Name $d.Name -Path $d.FullName -Tier "full" -Category "domain"
+        }
+
+        # Domain mini-tier projects
+        $domainMiniDir = Join-Path $domainsDir "_mini"
+        if (Test-Path $domainMiniDir) {
+            $dmDirs = Get-ChildItem -Path $domainMiniDir -Directory -ErrorAction SilentlyContinue |
+                     Where-Object { $_.Name -notmatch '^[_\.]' }
+            foreach ($d in $dmDirs) {
+                $projects += New-ProjectInfo -Name $d.Name -Path $d.FullName -Tier "mini" -Category "domain"
+            }
         }
     }
 

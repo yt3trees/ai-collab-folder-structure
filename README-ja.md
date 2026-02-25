@@ -217,12 +217,16 @@ AIは `_ai-context/obsidian_notes/` を通じてObsidian Vaultを参照し、作
 
 ## ワークスペース構成の詳細
 
-### 2種類のプロジェクト Tier
+### プロジェクト Tier と Category
 
-| Tier | 配置先 | 用途 | 構成 |
-|------|--------|------|------|
-| full | `Projects/{案件}/` | メイン案件 | 全機能(_ai-workspace、構造化フォルダ) |
-| mini | `Projects/_mini/{案件}/` | お手伝い系 | 軽量構成(最小限のフォルダ) |
+| Tier | Category | 配置先 | 用途 | 構成 |
+|------|----------|--------|------|------|
+| full | project | `Projects/{案件}/` | メイン案件 | 全機能(_ai-workspace、構造化フォルダ) |
+| mini | project | `Projects/_mini/{案件}/` | お手伝い系 | 軽量構成(最小限のフォルダ) |
+| full | domain | `Projects/_domains/{案件}/` | 継続的な技術領域 | 全機能(_ai-workspace、構造化フォルダ) |
+| mini | domain | `Projects/_domains/_mini/{案件}/` | 軽量な技術領域タスク | 軽量構成(最小限のフォルダ) |
+
+Category は tier (フォルダ構成) とは独立した軸です。`domain` は期間限定でないプロジェクト(生成AIツール開発、共通基盤など)を `_domains/` 配下に分離管理するためのカテゴリです。
 
 ### Multi-CLI対応
 
@@ -263,8 +267,11 @@ Documents/Projects/
 │   ├── sync_from_asana.py      # Asana → Markdown同期
 │   └── config.json.example     # Asana同期の設定例
 ├── _archive/                   # アーカイブ済みプロジェクト
-│   └── _mini/               # アーカイブ済み mini tier プロジェクト
+│   ├── _mini/               # アーカイブ済み mini tier プロジェクト
+│   └── _domains/            # アーカイブ済み domain プロジェクト
 ├── _mini/                   # mini tier プロジェクト群
+├── _domains/                # domain カテゴリプロジェクト群
+│   └── _mini/               # domain mini tier プロジェクト
 ├── .context/                   # ワークスペースAIコンテキスト
 │   └── active_projects.md      # アクティブプロジェクト一覧
 ├── _ai-workspace/              # ワークスペース全体のAI分析・実験用

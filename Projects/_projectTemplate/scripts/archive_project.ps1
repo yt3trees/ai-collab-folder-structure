@@ -22,6 +22,10 @@ param(
     [switch]$Mini,
 
     [Parameter(Mandatory=$false)]
+    [ValidateSet("project", "domain")]
+    [string]$Category = "project",
+
+    [Parameter(Mandatory=$false)]
     [switch]$DryRun,
 
     [Parameter(Mandatory=$false)]
@@ -42,13 +46,14 @@ $localProjectsRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConf
 $boxProjectsRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConfig.boxProjectsRoot)
 $obsidianVaultRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConfig.obsidianVaultRoot)
 
-# Determine project subpath based on Support flag
+# Determine project subpath based on Category and Tier
+$categoryPrefix = if ($Category -eq "domain") { "_domains\" } else { "" }
 if ($Mini) {
-    $projectSubPath = "_mini\$ProjectName"
-    $archiveSubPath = "_archive\_mini\$ProjectName"
+    $projectSubPath = "${categoryPrefix}_mini\$ProjectName"
+    $archiveSubPath = "_archive\${categoryPrefix}_mini\$ProjectName"
 } else {
-    $projectSubPath = $ProjectName
-    $archiveSubPath = "_archive\$ProjectName"
+    $projectSubPath = "${categoryPrefix}$ProjectName"
+    $archiveSubPath = "_archive\${categoryPrefix}$ProjectName"
 }
 
 # Source paths

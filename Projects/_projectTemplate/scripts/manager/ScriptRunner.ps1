@@ -59,11 +59,22 @@ function Get-ProjectParams {
 
     $name = $ComboText.Trim()
     $isMini = [bool]$MiniChecked
+    $isDomain = $false
 
-    if ($name -match '^(.+)\s+\[Mini\]$') {
+    # Parse suffixes: [Domain][Mini], [Domain], [Mini]
+    if ($name -match '^(.+)\s+\[Domain\]\[Mini\]$') {
+        $name = $Matches[1]
+        $isDomain = $true
+        $isMini = $true
+    }
+    elseif ($name -match '^(.+)\s+\[Domain\]$') {
+        $name = $Matches[1]
+        $isDomain = $true
+    }
+    elseif ($name -match '^(.+)\s+\[Mini\]$') {
         $name = $Matches[1]
         $isMini = $true
     }
 
-    return @{ Name = $name; IsMini = $isMini }
+    return @{ Name = $name; IsMini = $isMini; IsDomain = $isDomain }
 }

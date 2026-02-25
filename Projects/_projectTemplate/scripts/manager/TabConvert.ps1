@@ -53,6 +53,7 @@ function Initialize-TabConvert {
 
             $safeName = $params.Name -replace "'", "''"
             $argStr = "-ProjectName '$safeName' -To $toTier -Force"
+            if ($params.IsDomain) { $argStr += " -Category domain" }
             if ($dryRun.IsChecked) { $argStr += " -DryRun" }
 
             $scriptPath = Join-Path $ScriptDir "convert_tier.ps1"

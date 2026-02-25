@@ -39,6 +39,7 @@ function Initialize-TabCheck {
             $safeName = $params.Name -replace "'", "''"
             $argStr = "-ProjectName '$safeName'"
             if ($params.IsMini) { $argStr += " -Mini" }
+            if ($params.IsDomain) { $argStr += " -Category domain" }
 
             $scriptPath = Join-Path $ScriptDir "check_project.ps1"
             $outputBox = $Window.FindName("txtCheckOutput")

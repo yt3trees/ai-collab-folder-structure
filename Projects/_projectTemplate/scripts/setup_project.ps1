@@ -11,6 +11,10 @@ param(
     [string]$Tier = "full",
 
     [Parameter(Mandatory = $false)]
+    [ValidateSet("project", "domain")]
+    [string]$Category = "project",
+
+    [Parameter(Mandatory = $false)]
     [string[]]$ExternalSharedPaths = @()
 )
 
@@ -28,12 +32,13 @@ $localProjectsRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConf
 $boxProjectsRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConfig.boxProjectsRoot)
 $obsidianVaultRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConfig.obsidianVaultRoot)
 
-# Determine project subpath based on Tier
+# Determine project subpath based on Category and Tier
+$categoryPrefix = if ($Category -eq "domain") { "_domains\" } else { "" }
 if ($Tier -eq "mini") {
-    $projectSubPath = "_mini\$ProjectName"
+    $projectSubPath = "${categoryPrefix}_mini\$ProjectName"
 }
 else {
-    $projectSubPath = $ProjectName
+    $projectSubPath = "${categoryPrefix}$ProjectName"
 }
 
 $docRoot = Join-Path $localProjectsRoot $projectSubPath
@@ -42,6 +47,7 @@ $obsidianProject = Join-Path $obsidianVaultRoot "Projects\$projectSubPath"
 
 Write-Host "=== $ProjectName Setup ===" -ForegroundColor Cyan
 Write-Host "Tier: $Tier" -ForegroundColor DarkGray
+Write-Host "Category: $Category" -ForegroundColor DarkGray
 Write-Host "Paths config: $pathsConfigFile" -ForegroundColor DarkGray
 Write-Host ""
 
@@ -406,13 +412,15 @@ Write-Host ""
 Write-Host "Setup complete!" -ForegroundColor Green
 Write-Host "Project: $ProjectName" -ForegroundColor Cyan
 Write-Host "Tier: $Tier" -ForegroundColor DarkGray
+Write-Host "Category: $Category" -ForegroundColor DarkGray
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
+$categoryArg = if ($Category -eq "domain") { " -Category domain" } else { "" }
 if ($Tier -eq "mini") {
-    Write-Host "  1. Run .\check_project.ps1 -ProjectName $ProjectName -Mini"
+    Write-Host "  1. Run .\check_project.ps1 -ProjectName $ProjectName -Mini$categoryArg"
 }
 else {
-    Write-Host "  1. Run .\check_project.ps1 -ProjectName $ProjectName"
+    Write-Host "  1. Run .\check_project.ps1 -ProjectName $ProjectName$categoryArg"
 }
 Write-Host "  2. Create Obsidian notes for the project"
 Write-Host "  3. Create AGENTS.md in: $boxShared\ (if not exists)"

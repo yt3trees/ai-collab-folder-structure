@@ -18,6 +18,8 @@
 param(
     [string]$ProjectName,
     [switch]$Mini,
+    [ValidateSet("project", "domain")]
+    [string]$Category = "project",
     [string]$TemplateDir
 )
 
@@ -79,15 +81,16 @@ function Setup-Workspace {
 
 # --- Per-project setup ---
 function Setup-Project {
-    param([string]$Name, [switch]$IsMini)
+    param([string]$Name, [switch]$IsMini, [string]$Category = "project")
 
+    $categoryPrefix = if ($Category -eq "domain") { "_domains\" } else { "" }
     if ($IsMini) {
-        $dir = Join-Path $projectsRoot "_mini\$Name"
-        $obsidianSubPath = "_mini\$Name"
+        $dir = Join-Path $projectsRoot "${categoryPrefix}_mini\$Name"
+        $obsidianSubPath = "${categoryPrefix}_mini\$Name"
     }
     else {
-        $dir = Join-Path $projectsRoot $Name
-        $obsidianSubPath = $Name
+        $dir = Join-Path $projectsRoot "${categoryPrefix}$Name"
+        $obsidianSubPath = "${categoryPrefix}$Name"
     }
 
     if (-not (Test-Path $dir)) {
@@ -162,10 +165,10 @@ function Setup-Project {
         if ($skillFolders.Count -gt 0) {
             # Determine BOX project path
             if ($IsMini) {
-                $boxProjDir = Join-Path $boxProjectsRoot "_mini\$Name"
+                $boxProjDir = Join-Path $boxProjectsRoot "${categoryPrefix}_mini\$Name"
             }
             else {
-                $boxProjDir = Join-Path $boxProjectsRoot $Name
+                $boxProjDir = Join-Path $boxProjectsRoot "${categoryPrefix}$Name"
             }
 
             # 1. Deploy skills to BOX
@@ -222,7 +225,7 @@ Write-Host "================================" -ForegroundColor Cyan
 Setup-Workspace
 
 if ($ProjectName) {
-    Setup-Project -Name $ProjectName -IsMini:$Mini
+    Setup-Project -Name $ProjectName -IsMini:$Mini -Category $Category
 }
 
 Write-Host "`n=== Done ===" -ForegroundColor Green

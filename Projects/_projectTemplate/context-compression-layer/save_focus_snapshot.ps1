@@ -20,6 +20,8 @@
 param(
     [string]$ProjectName,
     [switch]$Mini,
+    [ValidateSet("project", "domain")]
+    [string]$Category = "project",
     [switch]$Workspace
 )
 
@@ -36,11 +38,12 @@ if ($Workspace) {
     $ctxDir = Join-Path $projectsRoot ".context"
 }
 elseif ($ProjectName) {
+    $categoryPrefix = if ($Category -eq "domain") { "_domains\" } else { "" }
     if ($Mini) {
-        $projDir = Join-Path $projectsRoot "_mini\$ProjectName"
+        $projDir = Join-Path $projectsRoot "${categoryPrefix}_mini\$ProjectName"
     }
     else {
-        $projDir = Join-Path $projectsRoot $ProjectName
+        $projDir = Join-Path $projectsRoot "${categoryPrefix}$ProjectName"
     }
     # Files live in _ai-context/context/ (junction to Obsidian ai-context/)
     $ctxDir = Join-Path $projDir "_ai-context\context"
