@@ -173,7 +173,7 @@ $styles
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="300">
+                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="360">
                             <StackPanel Margin="16">
                                 <Label Content="Project Name (required)"/>
                                 <TextBox x:Name="setupProjectName"/>

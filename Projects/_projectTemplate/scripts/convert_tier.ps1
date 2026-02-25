@@ -526,7 +526,7 @@ $boxAgents = Join-Path $dstBox "AGENTS.md"
 if ($DryRun) {
     if (Test-Path $boxAgents) {
         Write-Host "  [DRY] Would copy: AGENTS.md (BOX -> Local)" -ForegroundColor Magenta
-        Write-Host "  [DRY] Would copy: CLAUDE.md (BOX -> Local)" -ForegroundColor Magenta
+        Write-Host "  [DRY] Would create: CLAUDE.md (@AGENTS.md reference)" -ForegroundColor Magenta
     }
     else {
         Write-Host "  [DRY] AGENTS.md not found on BOX - would create default" -ForegroundColor Magenta
@@ -540,11 +540,11 @@ else {
         Write-Host "  Created: $boxAgents" -ForegroundColor Green
     }
 
-    # Ensure CLAUDE.md exists on BOX
+    # Ensure CLAUDE.md exists on BOX (@AGENTS.md reference)
     $boxClaude = Join-Path $dstBox "CLAUDE.md"
     if (-not (Test-Path $boxClaude)) {
-        Copy-Item -Path $boxAgents -Destination $boxClaude -Force
-        Write-Host "  Created: BOX CLAUDE.md (Copy of AGENTS.md)" -ForegroundColor Green
+        Set-Content -Path $boxClaude -Value "@AGENTS.md" -Encoding UTF8
+        Write-Host "  Created: BOX CLAUDE.md (@AGENTS.md reference)" -ForegroundColor Green
     }
 
     # Copy to local
@@ -552,8 +552,8 @@ else {
     $localClaude = Join-Path $dstLocal "CLAUDE.md"
     Copy-Item -Path $boxAgents -Destination $localAgents -Force
     Write-Host "  Copied: AGENTS.md -> Local Project Root" -ForegroundColor Green
-    Copy-Item -Path $boxAgents -Destination $localClaude -Force
-    Write-Host "  Copied: CLAUDE.md -> Local Project Root" -ForegroundColor Green
+    Set-Content -Path $localClaude -Value "@AGENTS.md" -Encoding UTF8
+    Write-Host "  Created: CLAUDE.md -> Local Project Root (@AGENTS.md reference)" -ForegroundColor Green
 }
 Write-Host ""
 

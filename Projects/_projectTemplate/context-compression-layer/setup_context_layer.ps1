@@ -129,9 +129,9 @@ function Setup-Project {
         Write-Host "  [WARN]   context/ junction not created (Obsidian ai-context not found)" -ForegroundColor Yellow
     }
 
-    # Auto-append CCL instructions to CLAUDE.md and AGENTS.md
+    # Auto-append CCL instructions to AGENTS.md (CLAUDE.md is @AGENTS.md reference, skip)
     $snippetPath = Join-Path $TemplateDir "CLAUDE_MD_SNIPPET.md"
-    foreach ($mdFile in @("CLAUDE.md", "AGENTS.md")) {
+    foreach ($mdFile in @("AGENTS.md")) {
         $pathsToCheck = @(
             (Join-Path $dir $mdFile),
             (Join-Path $dir "shared\$mdFile")

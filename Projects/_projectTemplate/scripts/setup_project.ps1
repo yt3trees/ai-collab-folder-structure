@@ -384,11 +384,11 @@ else {
     Write-Host "  Found master: $boxAgents" -ForegroundColor Gray
 }
 
-# 3.2 Ensure CLAUDE.md exists on BOX (Copy of AGENTS.md)
+# 3.2 Ensure CLAUDE.md exists on BOX (@AGENTS.md reference)
 $boxClaude = "$boxShared\CLAUDE.md"
 if (-not (Test-Path $boxClaude)) {
-    Copy-Item -Path $boxAgents -Destination $boxClaude -Force
-    Write-Host "  Created: $boxClaude (Copy of AGENTS.md)" -ForegroundColor Green
+    Set-Content -Path $boxClaude -Value "@AGENTS.md" -Encoding UTF8
+    Write-Host "  Created: $boxClaude (@AGENTS.md reference)" -ForegroundColor Green
 }
 else {
     Write-Host "  Exists: $boxClaude" -ForegroundColor Gray
@@ -402,9 +402,9 @@ $localClaude = "$docRoot\CLAUDE.md"
 Copy-Item -Path $boxAgents -Destination $localAgents -Force
 Write-Host "  Copied: AGENTS.md -> Local Project Root" -ForegroundColor Green
 
-# Copy AGENTS.md -> Local CLAUDE.md
-Copy-Item -Path $boxAgents -Destination $localClaude -Force
-Write-Host "  Copied: CLAUDE.md -> Local Project Root (Duplicate for Claude CLI)" -ForegroundColor Green
+# Create Local CLAUDE.md (@AGENTS.md reference)
+Set-Content -Path $localClaude -Value "@AGENTS.md" -Encoding UTF8
+Write-Host "  Created: CLAUDE.md -> Local Project Root (@AGENTS.md reference)" -ForegroundColor Green
 
 
 
