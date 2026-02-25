@@ -36,9 +36,11 @@ function Open-TerminalAtPath {
     if (-not (Test-Path $Path)) { return }
     if (Get-Command wt.exe -ErrorAction SilentlyContinue) {
         Start-Process wt.exe -ArgumentList "-d `"$Path`""
-    } elseif (Get-Command pwsh.exe -ErrorAction SilentlyContinue) {
+    }
+    elseif (Get-Command pwsh.exe -ErrorAction SilentlyContinue) {
         Start-Process pwsh.exe -ArgumentList "-NoExit -Command `"Set-Location '$Path'`""
-    } else {
+    }
+    else {
         Start-Process powershell.exe -ArgumentList "-NoExit -Command `"Set-Location '$Path'`""
     }
 }
@@ -48,9 +50,11 @@ function Open-AgentAtPath {
     if (-not (Test-Path $Path)) { return }
     if (Get-Command wt.exe -ErrorAction SilentlyContinue) {
         Start-Process wt.exe -ArgumentList "-d `"$Path`" -- pwsh.exe -NoExit -Command `"$Agent`""
-    } elseif (Get-Command pwsh.exe -ErrorAction SilentlyContinue) {
+    }
+    elseif (Get-Command pwsh.exe -ErrorAction SilentlyContinue) {
         Start-Process pwsh.exe -ArgumentList "-NoExit -Command `"Set-Location '$Path'; $Agent`""
-    } else {
+    }
+    else {
         Start-Process powershell.exe -ArgumentList "-NoExit -Command `"Set-Location '$Path'; $Agent`""
     }
 }
@@ -92,9 +96,9 @@ function New-ProjectCard {
 
     $tierBadge = New-Object System.Windows.Controls.TextBlock
     $badgeText = if ($Info.Category -eq "domain" -and $Info.Tier -eq "mini") { " [DM]" }
-                 elseif ($Info.Category -eq "domain") { " [D]" }
-                 elseif ($Info.Tier -eq "mini") { " [M]" }
-                 else { " [F]" }
+    elseif ($Info.Category -eq "domain") { " [D]" }
+    elseif ($Info.Tier -eq "mini") { " [M]" }
+    else { " [F]" }
     $tierBadge.Text = $badgeText
     $tierBadge.FontSize = 11
     $tierBadge.Foreground = New-ColorBrush "#a6adc8"
@@ -199,9 +203,9 @@ function New-ProjectCard {
             $checkCombo = $Window.FindName("checkProjectCombo")
             # Build display name with appropriate suffix
             $suffix = if ($data.IsDomain -and $data.IsMini) { " [Domain][Mini]" }
-                      elseif ($data.IsDomain) { " [Domain]" }
-                      elseif ($data.IsMini) { " [Mini]" }
-                      else { "" }
+            elseif ($data.IsDomain) { " [Domain]" }
+            elseif ($data.IsMini) { " [Mini]" }
+            else { "" }
             $checkCombo.Text = "$($data.ProjName)$suffix"
 
             $checkMiniBox = $Window.FindName("checkMini")
@@ -231,9 +235,9 @@ function New-ProjectCard {
             $editorCombo = $Window.FindName("editorProjectCombo")
             # Build display name matching the combo format
             $suffix = if ($data.IsDomain -and $data.IsMini) { " [Domain][Mini]" }
-                      elseif ($data.IsDomain) { " [Domain]" }
-                      elseif ($data.IsMini) { " [Mini]" }
-                      else { "" }
+            elseif ($data.IsDomain) { " [Domain]" }
+            elseif ($data.IsMini) { " [Mini]" }
+            else { "" }
             $displayName = "$($data.ProjName)$suffix"
             
             for ($i = 0; $i -lt $editorCombo.Items.Count; $i++) {
@@ -262,68 +266,89 @@ function New-ProjectCard {
     $btnTerm.Tag = $localProjPath
 
     $btnTerm.Add_Click({
-        param($sender, $e)
-        Open-TerminalAtPath -Path $sender.Tag
-    })
+            param($sender, $e)
+            Open-TerminalAtPath -Path $sender.Tag
+        })
 
     # Right-click: custom popup menu (avoids default MenuItem icon column)
     $btnTerm.Add_MouseRightButtonUp({
-        param($sender, $e)
-        $e.Handled = $true
-        $termPath = $sender.Tag
+            param($sender, $e)
+            $e.Handled = $true
+            $termPath = $sender.Tag
 
-        if ($null -ne $script:currentTermPopup) {
-            $script:currentTermPopup.IsOpen = $false
-            $script:currentTermPopup = $null
-        }
-
-        $popup = New-Object System.Windows.Controls.Primitives.Popup
-        $popup.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Mouse
-        $popup.PlacementTarget = $sender
-        $popup.StaysOpen = $false
-        $popup.AllowsTransparency = $true
-
-        $border = New-Object System.Windows.Controls.Border
-        $border.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244"))
-        $border.BorderBrush = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#45475a"))
-        $border.BorderThickness = New-Object System.Windows.Thickness(1)
-        $border.Padding = New-Object System.Windows.Thickness(2)
-
-        $menuStack = New-Object System.Windows.Controls.StackPanel
-
-        foreach ($agentDef in @(
-            @{ Label = "Claude"; Cmd = "claude" },
-            @{ Label = "Gemini"; Cmd = "gemini" },
-            @{ Label = "Codex";  Cmd = "codex"  }
-        )) {
-            $menuItem = New-Object System.Windows.Controls.TextBlock
-            $menuItem.Text = $agentDef.Label
-            $menuItem.Foreground = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#cdd6f4"))
-            $menuItem.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244"))
-            $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5)
-            $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
-            $menuItem.Tag = @{ Path = $termPath; Cmd = $agentDef.Cmd; Popup = $popup }
-            $menuItem.Add_MouseEnter({ $this.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#45475a")) })
-            $menuItem.Add_MouseLeave({ $this.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244")) })
-            $menuItem.Add_MouseLeftButtonDown({
-                param($sender, $e)
-                $e.Handled = $true
-                $d = $sender.Tag
-                $d.Popup.IsOpen = $false
+            if ($null -ne $script:currentTermPopup) {
+                $script:currentTermPopup.IsOpen = $false
                 $script:currentTermPopup = $null
-                Open-AgentAtPath -Path $d.Path -Agent $d.Cmd
-            })
-            $menuStack.Children.Add($menuItem) | Out-Null
-        }
+            }
 
-        $border.Child = $menuStack
-        $popup.Child = $border
-        $script:currentTermPopup = $popup
-        $popup.IsOpen = $true
-    })
+            $popup = New-Object System.Windows.Controls.Primitives.Popup
+            $popup.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Mouse
+            $popup.PlacementTarget = $sender
+            $popup.StaysOpen = $false
+            $popup.AllowsTransparency = $true
+
+            $border = New-Object System.Windows.Controls.Border
+            $border.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244"))
+            $border.BorderBrush = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#45475a"))
+            $border.BorderThickness = New-Object System.Windows.Thickness(1)
+            $border.Padding = New-Object System.Windows.Thickness(2)
+
+            $menuStack = New-Object System.Windows.Controls.StackPanel
+
+            foreach ($agentDef in @(
+                    @{ Label = "Claude"; Cmd = "claude" },
+                    @{ Label = "Gemini"; Cmd = "gemini" },
+                    @{ Label = "Codex"; Cmd = "codex" }
+                )) {
+                $menuItem = New-Object System.Windows.Controls.TextBlock
+                $menuItem.Text = $agentDef.Label
+                $menuItem.Foreground = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#cdd6f4"))
+                $menuItem.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244"))
+                $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5)
+                $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
+                $menuItem.Tag = @{ Path = $termPath; Cmd = $agentDef.Cmd; Popup = $popup }
+                $menuItem.Add_MouseEnter({ $this.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#45475a")) })
+                $menuItem.Add_MouseLeave({ $this.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244")) })
+                $menuItem.Add_MouseLeftButtonDown({
+                        param($sender, $e)
+                        $e.Handled = $true
+                        $d = $sender.Tag
+                        $d.Popup.IsOpen = $false
+                        $script:currentTermPopup = $null
+                        Open-AgentAtPath -Path $d.Path -Agent $d.Cmd
+                    })
+                $menuStack.Children.Add($menuItem) | Out-Null
+            }
+
+            $border.Child = $menuStack
+            $popup.Child = $border
+            $script:currentTermPopup = $popup
+            $popup.IsOpen = $true
+        })
+
+    # [Dir] button - open project folder in Explorer
+    $btnDir = New-Object System.Windows.Controls.Button
+    $btnDir.Content = "Dir"
+    $btnDir.FontSize = 11
+    $btnDir.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
+    $btnDir.Margin = New-Object System.Windows.Thickness(6, 0, 0, 0)
+    $btnDir.Background = New-ColorBrush "#45475a"
+    $btnDir.Foreground = New-ColorBrush "#cdd6f4"
+    $btnDir.BorderThickness = New-Object System.Windows.Thickness(0)
+    $btnDir.Cursor = [System.Windows.Input.Cursors]::Hand
+    $btnDir.Tag = $localProjPath
+
+    $btnDir.Add_Click({
+            param($sender, $e)
+            $path = $sender.Tag
+            if (Test-Path $path) {
+                Start-Process explorer.exe -ArgumentList $path
+            }
+        })
 
     $btnPanel.Children.Add($btnCheck) | Out-Null
     $btnPanel.Children.Add($btnEdit)  | Out-Null
+    $btnPanel.Children.Add($btnDir)   | Out-Null
     $btnPanel.Children.Add($btnTerm)  | Out-Null
     $stack.Children.Add($btnPanel)    | Out-Null
 
