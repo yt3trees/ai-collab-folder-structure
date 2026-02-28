@@ -264,8 +264,9 @@ Documents/Projects/
 │   ├── CLAUDE.md               # AGENTS.mdのコピー (Claude CLI用)
 │   └── README.md               # テンプレート詳細ドキュメント
 ├── _globalScripts/             # プロジェクト横断スクリプト
-│   ├── sync_from_asana.py      # Asana → Markdown同期
-│   └── config.json.example     # Asana同期の設定例
+│   ├── sync_from_asana.py      # Asana → 案件別Markdown同期
+│   ├── config.json.example     # Asana同期のグローバル設定例
+│   └── asana_config.json.example  # 案件別Asana設定の例
 ├── _archive/                   # アーカイブ済みプロジェクト
 │   ├── _mini/               # アーカイブ済み mini tier プロジェクト
 │   └── _domains/            # アーカイブ済み domain プロジェクト
@@ -300,6 +301,7 @@ Documents/Projects/{ProjectName}/
 └── CLAUDE.md                   # Copy from shared/AGENTS.md
 
 Box/Projects/{ProjectName}/
+├── asana_config.json           # (Optional) Asana連携設定
 ├── CLAUDE.md                   # AI指示書 (実体)
 ├── docs/                       # 作成・編集ドキュメント
 │   ├── planning/               # 企画・要件定義・提案書
@@ -418,14 +420,16 @@ BOX同期完了後、GUIマネージャーの Setup タブから再度セット�
 
 | スクリプト | 用途 |
 |-----------|------|
-| `sync_from_asana.py` | Asanaタスク → Markdown同期 |
-| `config.json.example` | Asana同期の設定ファイル例 |
+| `sync_from_asana.py` | Asanaタスク → 案件別Markdown同期 |
+| `config.json.example` | Asana同期のグローバル設定例 (認証情報・個人プロジェクトGID) |
+| `asana_config.json.example` | 案件別Asana設定の例 (`Box/Projects/{案件}/asana_config.json` に配置) |
 
 ## ドキュメント
 
 - [workspace-architecture.md](./workspace-architecture.md) - 詳細設計ドキュメント
 - [_projectTemplate/README.md](./Projects/_projectTemplate/README.md) - テンプレート詳細ドキュメント
 - [CLAUDE.md](./Projects/CLAUDE.md) - ワークスペース全体のAI指示書
+- [_globalScripts/CLAUDE.md](./_globalScripts/CLAUDE.md) - Asana同期スクリプトのAI向け構成ドキュメント
 
 ## License
 

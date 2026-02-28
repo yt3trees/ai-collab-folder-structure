@@ -31,6 +31,9 @@ description: AI behavioral guideline for autonomously detecting work session bou
 - 決まったこと（あれば）
 - 残っていること
 
+`_ai-context/obsidian_notes/asana-tasks.md` が存在する場合、進行中タスクと照合し、
+セッション作業に関連する Asana タスクがあれば追記案の「今やってること」「次やること」に反映する。
+
 ### 2. 追記案の提示
 
 ```

@@ -266,8 +266,9 @@ Documents/Projects/
 │   ├── CLAUDE.md               # AGENTS.md copy (for Claude CLI)
 │   └── README.md               # Template detailed documentation
 ├── _globalScripts/             # Cross-project scripts
-│   ├── sync_from_asana.py      # Asana → Markdown sync
-│   └── config.json.example     # Asana sync config example
+│   ├── sync_from_asana.py      # Asana → Per-project Markdown sync
+│   ├── config.json.example     # Asana sync global config example
+│   └── asana_config.json.example  # Per-project Asana config example
 ├── _archive/                   # Archived projects
 │   ├── _mini/               # Archived mini tier projects
 │   └── _domains/            # Archived domain projects
@@ -302,6 +303,7 @@ Documents/Projects/{ProjectName}/
 └── CLAUDE.md                   # Copy from shared/AGENTS.md
 
 Box/Projects/{ProjectName}/
+├── asana_config.json           # (Optional) Asana integration config
 ├── CLAUDE.md                   # AI instructions (physical file)
 ├── docs/                       # Created/edited documents
 │   ├── planning/               # Planning, requirements, proposals
@@ -420,14 +422,16 @@ After BOX sync is complete, simply run the setup from the GUI Manager's Setup ta
 
 | Script | Purpose |
 |--------|---------|
-| `sync_from_asana.py` | Asana tasks → Markdown sync |
-| `config.json.example` | Asana sync config file example |
+| `sync_from_asana.py` | Asana tasks → Per-project Markdown sync |
+| `config.json.example` | Asana sync global config example (auth, personal project GIDs) |
+| `asana_config.json.example` | Per-project Asana config example (placed in `Box/Projects/{Project}/asana_config.json`) |
 
 ## Documentation
 
 - [workspace-architecture.md](./workspace-architecture.md) - Detailed design documentation
 - [_projectTemplate/README.md](./Projects/_projectTemplate/README.md) - Template detailed documentation
 - [CLAUDE.md](./Projects/CLAUDE.md) - AI instructions for entire workspace
+- [_globalScripts/CLAUDE.md](./_globalScripts/CLAUDE.md) - Asana sync script architecture for AI
 
 ## License
 

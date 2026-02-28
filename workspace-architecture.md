@@ -66,16 +66,25 @@ AIエージェントはセッションが終了すると短期記憶（コンテ
 セッション開始時のAI行動を定型化し、毎回「前回何をやったか」を確認する手間を省きます。
 
 - **Context Loading Priority**: 読み込み順序（必須→状況依存→オンデマンド）を定め、不要なファイルを読まずトークンを節約。状況依存ファイルとして tensions.md を decision_log の前に読む
-- **Session Start Protocol**: AIがコンテキストを優先順位順に読み込み (current_focus → project_summary → tensions → decision_log)、未完了事項を1〜2行で自動提示。前回更新から3日以上経過した場合のみ進捗確認を1回行い、その後ユーザーの指示を待つ
+- **Session Start Protocol**: AIがコンテキストを優先順位順に読み込み (current_focus → project_summary → tensions → decision_log → asana-tasks.md)、未完了事項を1〜2行で自動提示。前回更新から3日以上経過した場合のみ進捗確認を1回行い、その後ユーザーの指示を待つ
 - **承認モデル**: AIのファイル更新操作を Auto / Notify / Confirm の3段階で制御。current_focus.md 追記は自動、tensions.md 更新は報告後実行、project_summary.md 変更は必ず確認を取る
 
 ### カスタム AI SKILL による自律管理
 
 CCLは単なる静的ファイル群の置き場ではありません。AI自身がプロアクティブにファイルを更新・維持するための拡張機能 (SKILL) によって支えられます。
 - **context-decision-log**: 作業中に出た「会話上の暗黙的な決定（採用技術の選択など）」を検知し、構造化して記録を提案するスキル
-- **context-session-end**: 作業セッションの終了時（会話の区切り）に、その日の進捗とAIが関与した作業結果を要約し `current_focus.md` に追記更新するスキル
+- **context-session-end**: 作業セッションの終了時（会話の区切り）に、その日の進捗とAIが関与した作業結果を要約し `current_focus.md` に追記更新するスキル。`asana-tasks.md` が存在する場合は進行中タスクと照合し、関連するタスクがあれば追記案に含める
 - **obsidian-knowledge**: `_ai-context/obsidian_notes/` を通じてObsidian Vaultを読み取り文脈を補完し、セッションの成果や技術的知見を `#ai-memory` タグ付きでVaultに書き戻すことを提案するスキル。プロジェクト横断で再利用できる知見はVaultルートの `ai-context/` ハブ (tech-patterns/, lessons-learned/) への振り分けを提案
 - **行動規範（スキル不要の自律行動）**: tensions.md の未解決課題検出と記録提案、decision_log への意思決定検出、セッション終了の検知と current_focus.md 追記提案が CLAUDE.md の指示として組み込まれており、明示的なスキル呼び出しは不要
+
+### Asana タスク連携
+
+Asana のタスク情報を CCL のコンテキスト読み込みに統合し、AI がセッション開始時にプロジェクトの Asana タスク状況を自動的に把握します。
+
+- **データフロー**: `sync_from_asana.py` (_globalScripts/) が Asana API からタスクを取得し、案件ごとに `{obsidianVaultRoot}/Projects/{案件}/asana-tasks.md` へ出力。AI は `_ai-context/obsidian_notes/asana-tasks.md` としてジャンクション経由で参照
+- **案件別設定**: 各案件の `Box/Projects/{案件}/asana_config.json` に Asana プロジェクト GID を配列で指定。BOX 同期で 2PC 間共有
+- **ロール識別**: タスクごとに [担当] / [コラボ] / [他] を判定し、AI が自分に関係するタスクを把握
+- **個人タスク振り分け**: 個人 Asana プロジェクトのタスクは「案件」カスタムフィールドで各案件に自動振り分け
 
 ---
 

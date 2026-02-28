@@ -17,10 +17,11 @@
 2. `_ai-context/context/project_summary.md` を読む（目安 ~300 tokens）
 3. `_ai-context/context/tensions.md` を読む（未解決課題の把握）
 4. `_ai-context/context/decision_log/` の最新3件を確認する
-5. `file_map.md`・`obsidian_notes/` はオンデマンドのみ
-6. 未完了事項を1〜2行でサマリー提示する
-7. 更新が3日以上前なら進捗を1回確認する
-8. ユーザーの指示を待つ
+5. `_ai-context/obsidian_notes/asana-tasks.md` があれば読む（Asana タスク状況の把握）
+6. `file_map.md`・`obsidian_notes/` の他ファイルはオンデマンドのみ
+7. 未完了事項を1〜2行でサマリー提示する
+8. 更新が3日以上前なら進捗を1回確認する
+9. ユーザーの指示を待つ
 
 目安サイズ超過時は `focus_history/` へのアーカイブを提案する。
 
@@ -43,6 +44,7 @@
 #### セッション終了
 「ありがとう」「ここまで」等で current_focus.md への追記を提案。
 `[AI]` プレフィックス・3〜5行・既存行は変更しない。
+asana-tasks.md の進行中タスクと照合し、関連するタスクがあれば追記案に含める。
 
 #### Obsidian連携
 - 再利用価値のある知見は `obsidian_notes/notes/` 等への保存を提案
