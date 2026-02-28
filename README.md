@@ -358,9 +358,15 @@ Create `Documents/Projects/_config/paths.json`:
 {
   "localProjectsRoot": "%USERPROFILE%\\Documents\\Projects",
   "boxProjectsRoot": "%USERPROFILE%\\Box\\Projects",
-  "obsidianVaultRoot": "%USERPROFILE%\\Box\\Obsidian-Vault"
+  "obsidianVaultRoot": "%USERPROFILE%\\Box\\Obsidian-Vault",
+  "hotkey": {
+    "modifiers": "Ctrl+Shift",
+    "key": "P"
+  }
 }
 ```
+
+The `hotkey` field is optional (defaults to Ctrl+Shift+P). Since this file is managed per-PC (not synced via BOX), each PC can have different hotkey settings.
 
 Each value is a full path. Environment variables such as `%USERPROFILE%` are expanded automatically.
 
@@ -373,6 +379,10 @@ powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_proj
 Or double-click `exec_project_manager.cmd` in the Projects root to launch.
 
 Features:
+- System tray resident: Runs in the notification area (no taskbar icon), always accessible via tray icon click or global hotkey
+- Global hotkey: Toggle window visibility (default: Ctrl+Shift+P, configurable per-PC via paths.json)
+- Esc key: Hide window to tray
+- Close button: Hide to tray (Shift+Click to fully exit)
 - Dashboard tab: Project overview with quick actions
 - Editor tab: Built-in file viewer/editor for project files
 - Setup tab: Select project name and Tier for setup
@@ -380,6 +390,7 @@ Features:
 - Check tab: Health check for existing projects
 - Archive tab: Archive with DryRun preview
 - Archiving moves all three layers to `_archive/`. Mini tier projects are moved under `_archive/_mini/`.
+- Settings tab: Configure global hotkey and Windows startup registration
 - Real-time display of script output
 - Custom dark-themed title bar (Catppuccin Mocha)
 

@@ -44,6 +44,7 @@ else {
 . "$managerDir\ProjectDiscovery.ps1"
 . "$managerDir\EditorHelpers.ps1"
 . "$managerDir\XamlBuilder.ps1"
+. "$managerDir\TrayManager.ps1"
 . "$managerDir\TabDashboard.ps1"
 . "$managerDir\TabEditor.ps1"
 . "$managerDir\TabSetup.ps1"
@@ -51,6 +52,7 @@ else {
 . "$managerDir\TabArchive.ps1"
 . "$managerDir\TabContextSetup.ps1"
 . "$managerDir\TabConvert.ps1"
+. "$managerDir\TabSettings.ps1"
 
 # --- Initialize config and discover projects ---
 Initialize-AppConfig -ScriptDir $scriptDir
@@ -85,9 +87,19 @@ catch {
     exit 1
 }
 
+# --- Tray mode: hide from taskbar ---
+$window.ShowInTaskbar = $false
+
+# --- Escape key: hide to tray ---
+$window.Add_PreviewKeyDown({
+        if ($_.Key -eq [System.Windows.Input.Key]::Escape) {
+            $window.Hide()
+            $_.Handled = $true
+        }
+    })
+
 # --- Title bar controls ---
 $titleBar = $window.FindName("titleBar")
-$btnMinimize = $window.FindName("btnMinimize")
 $btnMaximize = $window.FindName("btnMaximize")
 $btnClose = $window.FindName("btnClose")
 
@@ -118,8 +130,6 @@ $titleBar.Add_MouseLeftButtonDown({
         }
     })
 
-$btnMinimize.Add_Click({ $window.WindowState = [System.Windows.WindowState]::Minimized })
-
 $btnMaximize.Add_Click({
         if ($window.WindowState -eq [System.Windows.WindowState]::Maximized) {
             $window.WindowState = [System.Windows.WindowState]::Normal
@@ -129,27 +139,47 @@ $btnMaximize.Add_Click({
         }
     })
 
+# Close button: hide to tray instead of closing (Shift+Click = force exit)
 $btnClose.Add_Click({
-        if ($script:AppState.EditorState.IsDirty) {
-            $fileName = [System.IO.Path]::GetFileName($script:AppState.EditorState.CurrentFile)
-            $result = [System.Windows.MessageBox]::Show(
-                "Save changes to '$fileName' before closing?",
-                "Unsaved Changes",
-                [System.Windows.MessageBoxButton]::YesNoCancel,
-                [System.Windows.MessageBoxImage]::Warning
-            )
-            if ($result -eq [System.Windows.MessageBoxResult]::Yes) {
-                Save-EditorFile -Window $window
+        # Check if Shift is held for force exit
+        $shiftHeld = [System.Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftShift) -or
+        [System.Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::RightShift)
+
+        if ($shiftHeld) {
+            # Force exit: check for unsaved changes first
+            if ($script:AppState.EditorState.IsDirty) {
+                $fileName = [System.IO.Path]::GetFileName($script:AppState.EditorState.CurrentFile)
+                $result = [System.Windows.MessageBox]::Show(
+                    "Save changes to '$fileName' before closing?",
+                    "Unsaved Changes",
+                    [System.Windows.MessageBoxButton]::YesNoCancel,
+                    [System.Windows.MessageBoxImage]::Warning
+                )
+                if ($result -eq [System.Windows.MessageBoxResult]::Yes) {
+                    Save-EditorFile -Window $window
+                }
+                elseif ($result -eq [System.Windows.MessageBoxResult]::Cancel) {
+                    return
+                }
             }
-            elseif ($result -eq [System.Windows.MessageBoxResult]::Cancel) {
-                return
-            }
+            Invoke-TrayExit
         }
-        $window.Close()
+        else {
+            # Normal close: just hide to tray
+            $window.Hide()
+        }
     })
 
 $window.Add_Closing({
         param($s, $e)
+        # If not a force exit, cancel close and hide instead
+        if (-not (Test-ForceExit)) {
+            $e.Cancel = $true
+            $s.Hide()
+            return
+        }
+
+        # Force exit path: check for unsaved changes
         if ($script:AppState.EditorState.IsDirty) {
             $fileName = [System.IO.Path]::GetFileName($script:AppState.EditorState.CurrentFile)
             $result = [System.Windows.MessageBox]::Show(
@@ -163,6 +193,7 @@ $window.Add_Closing({
             }
             elseif ($result -eq [System.Windows.MessageBoxResult]::Cancel) {
                 $e.Cancel = $true
+                $script:TrayState.ForceExit = $false
             }
         }
     })
@@ -175,6 +206,35 @@ Initialize-TabCheck        -Window $window -ScriptDir $scriptDir -ProjectList $p
 Initialize-TabArchive      -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabContextSetup -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabConvert      -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
+Initialize-TabSettings     -Window $window -ScriptDir $scriptDir
 
-# --- Show window ---
-$window.ShowDialog() | Out-Null
+# --- Initialize system tray ---
+Initialize-TrayIcon -Window $window
+
+# --- Register hotkey after window is fully loaded ---
+$window.Add_Loaded({
+        # Register global hotkey (deferred to avoid message-processing race)
+        Register-GlobalHotkey -Window $window | Out-Null
+    })
+
+# --- WPF Application lifecycle for tray-resident mode ---
+# Use Application with OnExplicitShutdown so the app keeps running
+# even when the main window is hidden
+$app = [System.Windows.Application]::Current
+if ($null -eq $app) {
+    $app = New-Object System.Windows.Application
+}
+$app.ShutdownMode = [System.Windows.ShutdownMode]::OnExplicitShutdown
+
+# --- Show window with forced activation ---
+$window.Show()
+$window.Topmost = $true
+$window.Activate()
+$window.Topmost = $false
+
+# Run the application loop (keeps running even when window is hidden)
+$app.Run() | Out-Null
+
+# --- Cleanup (after application exits) ---
+Unregister-GlobalHotkey
+Remove-TrayIcon

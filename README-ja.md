@@ -356,9 +356,15 @@ Box/Projects/_mini/{ProjectName}/
 {
   "localProjectsRoot": "%USERPROFILE%\\Documents\\Projects",
   "boxProjectsRoot": "%USERPROFILE%\\Box\\Projects",
-  "obsidianVaultRoot": "%USERPROFILE%\\Box\\Obsidian-Vault"
+  "obsidianVaultRoot": "%USERPROFILE%\\Box\\Obsidian-Vault",
+  "hotkey": {
+    "modifiers": "Ctrl+Shift",
+    "key": "P"
+  }
 }
 ```
+
+`hotkey` は省略可能です(デフォルト: Ctrl+Shift+P)。このファイルはPCごとにローカル管理(BOX非同期)のため、PCごとに異なるホットキーを設定できます。
 
 各値はフルパスで記述します。`%USERPROFILE%` などの環境変数は自動的に展開されます。
 
@@ -371,6 +377,10 @@ powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_proj
 または Projects ルートの `exec_project_manager.cmd` をダブルクリックでも起動できます。
 
 機能:
+- システムトレイ常駐: 通知領域に常駐(タスクバーには表示されない)、トレイアイコンクリックまたはグローバルホットキーでいつでもアクセス可能
+- グローバルホットキー: ウィンドウの表示/非表示をトグル(デフォルト: Ctrl+Shift+P、PCごとにpaths.jsonで設定変更可能)
+- Escキー: ウィンドウをトレイに格納
+- 閉じるボタン: トレイに格納(Shift+クリックで完全終了)
 - Dashboard タブ: プロジェクト概要とクイックアクション
 - Editor タブ: プロジェクトファイルの閲覧・編集
 - Setup タブ: プロジェクト名と Tier を選択してセットアップ
@@ -378,6 +388,7 @@ powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_proj
 - Check タブ: 既存プロジェクトの健全性チェック
 - Archive タブ: DryRun プレビュー付きでアーカイブ実行
 - アーカイブは3層すべてを `_archive/` に移動します。mini tier は `_archive/_mini/` 配下に移動されます。
+- Settings タブ: グローバルホットキーの設定変更、Windowsスタートアップ登録/解除
 - 出力エリアにスクリプトの実行結果をリアルタイム表示
 - カスタムダークテーマタイトルバー (Catppuccin Mocha)
 

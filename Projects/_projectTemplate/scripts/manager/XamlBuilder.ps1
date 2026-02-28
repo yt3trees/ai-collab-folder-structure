@@ -4,7 +4,7 @@
 function Build-MainWindowXaml {
     $styles = Get-ThemeResourcesXaml
 
-    # Tab indices: 0=Dashboard, 1=Editor, 2=Setup, 3=AI Context, 4=Check, 5=Archive, 6=Convert
+    # Tab indices: 0=Dashboard, 1=Editor, 2=Setup, 3=AI Context, 4=Check, 5=Archive, 6=Convert, 7=Settings
     return @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -39,8 +39,6 @@ $styles
                                FontSize="12" VerticalAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button x:Name="btnMinimize" Content="&#x2500;" FontSize="12"
-                            Foreground="#a6adc8" Style="{StaticResource TitleBarButton}"/>
                     <Button x:Name="btnMaximize" Content="&#x25A1;" FontSize="13"
                             Foreground="#a6adc8" Style="{StaticResource TitleBarButton}"/>
                     <Button x:Name="btnClose"    Content="&#x2715;" FontSize="12"
@@ -382,6 +380,72 @@ $styles
                         <Border Grid.Row="2" Background="#181825" CornerRadius="6"
                                 BorderBrush="#313244" BorderThickness="1" Margin="16,0,16,16">
                             <TextBox x:Name="txtConvertOutput" IsReadOnly="True" TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto" Background="Transparent"
+                                     Foreground="#a6e3a1" FontFamily="Consolas" FontSize="12"
+                                     BorderThickness="0" Padding="10" AcceptsReturn="True"/>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+                <!-- Tab 7: Settings -->
+                <TabItem Header="Settings">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="360">
+                            <StackPanel Margin="16">
+                                <!-- Current Hotkey Display -->
+                                <TextBlock Text="Global Hotkey" Foreground="#cba6f7" FontSize="15"
+                                           FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="Current: " Foreground="#a6adc8" FontSize="13"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="settingsCurrentHotkey" Text="..." Foreground="#a6e3a1"
+                                               FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <!-- Modifier Keys -->
+                                <Label Content="Modifier Keys"/>
+                                <WrapPanel Margin="0,0,0,8">
+                                    <CheckBox x:Name="settingsModCtrl" Content="Ctrl" Margin="0,0,16,0"/>
+                                    <CheckBox x:Name="settingsModShift" Content="Shift" Margin="0,0,16,0"/>
+                                    <CheckBox x:Name="settingsModAlt" Content="Alt" Margin="0,0,16,0"/>
+                                    <CheckBox x:Name="settingsModWin" Content="Win" Margin="0,0,16,0"/>
+                                </WrapPanel>
+
+                                <!-- Key -->
+                                <Label Content="Key (A-Z, 0-9, F1-F12)"/>
+                                <TextBox x:Name="settingsKeyInput" Width="100" HorizontalAlignment="Left"
+                                         MaxLength="5"/>
+
+                                <!-- Startup -->
+                                <TextBlock Text="Startup" Foreground="#cba6f7" FontSize="15"
+                                           FontWeight="SemiBold" Margin="0,20,0,8"/>
+                                <CheckBox x:Name="settingsStartup"
+                                          Content="Launch at Windows startup"
+                                          Margin="0,0,0,4"/>
+
+                                <Button x:Name="btnSettingsSave" Content="Save Settings"
+                                        Style="{StaticResource RunButton}"/>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
+                            <TextBlock Text="Output" FontSize="12" Foreground="#a6adc8"
+                                       VerticalAlignment="Center"/>
+                            <Button x:Name="btnSettingsClear" Content="Clear"
+                                    Margin="10,0,0,0" Padding="8,3"
+                                    Background="Transparent" Foreground="#6c7086"
+                                    BorderBrush="#45475a" BorderThickness="1"
+                                    Cursor="Hand" FontSize="11"/>
+                        </StackPanel>
+                        <Border Grid.Row="2" Background="#181825" CornerRadius="6"
+                                BorderBrush="#313244" BorderThickness="1" Margin="16,0,16,16">
+                            <TextBox x:Name="txtSettingsOutput" IsReadOnly="True" TextWrapping="Wrap"
                                      VerticalScrollBarVisibility="Auto" Background="Transparent"
                                      Foreground="#a6e3a1" FontFamily="Consolas" FontSize="12"
                                      BorderThickness="0" Padding="10" AcceptsReturn="True"/>
