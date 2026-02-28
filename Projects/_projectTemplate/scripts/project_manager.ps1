@@ -14,6 +14,13 @@ if ($consoleWindow -ne [IntPtr]::Zero) {
     [Native.Win32]::ShowWindow($consoleWindow, 0) | Out-Null  # SW_HIDE
 }
 
+# --- Single instance check (prevent double launch) ---
+$script:AppMutex = New-Object System.Threading.Mutex($false, "Global\ProjectManager_SingleInstance")
+if (-not $script:AppMutex.WaitOne(0, $false)) {
+    # Another instance is already running - exit silently
+    $script:AppMutex.Dispose()
+    exit 0
+}
 
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
@@ -238,3 +245,5 @@ $app.Run() | Out-Null
 # --- Cleanup (after application exits) ---
 Unregister-GlobalHotkey
 Remove-TrayIcon
+$script:AppMutex.ReleaseMutex()
+$script:AppMutex.Dispose()
