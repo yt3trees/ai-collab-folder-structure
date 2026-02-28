@@ -12,7 +12,7 @@ Asana タスクを案件別 Markdown ファイルとして Obsidian Vault に出
 | ファイル | 場所 | 用途 |
 |---------|------|------|
 | `config.json` | `_globalScripts/` | グローバル設定 (token, user_gid, personal_project_gids) |
-| `asana_config.json` | `Box/Projects/{案件}/` | 案件別設定 (asana_project_gids 配列) |
+| `asana_config.json` | `Box/Projects/{案件}/` | 案件別設定 (asana_project_gids, anken_aliases) |
 
 グローバル設定 (`config.json`):
 
@@ -30,9 +30,13 @@ Asana タスクを案件別 Markdown ファイルとして Obsidian Vault に出
 
 ```json
 {
-  "asana_project_gids": ["gid1", "gid2"]
+  "asana_project_gids": ["gid1", "gid2"],
+  "anken_aliases": ["Asana上の案件名"]
 }
 ```
+
+- `asana_project_gids`: この案件に紐づく Asana プロジェクトの GID 配列
+- `anken_aliases`: (任意) 個人プロジェクトの「案件」フィールド値がフォルダ名と異なる場合のエイリアス。フォルダ名と一致する場合は不要
 
 ### 処理フロー
 
@@ -40,7 +44,7 @@ Asana タスクを案件別 Markdown ファイルとして Obsidian Vault に出
 2. `boxProjectsRoot` 配下を走査し、`asana_config.json` を持つ案件を自動検出
 3. 各案件の Asana プロジェクトから全タスクを取得
 4. [担当] / [コラボ] / [他] のロールタグを付与
-5. 個人プロジェクトのタスクは「案件」カスタムフィールドで各案件に振り分け
+5. 個人プロジェクトのタスクは「案件」カスタムフィールドで各案件に振り分け (フォルダ名 or anken_aliases でマッチ)
 
 ### 出力ファイル
 

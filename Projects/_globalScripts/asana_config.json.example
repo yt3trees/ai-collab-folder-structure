@@ -1,3 +1,4 @@
 {
-  "asana_project_gids": ["your_asana_project_gid_1", "your_asana_project_gid_2"]
+  "asana_project_gids": ["your_asana_project_gid_1", "your_asana_project_gid_2"],
+  "anken_aliases": ["Asana上の案件名が異なる場合のエイリアス"]
 }

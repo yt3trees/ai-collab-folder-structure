@@ -71,8 +71,10 @@ def discover_projects(box_projects_root):
                     'box_path': entry.path,
                     'relative_path': f"{prefix}/{entry.name}",
                     'asana_config': asana_config,
+                    'anken_aliases': asana_config.get('anken_aliases', []),
                 })
-                print(f"  Found: {prefix}/{entry.name} ({len(asana_config.get('asana_project_gids', []))} Asana projects)")
+                aliases_info = f", aliases: {asana_config['anken_aliases']}" if asana_config.get('anken_aliases') else ""
+                print(f"  Found: {prefix}/{entry.name} ({len(asana_config.get('asana_project_gids', []))} Asana projects{aliases_info})")
 
     return projects
 
@@ -430,7 +432,9 @@ def sync_from_asana():
             matched = False
             if anken:
                 for proj_data in all_project_data:
-                    if proj_data['project']['name'] == anken:
+                    proj_name = proj_data['project']['name']
+                    aliases = proj_data['project'].get('anken_aliases', [])
+                    if anken == proj_name or anken in aliases:
                         proj_data['personal_tasks'].append(task)
                         matched = True
                         break
