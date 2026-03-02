@@ -126,7 +126,7 @@ def load_existing_memos(file_path):
                 current_gid = match.group(1)
                 current_memo = []
             elif current_gid:
-                if re.match(r'^\s*- \[[ x]\]', line):
+                if re.match(r'^\s*- \[[ x]\]', line) or re.match(r'^#', line):
                     memos[current_gid] = "".join(current_memo)
                     current_gid = None
                     current_memo = []
@@ -155,6 +155,14 @@ def classify_task_role(task, user_gid):
             return 'コラボ'
 
     return '他'
+
+
+def task_sort_key(task, user_gid):
+    """タスクのソートキー: ロール順 (担当→コラボ→他) → 期限昇順 (期限なしは末尾)"""
+    role_order = {'担当': 0, 'コラボ': 1, '他': 2}
+    role = classify_task_role(task, user_gid)
+    due = task.get('due_on') or '9999-99-99'
+    return (role_order.get(role, 9), due)
 
 
 def fetch_tasks_for_project(tasks_api, project_gid):
@@ -193,8 +201,10 @@ def write_task_line(f, task, role, existing_memos):
     checkbox = 'x' if task.get('completed') else ' '
     due = f" (Due: {task.get('due_on')})" if task.get('due_on') else ""
     role_tag = f"[{role}] " if role else ""
+    anken = get_custom_field_value(task, '案件')
+    anken_tag = f"[{anken}] " if anken else ""
 
-    f.write(f"- [{checkbox}] {role_tag}{task['name']}{due} [[Asana](https://app.asana.com/0/0/{gid})]\n")
+    f.write(f"- [{checkbox}] {role_tag}{anken_tag}{task['name']}{due} [[Asana](https://app.asana.com/0/0/{gid})]\n")
 
     if not task.get('completed'):
         f.write(f"    - <!-- Memo area for {gid} -->\n")
@@ -214,9 +224,7 @@ def write_project_section(f, project_name, tasks, user_gid, existing_memos):
     # 進行中タスク
     f.write("### 進行中\n\n")
     if in_progress:
-        # 担当 → コラボ → 他 の順にソート
-        role_order = {'担当': 0, 'コラボ': 1, '他': 2}
-        for task in sorted(in_progress, key=lambda t: role_order.get(classify_task_role(t, user_gid), 9)):
+        for task in sorted(in_progress, key=lambda t: task_sort_key(t, user_gid)):
             role = classify_task_role(task, user_gid)
             write_task_line(f, task, role, existing_memos)
     else:
@@ -286,7 +294,7 @@ def write_personal_file(output_path, tasks, user_gid):
 
         f.write("## 進行中\n\n")
         if in_progress:
-            for task in in_progress:
+            for task in sorted(in_progress, key=lambda t: task_sort_key(t, user_gid)):
                 role = classify_task_role(task, user_gid)
                 write_task_line(f, task, role, existing_memos)
         else:
@@ -350,7 +358,7 @@ def write_global_summary(output_path, all_project_data, personal_tasks, user_gid
 
             in_progress = [t for t in all_tasks if not t.get('completed')]
             if in_progress:
-                for task in in_progress:
+                for task in sorted(in_progress, key=lambda t: task_sort_key(t, user_gid)):
                     role = classify_task_role(task, user_gid)
                     write_task_line(f, task, role, existing_memos)
             else:
@@ -363,7 +371,7 @@ def write_global_summary(output_path, all_project_data, personal_tasks, user_gid
             f.write("## 個人 / 未分類\n\n")
             in_progress = [t for t in personal_tasks if not t.get('completed')]
             if in_progress:
-                for task in in_progress:
+                for task in sorted(in_progress, key=lambda t: task_sort_key(t, user_gid)):
                     role = classify_task_role(task, user_gid)
                     write_task_line(f, task, role, existing_memos)
             else:
@@ -386,6 +394,7 @@ def sync_from_asana():
     user_gid = os.environ.get('ASANA_USER_GID', config.get('user_gid'))
     if not user_gid:
         raise ValueError("'user_gid' is required in config.json or ASANA_USER_GID env var")
+    user_gid = str(user_gid)
 
     box_projects_root = paths['boxProjectsRoot']
     obsidian_vault_root = paths['obsidianVaultRoot']
@@ -421,7 +430,8 @@ def sync_from_asana():
             asana_proj_name = fetch_project_name(projects_api, gid)
             print(f"    Fetching: {asana_proj_name} ({gid})")
             tasks = fetch_tasks_for_project(tasks_api, gid)
-            print(f"    -> {len(tasks)} tasks")
+            tasks = [t for t in tasks if classify_task_role(t, user_gid) in ('担当', 'コラボ')]
+            print(f"    -> {len(tasks)} tasks (担当/コラボのみ)")
             sections.append((asana_proj_name, tasks))
         all_project_data.append({
             'project': proj,
@@ -437,7 +447,8 @@ def sync_from_asana():
         asana_proj_name = fetch_project_name(projects_api, gid)
         print(f"  Fetching: {asana_proj_name} ({gid})")
         tasks = fetch_tasks_for_project(tasks_api, gid)
-        print(f"  -> {len(tasks)} tasks")
+        tasks = [t for t in tasks if classify_task_role(t, user_gid) in ('担当', 'コラボ')]
+        print(f"  -> {len(tasks)} tasks (担当/コラボのみ)")
 
         for task in tasks:
             anken = get_custom_field_value(task, '案件')
