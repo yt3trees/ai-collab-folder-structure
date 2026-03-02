@@ -122,8 +122,12 @@ function Setup-Project {
         Write-Host "  [SKIP]   context/ junction (already exists)" -ForegroundColor Yellow
     }
     elseif (Test-Path $obsAiCtx) {
-        cmd /c mklink /J "$contextJunction" "$obsAiCtx" | Out-Null
-        Write-Host "  [CREATE] context/ -> $obsAiCtx (junction)" -ForegroundColor Green
+        try {
+            New-Item -ItemType Junction -Path $contextJunction -Target $obsAiCtx -ErrorAction Stop | Out-Null
+            Write-Host "  [CREATE] context/ -> $obsAiCtx (junction)" -ForegroundColor Green
+        } catch {
+            Write-Host "  [ERROR]  context/ junction failed: $($_.Exception.Message)" -ForegroundColor Red
+        }
     }
     else {
         Write-Host "  [WARN]   context/ junction not created (Obsidian ai-context not found)" -ForegroundColor Yellow
@@ -206,8 +210,12 @@ function Setup-Project {
                 }
                 else {
                     if (Test-Path $boxPath) {
-                        cmd /c mklink /J "$localPath" "$boxPath" | Out-Null
-                        Write-Host "    [CREATE] $cli -> $boxPath (junction)" -ForegroundColor Green
+                        try {
+                            New-Item -ItemType Junction -Path $localPath -Target $boxPath -ErrorAction Stop | Out-Null
+                            Write-Host "    [CREATE] $cli -> $boxPath (junction)" -ForegroundColor Green
+                        } catch {
+                            Write-Host "    [ERROR]  $cli junction failed: $($_.Exception.Message)" -ForegroundColor Red
+                        }
                     }
                     else {
                         Write-Host "    [WARN]   $cli source not found in BOX: $boxPath" -ForegroundColor Red
