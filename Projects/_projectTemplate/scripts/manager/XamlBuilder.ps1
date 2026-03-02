@@ -415,6 +415,11 @@ $styles
                                              HorizontalAlignment="Left"/>
                                 </StackPanel>
 
+                                <Button x:Name="btnAsanaSaveSchedule" Content="Save Schedule"
+                                        Padding="12,4" Background="#45475a" Foreground="#cdd6f4"
+                                        BorderBrush="#585b70" BorderThickness="1" Cursor="Hand"
+                                        FontSize="12" HorizontalAlignment="Left" Margin="0,0,0,12"/>
+
                                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                                     <TextBlock Text="Last Sync: " Foreground="#a6adc8" FontSize="13"
                                                VerticalAlignment="Center"/>

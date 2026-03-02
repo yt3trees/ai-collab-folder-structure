@@ -32,12 +32,12 @@ def load_paths():
             f"paths.json not found: {PATHS_JSON}\n"
             "Please create _config/paths.json with localProjectsRoot, boxProjectsRoot, obsidianVaultRoot"
         )
-    for enc in ('utf-8', 'cp932'):
+    for enc in ('utf-8-sig', 'utf-8', 'cp932'):
         try:
             with open(PATHS_JSON, 'r', encoding=enc) as f:
                 paths = json.load(f)
             break
-        except UnicodeDecodeError:
+        except (UnicodeDecodeError, json.JSONDecodeError):
             continue
     else:
         raise ValueError(f"Cannot decode {PATHS_JSON} as utf-8 or cp932")
@@ -399,10 +399,13 @@ def sync_from_asana():
     box_projects_root = paths['boxProjectsRoot']
     obsidian_vault_root = paths['obsidianVaultRoot']
     personal_project_gids = config.get('personal_project_gids', [])
-    output_file = os.environ.get('ASANA_OUTPUT_FILE', config.get(
-        'output_file',
-        os.path.join(obsidian_vault_root, 'asana-tasks-view.md')
-    ))
+    output_file = os.environ.get('ASANA_OUTPUT_FILE', '')
+    if not output_file:
+        configured = config.get('output_file', '')
+        if configured and os.path.isdir(os.path.dirname(configured)):
+            output_file = configured
+        else:
+            output_file = os.path.join(obsidian_vault_root, 'asana-tasks-view.md')
 
     # --- Asana API クライアント初期化 ---
     configuration = asana.Configuration()
