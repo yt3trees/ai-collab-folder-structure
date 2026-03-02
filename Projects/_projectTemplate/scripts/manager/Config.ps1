@@ -25,7 +25,26 @@ function Initialize-AppConfig {
     $configPath = Join-Path $script:AppState.WorkspaceRoot "_config\paths.json"
     if (Test-Path $configPath) {
         try {
-            $json = [System.IO.File]::ReadAllText($configPath, [System.Text.Encoding]::UTF8)
+            # Detect encoding: UTF-8 BOM -> UTF-8 -> cp932 (SJIS)
+            $rawBytes = [System.IO.File]::ReadAllBytes($configPath)
+            $detectedEncoding = [System.Text.Encoding]::UTF8
+            if ($rawBytes.Length -ge 3 -and $rawBytes[0] -eq 0xEF -and $rawBytes[1] -eq 0xBB -and $rawBytes[2] -eq 0xBF) {
+                $detectedEncoding = New-Object System.Text.UTF8Encoding($true)
+            }
+            else {
+                try {
+                    $testStr = [System.Text.Encoding]::UTF8.GetString($rawBytes)
+                    $null = $testStr | ConvertFrom-Json
+                    $detectedEncoding = New-Object System.Text.UTF8Encoding($false)
+                }
+                catch {
+                    $detectedEncoding = [System.Text.Encoding]::GetEncoding(932)
+                }
+            }
+            $json = $detectedEncoding.GetString($rawBytes)
+            if ($json.Length -gt 0 -and $json[0] -eq [char]0xFEFF) {
+                $json = $json.Substring(1)
+            }
             $script:AppState.PathsConfig = $json | ConvertFrom-Json
             foreach ($prop in $script:AppState.PathsConfig.PSObject.Properties) {
                 if ($prop.Value -is [string]) {

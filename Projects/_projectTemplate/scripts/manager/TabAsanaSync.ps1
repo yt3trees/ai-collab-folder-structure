@@ -128,6 +128,11 @@ function Save-AsanaSyncConfig {
         }
 
         $newJson = $obj | ConvertTo-Json -Depth 10
+        # Unescape \uXXXX sequences so non-ASCII characters (e.g. Japanese) are preserved as-is
+        $newJson = [System.Text.RegularExpressions.Regex]::Replace($newJson, '\\u([0-9A-Fa-f]{4})', {
+                param($m)
+                [char]([int]::Parse($m.Groups[1].Value, [System.Globalization.NumberStyles]::HexNumber))
+            })
         [System.IO.File]::WriteAllText($configPath, $newJson, $detectedEncoding)
 
         # Update in-memory config
