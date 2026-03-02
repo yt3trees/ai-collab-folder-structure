@@ -4,7 +4,7 @@
 function Build-MainWindowXaml {
     $styles = Get-ThemeResourcesXaml
 
-    # Tab indices: 0=Dashboard, 1=Editor, 2=Setup, 3=AI Context, 4=Check, 5=Archive, 6=Convert, 7=Settings
+    # Tab indices: 0=Dashboard, 1=Editor, 2=Setup, 3=AI Context, 4=Check, 5=Archive, 6=Convert, 7=Asana Sync, 8=Settings
     return @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -387,7 +387,63 @@ $styles
                     </Grid>
                 </TabItem>
 
-                <!-- Tab 7: Settings -->
+                <!-- Tab 7: Asana Sync -->
+                <TabItem Header="Asana Sync">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="280">
+                            <StackPanel Margin="16">
+                                <TextBlock Text="Manual Execution" Foreground="#cba6f7" FontSize="15"
+                                           FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <Button x:Name="btnAsanaSync" Content="Run Sync Now"
+                                        Style="{StaticResource RunButton}"/>
+
+                                <TextBlock Text="Scheduled Execution" Foreground="#cba6f7" FontSize="15"
+                                           FontWeight="SemiBold" Margin="0,20,0,8"/>
+                                <CheckBox x:Name="chkAsanaSchedule"
+                                          Content="Enable scheduled sync"
+                                          Margin="0,0,0,8"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="Interval (min): " Foreground="#a6adc8" FontSize="13"
+                                               VerticalAlignment="Center"/>
+                                    <TextBox x:Name="txtAsanaInterval" Text="60" Width="80"
+                                             HorizontalAlignment="Left"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBlock Text="Last Sync: " Foreground="#a6adc8" FontSize="13"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="lblAsanaLastSync" Text="---" Foreground="#a6e3a1"
+                                               FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
+                            <TextBlock Text="Output" FontSize="12" Foreground="#a6adc8"
+                                       VerticalAlignment="Center"/>
+                            <Button x:Name="btnAsanaClear" Content="Clear"
+                                    Margin="10,0,0,0" Padding="8,3"
+                                    Background="Transparent" Foreground="#6c7086"
+                                    BorderBrush="#45475a" BorderThickness="1"
+                                    Cursor="Hand" FontSize="11"/>
+                        </StackPanel>
+                        <Border Grid.Row="2" Background="#181825" CornerRadius="6"
+                                BorderBrush="#313244" BorderThickness="1" Margin="16,0,16,16">
+                            <TextBox x:Name="txtAsanaOutput" IsReadOnly="True" TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto" Background="Transparent"
+                                     Foreground="#a6e3a1" FontFamily="Consolas" FontSize="12"
+                                     BorderThickness="0" Padding="10" AcceptsReturn="True"/>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+                <!-- Tab 8: Settings -->
                 <TabItem Header="Settings">
                     <Grid>
                         <Grid.RowDefinitions>

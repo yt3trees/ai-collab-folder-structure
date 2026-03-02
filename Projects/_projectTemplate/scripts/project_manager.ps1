@@ -59,6 +59,7 @@ else {
 . "$managerDir\TabArchive.ps1"
 . "$managerDir\TabContextSetup.ps1"
 . "$managerDir\TabConvert.ps1"
+. "$managerDir\TabAsanaSync.ps1"
 . "$managerDir\TabSettings.ps1"
 
 # --- Initialize config and discover projects ---
@@ -213,6 +214,7 @@ Initialize-TabCheck        -Window $window -ScriptDir $scriptDir -ProjectList $p
 Initialize-TabArchive      -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabContextSetup -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabConvert      -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
+Initialize-TabAsanaSync  -Window $window -ScriptDir $scriptDir
 Initialize-TabSettings     -Window $window -ScriptDir $scriptDir
 
 # --- Initialize system tray ---

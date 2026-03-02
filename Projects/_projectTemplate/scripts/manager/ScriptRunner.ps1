@@ -26,7 +26,7 @@ function Invoke-ScriptWithOutput {
 
         # Merge all streams (*>&1) so Write-Host/Write-Error are captured without
         # spawning a background-thread ScriptBlock (which causes runspace conflicts)
-        $cmd = "& '$ScriptPath' $ArgumentString *>&1"
+        $cmd = "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '$ScriptPath' $ArgumentString *>&1"
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $psi.FileName = "powershell.exe"
         $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -Command `"$cmd`""
