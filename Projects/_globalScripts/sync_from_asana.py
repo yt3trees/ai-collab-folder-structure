@@ -16,8 +16,12 @@ PATHS_JSON = os.path.join(PROJECTS_ROOT, '_config', 'paths.json')
 def load_config():
     """グローバル設定 (config.json) を読み込む"""
     if os.path.exists(CONFIG_PATH):
-        with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        for enc in ('utf-8', 'cp932'):
+            try:
+                with open(CONFIG_PATH, 'r', encoding=enc) as f:
+                    return json.load(f)
+            except UnicodeDecodeError:
+                continue
     return {}
 
 
@@ -28,11 +32,19 @@ def load_paths():
             f"paths.json not found: {PATHS_JSON}\n"
             "Please create _config/paths.json with localProjectsRoot, boxProjectsRoot, obsidianVaultRoot"
         )
-    with open(PATHS_JSON, 'r', encoding='utf-8') as f:
-        paths = json.load(f)
-    # 環境変数展開
+    for enc in ('utf-8', 'cp932'):
+        try:
+            with open(PATHS_JSON, 'r', encoding=enc) as f:
+                paths = json.load(f)
+            break
+        except UnicodeDecodeError:
+            continue
+    else:
+        raise ValueError(f"Cannot decode {PATHS_JSON} as utf-8 or cp932")
+    # 環境変数展開 (文字列値のみ)
     for key in paths:
-        paths[key] = os.path.expandvars(paths[key])
+        if isinstance(paths[key], str):
+            paths[key] = os.path.expandvars(paths[key])
     return paths
 
 
