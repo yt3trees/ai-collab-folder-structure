@@ -165,6 +165,25 @@ def task_sort_key(task, user_gid):
     return (role_order.get(role, 9), due)
 
 
+def deduplicate_tasks(tasks):
+    """GID が重複するタスクを除去する (due_on が最新のものを残す)
+
+    同じタスクが複数の Asana プロジェクトに存在する場合、
+    due_on が最も新しいエントリを採用する。
+    """
+    seen = {}
+    for task in tasks:
+        gid = task['gid']
+        if gid in seen:
+            existing_due = seen[gid].get('due_on') or ''
+            new_due = task.get('due_on') or ''
+            if new_due > existing_due:
+                seen[gid] = task
+        else:
+            seen[gid] = task
+    return list(seen.values())
+
+
 def fetch_tasks_for_project(tasks_api, project_gid):
     """Asana プロジェクトから全タスクを取得する"""
     try:
@@ -218,6 +237,7 @@ def write_project_section(f, project_name, tasks, user_gid, existing_memos):
     """Asana プロジェクト単位のセクションを出力する"""
     f.write(f"## {project_name}\n\n")
 
+    tasks = deduplicate_tasks(tasks)
     in_progress = [t for t in tasks if not t.get('completed')]
     completed = [t for t in tasks if t.get('completed')]
 
@@ -289,6 +309,7 @@ def write_personal_file(output_path, tasks, user_gid):
         f.write(f"> このファイルは sync_from_asana.py により自動生成されます。\n")
         f.write(f"> 'Memo area' 以下の記述は保持されます。\n\n")
 
+        tasks = deduplicate_tasks(tasks)
         in_progress = [t for t in tasks if not t.get('completed')]
         completed = [t for t in tasks if t.get('completed')]
 
@@ -355,6 +376,7 @@ def write_global_summary(output_path, all_project_data, personal_tasks, user_gid
             for asana_proj_name, tasks in sections:
                 all_tasks.extend(tasks)
             all_tasks.extend(proj_personal)
+            all_tasks = deduplicate_tasks(all_tasks)
 
             in_progress = [t for t in all_tasks if not t.get('completed')]
             if in_progress:
