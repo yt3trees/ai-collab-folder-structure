@@ -174,7 +174,7 @@ $styles
                         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="360">
                             <StackPanel Margin="16">
                                 <Label Content="Project Name (required)"/>
-                                <TextBox x:Name="setupProjectName"/>
+                                <ComboBox x:Name="setupProjectName" IsEditable="True"/>
 
                                 <Label Content="Tier"/>
                                 <ComboBox x:Name="setupTier" SelectedIndex="0">

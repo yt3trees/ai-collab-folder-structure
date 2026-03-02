@@ -209,7 +209,7 @@ $window.Add_Closing({
 # --- Initialize all tabs ---
 Initialize-TabDashboard    -Window $window -ScriptDir $scriptDir
 Initialize-TabEditor       -Window $window
-Initialize-TabSetup        -Window $window -ScriptDir $scriptDir
+Initialize-TabSetup        -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabCheck        -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabArchive      -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabContextSetup -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList

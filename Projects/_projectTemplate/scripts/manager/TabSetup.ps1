@@ -3,12 +3,62 @@
 function Initialize-TabSetup {
     param(
         [System.Windows.Window]$Window,
-        [string]$ScriptDir
+        [string]$ScriptDir,
+        [string[]]$ProjectList
     )
 
+    $setupProjectCombo = $Window.FindName("setupProjectName")
     $btnSetup = $Window.FindName("btnSetup")
     $btnSetupClear = $Window.FindName("btnSetupClear")
     $btnSetupBrowse = $Window.FindName("btnSetupBrowseExternalShared")
+
+    # Populate project dropdown
+    foreach ($p in $ProjectList) {
+        $setupProjectCombo.Items.Add($p) | Out-Null
+    }
+
+    # Auto-load when project selection changes
+    $setupProjectCombo.Add_SelectionChanged({
+            $combo = $Window.FindName("setupProjectName")
+            $comboText = if ($null -ne $combo.SelectedItem) { $combo.SelectedItem.ToString() } else { "" }
+            if ([string]::IsNullOrWhiteSpace($comboText)) { return }
+
+            try {
+                # Resolve boxProjectsRoot inside handler (local vars don't survive function scope)
+                $wsRoot = $script:AppState.WorkspaceRoot
+                $pcfg = Join-Path $wsRoot "_config\paths.json"
+                if (-not (Test-Path $pcfg)) { return }
+                $cfg = Get-Content $pcfg -Raw | ConvertFrom-Json
+                $boxRoot = [System.Environment]::ExpandEnvironmentVariables($cfg.boxProjectsRoot)
+
+                $params = Get-ProjectParams -ComboText $comboText -MiniChecked $false
+                $categoryPrefix = if ($params.IsDomain) { "_domains\" } else { "" }
+                $projectSubPath = if ($params.IsMini) {
+                    "${categoryPrefix}_mini\$($params.Name)"
+                }
+                else {
+                    "${categoryPrefix}$($params.Name)"
+                }
+
+                $configPath = Join-Path $boxRoot "$projectSubPath\.external_shared_paths"
+                $txtExternalShared = $Window.FindName("setupExternalShared")
+                if (Test-Path $configPath) {
+                    $lines = @(Get-Content -Path $configPath | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+                    if ($lines.Count -gt 0) {
+                        $txtExternalShared.Text = ($lines -join "`r`n")
+                    }
+                    else {
+                        $txtExternalShared.Text = ""
+                    }
+                }
+                else {
+                    $txtExternalShared.Text = ""
+                }
+            }
+            catch {
+                $Window.FindName("txtSetupOutput").Text = "[Auto-load error] $($_.Exception.Message)"
+            }
+        })
 
     $btnSetupClear.Add_Click({
             $out = $Window.FindName("txtSetupOutput")
@@ -39,8 +89,8 @@ function Initialize-TabSetup {
         })
 
     $btnSetup.Add_Click({
-            $projNameBox = $Window.FindName("setupProjectName")
-            $name = $projNameBox.Text.Trim()
+            $combo = $Window.FindName("setupProjectName")
+            $name = $combo.Text.Trim()
             if ([string]::IsNullOrEmpty($name)) {
                 [System.Windows.MessageBox]::Show(
                     "Project Name is required.",
@@ -51,16 +101,19 @@ function Initialize-TabSetup {
                 return
             }
 
-            $tierCombo = $Window.FindName("setupTier")
-            $tier = ($tierCombo.SelectedItem).Content
-
-            $categoryCombo = $Window.FindName("setupCategory")
-            $category = ($categoryCombo.SelectedItem).Content
+            # Parse project name with suffix tags
+            $params = Get-ProjectParams -ComboText $name -MiniChecked $false
+            $safeName = $params.Name -replace "'", "''"
+            $tier = if ($params.IsMini) { "mini" } else {
+                ($Window.FindName("setupTier").SelectedItem).Content
+            }
+            $category = if ($params.IsDomain) { "domain" } else {
+                ($Window.FindName("setupCategory").SelectedItem).Content
+            }
 
             $txtExternalShared = $Window.FindName("setupExternalShared")
             $externalShared = $txtExternalShared.Text.Trim()
 
-            $safeName = $name -replace "'", "''"
             $argStr = "-ProjectName '$safeName' -Tier $tier -Category $category"
             
             if (-not [string]::IsNullOrWhiteSpace($externalShared)) {

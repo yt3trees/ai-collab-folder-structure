@@ -227,23 +227,38 @@ else {
 $externalSharedDir = "$docRoot\external_shared"
 $externalSharedConfig = "$boxShared\.external_shared_paths"
 
-# Collect all paths to process (from args or config file)
+# Collect all paths to process (from args + existing config, merged)
 $pathsToProcess = @()
 
-# First get from arguments (will overwrite config later)
+# Read existing config if present
+$existingPaths = @()
+if (Test-Path $externalSharedConfig) {
+    $existingPaths = @(Get-Content -Path $externalSharedConfig | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+}
+
 if ($ExternalSharedPaths -and $ExternalSharedPaths.Count -gt 0) {
-    # Escape user profile properly to make path cross-PC compatible
+    # Normalize new paths from arguments
+    $newPaths = @()
     foreach ($p in $ExternalSharedPaths) {
         if (-not [string]::IsNullOrWhiteSpace($p)) {
             $normalizedPath = $p -replace [regex]::Escape($env:USERPROFILE), '%USERPROFILE%'
-            $pathsToProcess += $normalizedPath
+            $newPaths += $normalizedPath
         }
     }
-    # Save the updated list to config file
+    # Merge existing + new paths (deduplicate)
+    $merged = @($existingPaths) + @($newPaths) | Select-Object -Unique
+    $pathsToProcess = @($merged)
+    # Save merged list to config file
     if ($pathsToProcess.Count -gt 0) {
         Set-Content -Path $externalSharedConfig -Value $pathsToProcess -Encoding UTF8
         Write-Host "  Saved External Shared Paths to: .external_shared_paths" -ForegroundColor Green
+        if ($existingPaths.Count -gt 0) {
+            Write-Host "    (Merged with $($existingPaths.Count) existing path(s))" -ForegroundColor DarkGray
+        }
     }
+}
+elseif ($existingPaths.Count -gt 0) {
+    $pathsToProcess = $existingPaths
 }
 elseif (Test-Path $externalSharedConfig) {
     # If no arguments provided, read from config
