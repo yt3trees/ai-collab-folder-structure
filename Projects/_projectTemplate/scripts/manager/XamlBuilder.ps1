@@ -63,13 +63,17 @@ $styles
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="200"/>
                             </Grid.ColumnDefinitions>
                             <Button x:Name="btnDashRefresh" Content="Refresh"
                                     Grid.Column="0" Style="{StaticResource SmallButton}" Margin="0,0,8,0"/>
-                            <TextBlock Grid.Column="2" Text="Filter: " VerticalAlignment="Center"
+                            <CheckBox x:Name="chkShowHidden" Grid.Column="2" Content="Show Hidden"
+                                      Foreground="#a6adc8" FontSize="12" VerticalAlignment="Center"
+                                      Margin="0,0,16,0"/>
+                            <TextBlock Grid.Column="3" Text="Filter: " VerticalAlignment="Center"
                                        Foreground="#a6adc8" Margin="0,0,4,0" FontSize="12"/>
-                            <TextBox x:Name="txtDashFilter" Grid.Column="3" FontSize="12" Padding="6,4"/>
+                            <TextBox x:Name="txtDashFilter" Grid.Column="4" FontSize="12" Padding="6,4"/>
                         </Grid>
 
                         <!-- Cards area -->

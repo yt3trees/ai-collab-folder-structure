@@ -3,8 +3,10 @@
 
 $script:AppState = @{
     WorkspaceRoot   = ""
+    ScriptDir       = ""
     PathsConfig     = $null
     Projects        = @()
+    HiddenProjects  = @()
     SelectedProject = $null
     EditorControl   = $null
     EditorState     = @{
@@ -19,6 +21,7 @@ $script:AppState = @{
 function Initialize-AppConfig {
     param([string]$ScriptDir)
 
+    $script:AppState.ScriptDir    = $ScriptDir
     $script:AppState.WorkspaceRoot = Split-Path (Split-Path $ScriptDir)
 
     # Try to load paths from _config/paths.json
@@ -64,6 +67,66 @@ function Initialize-AppConfig {
             ObsidianVault = Join-Path $env:USERPROFILE "Box\Obsidian-Vault"
         }
     }
+
+    Load-HiddenProjects
+}
+
+# ---- Hidden Projects (Dashboard) ----
+
+function Get-HiddenProjectsPath {
+    $configDir = Join-Path $script:AppState.WorkspaceRoot "_config"
+    return Join-Path $configDir "hidden_projects.json"
+}
+
+function Load-HiddenProjects {
+    $path = Get-HiddenProjectsPath
+    if (Test-Path $path) {
+        try {
+            $json   = Get-Content $path -Raw -Encoding UTF8
+            $loaded = $json | ConvertFrom-Json
+            $script:AppState.HiddenProjects = if ($null -eq $loaded) { @() } else { @($loaded) }
+        }
+        catch {
+            $script:AppState.HiddenProjects = @()
+        }
+    }
+}
+
+function Save-HiddenProjects {
+    $path = Get-HiddenProjectsPath
+    $dir  = Split-Path $path
+    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+
+    if ($script:AppState.HiddenProjects.Count -eq 0) {
+        Set-Content $path -Value "[]" -Encoding UTF8
+    }
+    else {
+        $script:AppState.HiddenProjects | ConvertTo-Json | Set-Content $path -Encoding UTF8
+    }
+}
+
+function Get-ProjectHiddenKey {
+    param([hashtable]$Info)
+    return "$($Info.Name)|$($Info.Tier)|$($Info.Category)"
+}
+
+function Test-ProjectHidden {
+    param([hashtable]$Info)
+    return ($script:AppState.HiddenProjects -contains (Get-ProjectHiddenKey -Info $Info))
+}
+
+function Set-ProjectHidden {
+    param([hashtable]$Info, [bool]$Hidden)
+    $key = Get-ProjectHiddenKey -Info $Info
+    if ($Hidden) {
+        if (-not ($script:AppState.HiddenProjects -contains $key)) {
+            $script:AppState.HiddenProjects = @($script:AppState.HiddenProjects) + $key
+        }
+    }
+    else {
+        $script:AppState.HiddenProjects = @($script:AppState.HiddenProjects | Where-Object { $_ -ne $key })
+    }
+    Save-HiddenProjects
 }
 
 function Get-WorkspaceRoot {
