@@ -5,9 +5,9 @@ function Get-ProjectNameList {
     $root = $script:AppState.WorkspaceRoot
     $projects = @()
 
-    # Regular (full-tier) projects: top-level dirs not starting with _ or .
+    # Regular (full-tier) projects: top-level dirs not starting with _ or . (Exception: _INHOUSE)
     $dirs = Get-ChildItem -Path $root -Directory -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -notmatch '^[_\.]'  }
+            Where-Object { $_.Name -eq '_INHOUSE' -or $_.Name -notmatch '^[_\.]' }
     foreach ($d in $dirs) { $projects += $d.Name }
 
     # Mini-tier projects under _mini/
@@ -122,9 +122,9 @@ function Get-ProjectInfoList {
         return $info
     }
 
-    # Full-tier projects
+    # Full-tier projects (Exception: _INHOUSE)
     $dirs = Get-ChildItem -Path $root -Directory -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -notmatch '^[_\.]'  }
+            Where-Object { $_.Name -eq '_INHOUSE' -or $_.Name -notmatch '^[_\.]' }
     foreach ($d in $dirs) {
         $projects += New-ProjectInfo -Name $d.Name -Path $d.FullName -Tier "full"
     }
