@@ -161,7 +161,9 @@ $styles
                                     Margin="0,0,8,0" IsEnabled="False"/>
                             <Button x:Name="btnEditorReload" Content="Reload"
                                     Style="{StaticResource SmallButton}"
-                                    IsEnabled="False"/>
+                                    Margin="0,0,8,0" IsEnabled="False"/>
+                            <Button x:Name="btnEditorTerm" Content="Term"
+                                    Style="{StaticResource SmallButton}"/>
                         </StackPanel>
                     </Grid>
                 </TabItem>

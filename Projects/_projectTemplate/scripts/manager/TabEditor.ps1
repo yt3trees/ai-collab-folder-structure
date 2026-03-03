@@ -443,6 +443,71 @@ function Initialize-TabEditor {
             }
         })
 
+    # Term button
+    $btnEditorTerm = $Window.FindName("btnEditorTerm")
+
+    $btnEditorTerm.Add_Click({
+            $proj = $script:AppState.SelectedProject
+            if ($null -ne $proj) { Open-TerminalAtPath -Path $proj.Path }
+        })
+
+    $btnEditorTerm.Add_MouseRightButtonUp({
+            param($sender, $e)
+            $e.Handled = $true
+            $proj = $script:AppState.SelectedProject
+            if ($null -eq $proj) { return }
+            $termPath = $proj.Path
+
+            if ($null -ne $script:currentTermPopup) {
+                $script:currentTermPopup.IsOpen = $false
+                $script:currentTermPopup = $null
+            }
+
+            $popup = New-Object System.Windows.Controls.Primitives.Popup
+            $popup.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Mouse
+            $popup.PlacementTarget = $sender
+            $popup.StaysOpen = $false
+            $popup.AllowsTransparency = $true
+
+            $border = New-Object System.Windows.Controls.Border
+            $border.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244"))
+            $border.BorderBrush = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#45475a"))
+            $border.BorderThickness = New-Object System.Windows.Thickness(1)
+            $border.Padding = New-Object System.Windows.Thickness(2)
+
+            $menuStack = New-Object System.Windows.Controls.StackPanel
+
+            foreach ($agentDef in @(
+                    @{ Label = "Claude"; Cmd = "claude" },
+                    @{ Label = "Gemini"; Cmd = "gemini" },
+                    @{ Label = "Codex";  Cmd = "codex"  }
+                )) {
+                $menuItem = New-Object System.Windows.Controls.TextBlock
+                $menuItem.Text = $agentDef.Label
+                $menuItem.Foreground = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#cdd6f4"))
+                $menuItem.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244"))
+                $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5)
+                $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
+                $menuItem.Tag = @{ Path = $termPath; Cmd = $agentDef.Cmd; Popup = $popup }
+                $menuItem.Add_MouseEnter({ $this.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#45475a")) })
+                $menuItem.Add_MouseLeave({ $this.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244")) })
+                $menuItem.Add_MouseLeftButtonDown({
+                        param($sender, $e)
+                        $e.Handled = $true
+                        $d = $sender.Tag
+                        $d.Popup.IsOpen = $false
+                        $script:currentTermPopup = $null
+                        Open-AgentAtPath -Path $d.Path -Agent $d.Cmd
+                    })
+                $menuStack.Children.Add($menuItem) | Out-Null
+            }
+
+            $border.Child = $menuStack
+            $popup.Child = $border
+            $script:currentTermPopup = $popup
+            $popup.IsOpen = $true
+        })
+
     # New Decision Log button
     $Window.FindName("btnNewDecisionLog").Add_Click({
             $combo = $Window.FindName("editorProjectCombo")
