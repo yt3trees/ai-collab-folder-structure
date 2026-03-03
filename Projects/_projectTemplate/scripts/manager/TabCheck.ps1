@@ -10,11 +10,24 @@ function Initialize-TabCheck {
     $checkProjectCombo = $Window.FindName("checkProjectCombo")
     $btnCheck = $Window.FindName("btnCheck")
     $btnCheckClear = $Window.FindName("btnCheckClear")
+    $checkMini = $Window.FindName("checkMini")
+    $checkDomain = $Window.FindName("checkDomain")
 
     # Populate dropdown
     foreach ($p in $ProjectList) {
         $checkProjectCombo.Items.Add($p) | Out-Null
     }
+
+    # Auto-toggle checkboxes on combo selection
+    $checkProjectCombo.Add_SelectionChanged({
+            $combo = $Window.FindName("checkProjectCombo")
+            $comboText = if ($null -ne $combo.SelectedItem) { $combo.SelectedItem.ToString() } else { "" }
+            if ([string]::IsNullOrWhiteSpace($comboText)) { return }
+
+            $params = Get-ProjectParams -ComboText $comboText -MiniChecked $false -DomainChecked $false
+            $Window.FindName("checkMini").IsChecked = $params.IsMini
+            $Window.FindName("checkDomain").IsChecked = $params.IsDomain
+        })
 
     $btnCheckClear.Add_Click({
             $out = $Window.FindName("txtCheckOutput")
@@ -24,8 +37,9 @@ function Initialize-TabCheck {
     $btnCheck.Add_Click({
             $combo = $Window.FindName("checkProjectCombo")
             $mini = $Window.FindName("checkMini")
+            $domain = $Window.FindName("checkDomain")
             $params = Get-ProjectParams -ComboText $combo.Text `
-                -MiniChecked $mini.IsChecked
+                -MiniChecked $mini.IsChecked -DomainChecked $domain.IsChecked
             if ([string]::IsNullOrEmpty($params.Name)) {
                 [System.Windows.MessageBox]::Show(
                     "Project Name is required.",

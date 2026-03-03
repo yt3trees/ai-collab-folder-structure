@@ -10,11 +10,24 @@ function Initialize-TabArchive {
     $archiveProjectCombo = $Window.FindName("archiveProjectCombo")
     $btnArchive = $Window.FindName("btnArchive")
     $btnArchiveClear = $Window.FindName("btnArchiveClear")
+    $archiveMini = $Window.FindName("archiveMini")
+    $archiveDomain = $Window.FindName("archiveDomain")
 
     # Populate dropdown
     foreach ($p in $ProjectList) {
         $archiveProjectCombo.Items.Add($p) | Out-Null
     }
+
+    # Auto-toggle checkboxes on combo selection
+    $archiveProjectCombo.Add_SelectionChanged({
+            $combo = $Window.FindName("archiveProjectCombo")
+            $comboText = if ($null -ne $combo.SelectedItem) { $combo.SelectedItem.ToString() } else { "" }
+            if ([string]::IsNullOrWhiteSpace($comboText)) { return }
+
+            $params = Get-ProjectParams -ComboText $comboText -MiniChecked $false -DomainChecked $false
+            $Window.FindName("archiveMini").IsChecked = $params.IsMini
+            $Window.FindName("archiveDomain").IsChecked = $params.IsDomain
+        })
 
     $btnArchiveClear.Add_Click({
             $out = $Window.FindName("txtArchiveOutput")
@@ -24,9 +37,10 @@ function Initialize-TabArchive {
     $btnArchive.Add_Click({
             $combo = $Window.FindName("archiveProjectCombo")
             $mini = $Window.FindName("archiveMini")
+            $domain = $Window.FindName("archiveDomain")
             $dryRun = $Window.FindName("archiveDryRun")
             $params = Get-ProjectParams -ComboText $combo.Text `
-                -MiniChecked $mini.IsChecked
+                -MiniChecked $mini.IsChecked -DomainChecked $domain.IsChecked
             if ([string]::IsNullOrEmpty($params.Name)) {
                 [System.Windows.MessageBox]::Show(
                     "Project Name is required.",

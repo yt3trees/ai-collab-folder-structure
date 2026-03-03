@@ -10,11 +10,24 @@ function Initialize-TabContextSetup {
     $ctxProjectCombo = $Window.FindName("ctxProjectCombo")
     $btnCtxLayer = $Window.FindName("btnCtxLayer")
     $btnCtxClear = $Window.FindName("btnCtxClear")
+    $ctxMini = $Window.FindName("ctxMini")
+    $ctxDomain = $Window.FindName("ctxDomain")
 
     # Populate dropdown
     foreach ($p in $ProjectList) {
         $ctxProjectCombo.Items.Add($p) | Out-Null
     }
+
+    # Auto-toggle checkboxes on combo selection
+    $ctxProjectCombo.Add_SelectionChanged({
+            $combo = $Window.FindName("ctxProjectCombo")
+            $comboText = if ($null -ne $combo.SelectedItem) { $combo.SelectedItem.ToString() } else { "" }
+            if ([string]::IsNullOrWhiteSpace($comboText)) { return }
+
+            $params = Get-ProjectParams -ComboText $comboText -MiniChecked $false -DomainChecked $false
+            $Window.FindName("ctxMini").IsChecked = $params.IsMini
+            $Window.FindName("ctxDomain").IsChecked = $params.IsDomain
+        })
 
     $btnCtxClear.Add_Click({
             $out = $Window.FindName("txtCtxOutput")
@@ -24,8 +37,9 @@ function Initialize-TabContextSetup {
     $btnCtxLayer.Add_Click({
             $combo = $Window.FindName("ctxProjectCombo")
             $mini = $Window.FindName("ctxMini")
+            $domain = $Window.FindName("ctxDomain")
             $params = Get-ProjectParams -ComboText $combo.Text `
-                -MiniChecked $mini.IsChecked
+                -MiniChecked $mini.IsChecked -DomainChecked $domain.IsChecked
 
             $argStr = ""
             if (-not [string]::IsNullOrEmpty($params.Name)) {

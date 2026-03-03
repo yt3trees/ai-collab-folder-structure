@@ -236,6 +236,8 @@ $styles
                                 <ComboBox x:Name="ctxProjectCombo" IsEditable="True"/>
                                 <CheckBox x:Name="ctxMini" Content="Mini tier project (-Mini)"
                                           Margin="0,10,0,0"/>
+                                <CheckBox x:Name="ctxDomain" Content="Domain project (-Category domain)"
+                                          Margin="0,6,0,0"/>
                                 <Button x:Name="btnCtxLayer" Content="Run Context Layer Setup"
                                         Style="{StaticResource RunButton}"/>
                             </StackPanel>
@@ -275,6 +277,8 @@ $styles
                                 <ComboBox x:Name="checkProjectCombo" IsEditable="True"/>
                                 <CheckBox x:Name="checkMini" Content="Mini tier project (-Mini)"
                                           Margin="0,10,0,0"/>
+                                <CheckBox x:Name="checkDomain" Content="Domain project (-Category domain)"
+                                          Margin="0,6,0,0"/>
                                 <Button x:Name="btnCheck" Content="Run Check"
                                         Style="{StaticResource RunButton}"/>
                             </StackPanel>
@@ -314,6 +318,8 @@ $styles
                                 <ComboBox x:Name="archiveProjectCombo" IsEditable="True"/>
                                 <CheckBox x:Name="archiveMini" Content="Mini tier project (-Mini)"
                                           Margin="0,10,0,0"/>
+                                <CheckBox x:Name="archiveDomain" Content="Domain project (-Category domain)"
+                                          Margin="0,6,0,0"/>
                                 <CheckBox x:Name="archiveDryRun"
                                           Content="Dry Run (preview only, no changes)"
                                           IsChecked="True" Margin="0,6,0,0"/>

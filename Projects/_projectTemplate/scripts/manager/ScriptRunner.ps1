@@ -54,12 +54,13 @@ function Invoke-ScriptWithOutput {
 function Get-ProjectParams {
     param(
         [string]$ComboText,
-        $MiniChecked
+        $MiniChecked,
+        $DomainChecked
     )
 
     $name = $ComboText.Trim()
     $isMini = [bool]$MiniChecked
-    $isDomain = $false
+    $isDomain = [bool]$DomainChecked
 
     # Parse suffixes: [Domain][Mini], [Domain], [Mini]
     if ($name -match '^(.+)\s+\[Domain\]\[Mini\]$') {
