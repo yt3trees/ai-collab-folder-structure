@@ -281,11 +281,16 @@ function Switch-WindowVisibility {
     if ($null -eq $window) { return }
 
     $window.Dispatcher.Invoke([Action] {
-            if ($window.IsVisible) {
+            if ($window.IsVisible -and $window.IsActive) {
                 $window.Hide()
             }
             else {
-                $window.Show()
+                if (-not $window.IsVisible) {
+                    $window.Show()
+                }
+                if ($window.WindowState -eq [System.Windows.WindowState]::Minimized) {
+                    $window.WindowState = [System.Windows.WindowState]::Normal
+                }
                 $window.Topmost = $true
                 $window.Activate()
                 $window.Topmost = $false
