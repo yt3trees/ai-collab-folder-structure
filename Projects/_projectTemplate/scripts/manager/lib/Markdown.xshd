@@ -7,7 +7,8 @@
   <Color name="InlineCode"     foreground="#a6e3a1" />
   <Color name="CodeBlock"      foreground="#a6e3a1" />
   <Color name="BlockQuote"     foreground="#9399b2" />
-  <Color name="Link"           foreground="#89b4fa" />
+  <Color name="Link"           foreground="#74c7ec" />
+  <Color name="Url"            foreground="#74c7ec" />
   <Color name="Image"          foreground="#94e2d5" />
   <Color name="ListMarker"     foreground="#f9e2af" />
   <Color name="HorizontalRule" foreground="#6c7086" />
@@ -69,6 +70,10 @@
 
     <Rule color="Image">
       \!\[.*\]\(.*\)
+    </Rule>
+
+    <Rule color="Url">
+      https?://[^\s\)\]]+
     </Rule>
 
     <Rule color="Link">

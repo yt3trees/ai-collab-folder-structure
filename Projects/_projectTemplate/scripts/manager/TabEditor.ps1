@@ -74,6 +74,32 @@ function Get-WorkspaceAIFiles {
         }
     }
 
+    # asana-tasks-view.md at workspace root
+    $asanaView = Join-Path $WorkspaceRoot "asana-tasks-view.md"
+    if (Test-Path $asanaView) {
+        $files.Add(@{ Label = "asana-tasks-view.md"; Path = $asanaView }) | Out-Null
+    }
+
+    return $files
+}
+
+# Asana task files for a project
+function Get-AsanaFiles {
+    param([hashtable]$ProjectInfo)
+
+    $obsidianNotesPath = Join-Path $ProjectInfo.AiContextPath "obsidian_notes"
+    $files = [System.Collections.Generic.List[hashtable]]::new()
+
+    $candidates = @(
+        @{ Label = "asana-tasks.md"; Path = Join-Path $obsidianNotesPath "asana-tasks.md" }
+    )
+
+    foreach ($c in $candidates) {
+        if (Test-Path $c.Path) {
+            $files.Add($c) | Out-Null
+        }
+    }
+
     return $files
 }
 
@@ -153,6 +179,20 @@ function Populate-FileTree {
         }
     }
 
+    # --- Asana Tasks ---
+    $asanaFiles = Get-AsanaFiles -ProjectInfo $ProjectInfo
+    if ($asanaFiles.Count -gt 0) {
+        $asanaFolder = New-TreeItem -Label "asana"
+        $asanaFolder.IsExpanded = $true
+
+        foreach ($f in $asanaFiles) {
+            $child = New-TreeItem -Label $f.Label -FilePath $f.Path
+            Add-ContextMenuToTreeItem -Item $child -Window $Window
+            $asanaFolder.Items.Add($child) | Out-Null
+        }
+        $Tree.Items.Add($asanaFolder) | Out-Null
+    }
+
     # --- Workspace: .context/ files ---
     $wsFiles = Get-WorkspaceAIFiles -WorkspaceRoot $WorkspaceRoot
 
@@ -216,6 +256,11 @@ function New-AvalonEditEditor {
         [System.Windows.Media.ColorConverter]::ConvertFromString("#45475a"))
     $editor.TextArea.SelectionForeground = $null  # Use syntax colors in selection
 
+    # Remove built-in LinkElementGenerator (overrides xshd URL colors with system blue)
+    $generators = $editor.TextArea.TextView.ElementGenerators
+    $toRemove = @($generators | Where-Object { $_.GetType().Name -eq "LinkElementGenerator" })
+    foreach ($g in $toRemove) { $generators.Remove($g) | Out-Null }
+
     # Current line highlight
     $editor.TextArea.TextView.CurrentLineBackground = [System.Windows.Media.SolidColorBrush](
         [System.Windows.Media.ColorConverter]::ConvertFromString("#11b4befe"))
@@ -273,15 +318,31 @@ function Initialize-TabEditor {
     # Register tree file-open handlers ONCE here (prevents accumulation on project switch)
     $fileTree = $Window.FindName("editorFileTree")
     $workspaceTree = $Window.FindName("editorWorkspaceTree")
-    $openFile = {
+    $script:_treeSelecting = $false
+    $fileTree.Add_SelectedItemChanged({
         param($s, $e)
+        if ($script:_treeSelecting) { return }
+        $script:_treeSelecting = $true
+        $wt = $Window.FindName("editorWorkspaceTree")
+        if ($null -ne $wt.SelectedItem) { $wt.SelectedItem.IsSelected = $false }
         $selected = $s.SelectedItem
         if ($null -ne $selected -and $null -ne $selected.Tag) {
             Open-FileInEditor -FilePath $selected.Tag -Window $Window
         }
-    }
-    $fileTree.Add_SelectedItemChanged($openFile)
-    $workspaceTree.Add_SelectedItemChanged($openFile)
+        $script:_treeSelecting = $false
+    })
+    $workspaceTree.Add_SelectedItemChanged({
+        param($s, $e)
+        if ($script:_treeSelecting) { return }
+        $script:_treeSelecting = $true
+        $ft = $Window.FindName("editorFileTree")
+        if ($null -ne $ft.SelectedItem) { $ft.SelectedItem.IsSelected = $false }
+        $selected = $s.SelectedItem
+        if ($null -ne $selected -and $null -ne $selected.Tag) {
+            Open-FileInEditor -FilePath $selected.Tag -Window $Window
+        }
+        $script:_treeSelecting = $false
+    })
 
     # When project changes, reload file tree
     $editorProjectCombo.Add_SelectionChanged({
