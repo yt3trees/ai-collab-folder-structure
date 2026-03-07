@@ -75,18 +75,23 @@ def discover_projects(box_projects_root):
             if not entry.is_dir() or entry.name.startswith('_'):
                 continue
             config_file = os.path.join(entry.path, 'asana_config.json')
+            asana_config = {}
             if os.path.exists(config_file):
-                with open(config_file, 'r', encoding='utf-8') as f:
-                    asana_config = json.load(f)
-                projects.append({
-                    'name': entry.name,
-                    'box_path': entry.path,
-                    'relative_path': f"{prefix}/{entry.name}",
-                    'asana_config': asana_config,
-                    'anken_aliases': asana_config.get('anken_aliases', []),
-                })
-                aliases_info = f", aliases: {asana_config['anken_aliases']}" if asana_config.get('anken_aliases') else ""
-                print(f"  Found: {prefix}/{entry.name} ({len(asana_config.get('asana_project_gids', []))} Asana projects{aliases_info})")
+                try:
+                    with open(config_file, 'r', encoding='utf-8') as f:
+                        asana_config = json.load(f)
+                except Exception as e:
+                    print(f"  WARNING: Failed to read {config_file}: {e}")
+                    
+            projects.append({
+                'name': entry.name,
+                'box_path': entry.path,
+                'relative_path': f"{prefix}/{entry.name}",
+                'asana_config': asana_config,
+                'anken_aliases': asana_config.get('anken_aliases', []),
+            })
+            aliases_info = f", aliases: {asana_config['anken_aliases']}" if asana_config.get('anken_aliases') else ""
+            print(f"  Found: {prefix}/{entry.name} ({len(asana_config.get('asana_project_gids', []))} Asana projects{aliases_info})")
 
     return projects
 
@@ -187,6 +192,11 @@ def deduplicate_tasks(tasks):
 def fetch_tasks_for_project(tasks_api, project_gid):
     """Asana プロジェクトから全タスクを取得する"""
     try:
+        # 直近7日間に完了したタスクも含めて取得する
+        from datetime import datetime, timedelta
+        from datetime import timezone
+        completed_since_date = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+        
         tasks = list(tasks_api.get_tasks({
             'project': project_gid,
             'opt_fields': (
@@ -196,7 +206,7 @@ def fetch_tasks_for_project(tasks_api, project_gid):
                 'custom_fields,custom_fields.name,'
                 'custom_fields.text_value,custom_fields.enum_value,custom_fields.number_value'
             ),
-            'completed_since': 'now'
+            'completed_since': completed_since_date
         }))
         return tasks
     except Exception as e:
@@ -362,7 +372,7 @@ def write_global_summary(output_path, all_project_data, personal_tasks, user_gid
                 for _, tasks in sections
             )
             total_in_progress += len([t for t in proj_personal if not t.get('completed')])
-            anchor = project_name.replace(' ', '-').replace('(', '').replace(')', '')
+            anchor = project_name.replace(' ', '-').replace('(', '').replace(')', '').replace('[', '').replace(']', '')
             f.write(f"- [{project_name}](#{anchor}) (進行中: {total_in_progress})\n")
         if personal_tasks:
             f.write(f"- [個人 / 未分類](#個人--未分類) (進行中: {len([t for t in personal_tasks if not t.get('completed')])})\n")
@@ -481,8 +491,9 @@ def sync_from_asana():
             if anken:
                 for proj_data in all_project_data:
                     proj_name = proj_data['project']['name']
+                    base_name = re.sub(r'\s*(?:\[Domain\]|\[Mini\])+$', '', proj_name, flags=re.IGNORECASE)
                     aliases = proj_data['project'].get('anken_aliases', [])
-                    if anken == proj_name or anken in aliases:
+                    if anken == proj_name or anken == base_name or anken in aliases:
                         proj_data['personal_tasks'].append(task)
                         matched = True
                         break
@@ -500,6 +511,14 @@ def sync_from_asana():
         proj = proj_data['project']
         obsidian_path = os.path.join(obsidian_vault_root, proj['relative_path'])
         output_path = os.path.join(obsidian_path, 'asana-tasks.md')
+
+        has_tasks = bool(proj_data['sections'] or proj_data['personal_tasks'])
+        has_config = bool(proj['asana_config'])
+        file_exists = os.path.exists(output_path)
+
+        # タスクがなく、設定ファイルもなく、既存のMarkdownファイルもない場合は出力をスキップ
+        if not (has_tasks or has_config or file_exists):
+            continue
 
         write_project_file(
             output_path=output_path,
