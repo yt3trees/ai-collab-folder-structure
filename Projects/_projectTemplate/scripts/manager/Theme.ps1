@@ -1,17 +1,45 @@
-# Theme.ps1 - Catppuccin Mocha dark theme XAML style definitions
-# Returns XAML resource dictionary content (to be embedded in Window.Resources)
+# Theme.ps1 - Customizable theme XAML style definitions
+# Supports "Default" (Catppuccin Mocha) and "GitHub" (GitHub Dark)
 
 function Get-ThemeResourcesXaml {
-    return @'
-        <!-- Catppuccin Mocha: TabControl -->
+    param([string]$ThemeName = "Default")
+
+    $themes = @{
+        "Default" = @{
+            Base      = "#1e1e2e"; Mantle = "#181825"; Crust = "#11111b"
+            Text      = "#cdd6f4"; Subtext0 = "#a6adc8"; Subtext1 = "#bac2de"
+            Surface0  = "#313244"; Surface1 = "#45475a"; Surface2 = "#585b70"
+            Overlay0  = "#6c7086"; Overlay1 = "#7f849c"; Overlay2 = "#9399b2"
+            Blue      = "#89b4fa"; Lavender = "#b4befe"; Sapphire = "#74c7ec"; Sky = "#89dceb"
+            Mauve     = "#cba6f7"; Pink = "#f5c2e7"; Flamingo = "#f2cdcd"; Rosewater = "#f5e0dc"
+            Red       = "#f38ba8"; Peach = "#fab387"; Yellow = "#f9e2af"; Green = "#a6e3a1"
+            Teal      = "#94e2d5"; Maroon = "#eba0ac"
+        }
+        "GitHub" = @{
+            Base      = "#0d1117"; Mantle = "#010409"; Crust = "#010409"
+            Text      = "#c9d1d9"; Subtext0 = "#8b949e"; Subtext1 = "#b1bac4"
+            Surface0  = "#161b22"; Surface1 = "#30363d"; Surface2 = "#484f58"
+            Overlay0  = "#6e7681"; Overlay1 = "#8b949e"; Overlay2 = "#b1bac4"
+            Blue      = "#58a6ff"; Lavender = "#a5d6ff"; Sapphire = "#388bfd"; Sky = "#79c0ff"
+            Mauve     = "#58a6ff"; Pink = "#ff7b72"; Flamingo = "#ffa198"; Rosewater = "#ff7b72"
+            Red       = "#f85149"; Peach = "#ffa657"; Yellow = "#d29922"; Green = "#3fb950"
+            Teal      = "#39d353"; Maroon = "#f85149"
+        }
+    }
+
+    $c = $themes[$ThemeName]
+    if ($null -eq $c) { $c = $themes["Default"] }
+
+    $xaml = @'
+        <!-- TabControl -->
         <Style TargetType="TabControl">
-            <Setter Property="Background" Value="#1e1e2e"/>
-            <Setter Property="BorderBrush" Value="#45475a"/>
+            <Setter Property="Background" Value="{{Base}}"/>
+            <Setter Property="BorderBrush" Value="{{Surface1}}"/>
         </Style>
 
-        <!-- ScrollViewer (dark corner where scrollbars meet) -->
+        <!-- ScrollViewer -->
         <Style TargetType="ScrollViewer">
-            <Setter Property="Background" Value="#1e1e2e"/>
+            <Setter Property="Background" Value="{{Base}}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ScrollViewer">
@@ -37,7 +65,7 @@ function Get-ThemeResourcesXaml {
                                 Maximum="{TemplateBinding ScrollableWidth}"
                                 ViewportSize="{TemplateBinding ViewportWidth}"
                                 Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}"/>
-                            <Rectangle Grid.Column="1" Grid.Row="1" Fill="#1e1e2e"/>
+                            <Rectangle Grid.Column="1" Grid.Row="1" Fill="{{Base}}"/>
                         </Grid>
                     </ControlTemplate>
                 </Setter.Value>
@@ -46,9 +74,9 @@ function Get-ThemeResourcesXaml {
 
         <!-- TabItem -->
         <Style TargetType="TabItem">
-            <Setter Property="Foreground" Value="#bac2de"/>
-            <Setter Property="Background" Value="#313244"/>
-            <Setter Property="BorderBrush" Value="#45475a"/>
+            <Setter Property="Foreground" Value="{{Subtext1}}"/>
+            <Setter Property="Background" Value="{{Surface0}}"/>
+            <Setter Property="BorderBrush" Value="{{Surface1}}"/>
             <Setter Property="Padding" Value="16,8"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Template">
@@ -61,15 +89,15 @@ function Get-ThemeResourcesXaml {
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="tabBorder" Property="Background" Value="#45475a"/>
-                                <Setter Property="Foreground" Value="#cba6f7"/>
+                                <Setter TargetName="tabBorder" Property="Background" Value="{{Surface1}}"/>
+                                <Setter Property="Foreground" Value="{{Mauve}}"/>
                             </Trigger>
                             <MultiTrigger>
                                 <MultiTrigger.Conditions>
                                     <Condition Property="IsMouseOver" Value="True"/>
                                     <Condition Property="IsSelected" Value="False"/>
                                 </MultiTrigger.Conditions>
-                                <Setter TargetName="tabBorder" Property="Background" Value="#585b70"/>
+                                <Setter TargetName="tabBorder" Property="Background" Value="{{Surface2}}"/>
                             </MultiTrigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -79,27 +107,27 @@ function Get-ThemeResourcesXaml {
 
         <!-- Label -->
         <Style TargetType="Label">
-            <Setter Property="Foreground" Value="#cdd6f4"/>
+            <Setter Property="Foreground" Value="{{Text}}"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Margin" Value="0,6,0,2"/>
         </Style>
 
-        <!-- TextBox (default) -->
+        <!-- TextBox -->
         <Style TargetType="TextBox">
-            <Setter Property="Background" Value="#313244"/>
-            <Setter Property="Foreground" Value="#cdd6f4"/>
-            <Setter Property="BorderBrush" Value="#585b70"/>
+            <Setter Property="Background" Value="{{Surface0}}"/>
+            <Setter Property="Foreground" Value="{{Text}}"/>
+            <Setter Property="BorderBrush" Value="{{Surface2}}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="8,6"/>
             <Setter Property="FontSize" Value="13"/>
-            <Setter Property="CaretBrush" Value="#cdd6f4"/>
+            <Setter Property="CaretBrush" Value="{{Text}}"/>
         </Style>
 
         <!-- ComboBox -->
         <Style TargetType="ComboBox">
-            <Setter Property="Background" Value="#313244"/>
-            <Setter Property="Foreground" Value="#cdd6f4"/>
-            <Setter Property="BorderBrush" Value="#585b70"/>
+            <Setter Property="Background" Value="{{Surface0}}"/>
+            <Setter Property="Foreground" Value="{{Text}}"/>
+            <Setter Property="BorderBrush" Value="{{Surface2}}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="8,6"/>
             <Setter Property="FontSize" Value="13"/>
@@ -120,7 +148,7 @@ function Get-ThemeResourcesXaml {
                                                     <ColumnDefinition/>
                                                     <ColumnDefinition Width="20"/>
                                                 </Grid.ColumnDefinitions>
-                                                <Path Grid.Column="1" Data="M0,0 L4,4 8,0" Stroke="#cdd6f4"
+                                                <Path Grid.Column="1" Data="M0,0 L4,4 8,0" Stroke="{{Text}}"
                                                       StrokeThickness="1.5" HorizontalAlignment="Center"
                                                       VerticalAlignment="Center"/>
                                             </Grid>
@@ -128,10 +156,10 @@ function Get-ThemeResourcesXaml {
                                     </ControlTemplate>
                                 </ToggleButton.Template>
                                 <ToggleButton.Background>
-                                    <SolidColorBrush Color="#313244"/>
+                                    <SolidColorBrush Color="{{Surface0}}"/>
                                 </ToggleButton.Background>
                                 <ToggleButton.BorderBrush>
-                                    <SolidColorBrush Color="#585b70"/>
+                                    <SolidColorBrush Color="{{Surface2}}"/>
                                 </ToggleButton.BorderBrush>
                             </ToggleButton>
                             <ContentPresenter x:Name="contentPresenter"
@@ -140,15 +168,15 @@ function Get-ThemeResourcesXaml {
                                               Margin="10,6,28,6" VerticalAlignment="Center"
                                               HorizontalAlignment="Left" IsHitTestVisible="False"/>
                             <TextBox x:Name="PART_EditableTextBox" Visibility="Collapsed"
-                                     Background="Transparent" Foreground="#cdd6f4"
-                                     CaretBrush="#cdd6f4" FontSize="13"
+                                     Background="Transparent" Foreground="{{Text}}"
+                                     CaretBrush="{{Text}}" FontSize="13"
                                      Margin="8,4,28,4" VerticalAlignment="Center"
                                      HorizontalAlignment="Stretch" Focusable="True"
                                      IsReadOnly="{TemplateBinding IsReadOnly}"/>
                             <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}"
                                    Placement="Bottom" AllowsTransparency="True" Focusable="False"
                                    PopupAnimation="Slide">
-                                <Border Background="#313244" BorderBrush="#585b70" BorderThickness="1"
+                                <Border Background="{{Surface0}}" BorderBrush="{{Surface2}}" BorderThickness="1"
                                         MaxHeight="{TemplateBinding MaxDropDownHeight}"
                                         MinWidth="{TemplateBinding ActualWidth}">
                                     <ScrollViewer>
@@ -170,8 +198,8 @@ function Get-ThemeResourcesXaml {
 
         <!-- ComboBoxItem -->
         <Style TargetType="ComboBoxItem">
-            <Setter Property="Background" Value="#313244"/>
-            <Setter Property="Foreground" Value="#cdd6f4"/>
+            <Setter Property="Background" Value="{{Surface0}}"/>
+            <Setter Property="Foreground" Value="{{Text}}"/>
             <Setter Property="Padding" Value="8,6"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Template">
@@ -183,7 +211,7 @@ function Get-ThemeResourcesXaml {
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="itemBorder" Property="Background" Value="#585b70"/>
+                                <Setter TargetName="itemBorder" Property="Background" Value="{{Surface2}}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -193,15 +221,15 @@ function Get-ThemeResourcesXaml {
 
         <!-- CheckBox -->
         <Style TargetType="CheckBox">
-            <Setter Property="Foreground" Value="#cdd6f4"/>
+            <Setter Property="Foreground" Value="{{Text}}"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Margin" Value="0,6,0,2"/>
         </Style>
 
         <!-- TreeView -->
         <Style TargetType="TreeView">
-            <Setter Property="Background" Value="#181825"/>
-            <Setter Property="BorderBrush" Value="#313244"/>
+            <Setter Property="Background" Value="{{Mantle}}"/>
+            <Setter Property="BorderBrush" Value="{{Surface0}}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="4"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
@@ -209,7 +237,7 @@ function Get-ThemeResourcesXaml {
 
         <!-- TreeViewItem -->
         <Style TargetType="TreeViewItem">
-            <Setter Property="Foreground" Value="#cdd6f4"/>
+            <Setter Property="Foreground" Value="{{Text}}"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Padding" Value="2,2"/>
             <Setter Property="Template">
@@ -238,7 +266,7 @@ function Get-ThemeResourcesXaml {
                                             <ControlTemplate TargetType="ToggleButton">
                                                 <Border Background="Transparent" Width="16" Height="16">
                                                     <Path x:Name="arrow" Data="M0,0 L4,4 8,0"
-                                                          Stroke="#a6adc8" StrokeThickness="1.5"
+                                                          Stroke="{{Subtext0}}" StrokeThickness="1.5"
                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 </Border>
                                                 <ControlTemplate.Triggers>
@@ -265,11 +293,11 @@ function Get-ThemeResourcesXaml {
                                 <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#45475a"/>
-                                <Setter Property="Foreground" Value="#cba6f7"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{{Surface1}}"/>
+                                <Setter Property="Foreground" Value="{{Mauve}}"/>
                             </Trigger>
                             <Trigger SourceName="Bd" Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#313244"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{{Surface0}}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -277,10 +305,10 @@ function Get-ThemeResourcesXaml {
             </Setter>
         </Style>
 
-        <!-- RunButton (primary action) -->
+        <!-- RunButton -->
         <Style x:Key="RunButton" TargetType="Button">
-            <Setter Property="Background" Value="#cba6f7"/>
-            <Setter Property="Foreground" Value="#1e1e2e"/>
+            <Setter Property="Background" Value="{{Mauve}}"/>
+            <Setter Property="Foreground" Value="{{Base}}"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="20,10"/>
@@ -296,11 +324,11 @@ function Get-ThemeResourcesXaml {
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="btnBorder" Property="Background" Value="#b4befe"/>
+                                <Setter TargetName="btnBorder" Property="Background" Value="{{Lavender}}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="btnBorder" Property="Background" Value="#585b70"/>
-                                <Setter Property="Foreground" Value="#6c7086"/>
+                                <Setter TargetName="btnBorder" Property="Background" Value="{{Surface2}}"/>
+                                <Setter Property="Foreground" Value="{{Overlay0}}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -308,10 +336,10 @@ function Get-ThemeResourcesXaml {
             </Setter>
         </Style>
 
-        <!-- DangerButton (destructive action) -->
+        <!-- DangerButton -->
         <Style x:Key="DangerButton" TargetType="Button">
-            <Setter Property="Background" Value="#f38ba8"/>
-            <Setter Property="Foreground" Value="#1e1e2e"/>
+            <Setter Property="Background" Value="{{Red}}"/>
+            <Setter Property="Foreground" Value="{{Base}}"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="20,10"/>
@@ -327,11 +355,11 @@ function Get-ThemeResourcesXaml {
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="btnBorder" Property="Background" Value="#eba0ac"/>
+                                <Setter TargetName="btnBorder" Property="Background" Value="{{Maroon}}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="btnBorder" Property="Background" Value="#585b70"/>
-                                <Setter Property="Foreground" Value="#6c7086"/>
+                                <Setter TargetName="btnBorder" Property="Background" Value="{{Surface2}}"/>
+                                <Setter Property="Foreground" Value="{{Overlay0}}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -339,10 +367,10 @@ function Get-ThemeResourcesXaml {
             </Setter>
         </Style>
 
-        <!-- SmallButton (compact, for toolbars) -->
+        <!-- SmallButton -->
         <Style x:Key="SmallButton" TargetType="Button">
-            <Setter Property="Background" Value="#45475a"/>
-            <Setter Property="Foreground" Value="#cdd6f4"/>
+            <Setter Property="Background" Value="{{Surface1}}"/>
+            <Setter Property="Foreground" Value="{{Text}}"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Padding" Value="10,4"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -356,11 +384,11 @@ function Get-ThemeResourcesXaml {
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="btnBorder" Property="Background" Value="#585b70"/>
+                                <Setter TargetName="btnBorder" Property="Background" Value="{{Surface2}}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="btnBorder" Property="Background" Value="#313244"/>
-                                <Setter Property="Foreground" Value="#6c7086"/>
+                                <Setter TargetName="btnBorder" Property="Background" Value="{{Surface0}}"/>
+                                <Setter Property="Foreground" Value="{{Overlay0}}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -368,10 +396,10 @@ function Get-ThemeResourcesXaml {
             </Setter>
         </Style>
 
-        <!-- CardCheckButton: small card action button -->
+        <!-- CardButton -->
         <Style x:Key="CardButton" TargetType="Button">
-            <Setter Property="Background" Value="#45475a"/>
-            <Setter Property="Foreground" Value="#cdd6f4"/>
+            <Setter Property="Background" Value="{{Surface1}}"/>
+            <Setter Property="Foreground" Value="{{Text}}"/>
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Padding" Value="8,4"/>
             <Setter Property="Margin" Value="0,0,6,0"/>
@@ -386,7 +414,7 @@ function Get-ThemeResourcesXaml {
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="btnBorder" Property="Background" Value="#585b70"/>
+                                <Setter TargetName="btnBorder" Property="Background" Value="{{Surface2}}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -394,10 +422,10 @@ function Get-ThemeResourcesXaml {
             </Setter>
         </Style>
 
-        <!-- TitleBarButton: minimize/maximize/close -->
+        <!-- TitleBarButton -->
         <Style x:Key="TitleBarButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#a6adc8"/>
+            <Setter Property="Foreground" Value="{{Subtext0}}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Width" Value="46"/>
@@ -411,7 +439,7 @@ function Get-ThemeResourcesXaml {
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bg" Property="Background" Value="#313244"/>
+                                <Setter TargetName="bg" Property="Background" Value="{{Surface0}}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -430,8 +458,8 @@ function Get-ThemeResourcesXaml {
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bg" Property="Background" Value="#f38ba8"/>
-                                <Setter Property="Foreground" Value="#1e1e2e"/>
+                                <Setter TargetName="bg" Property="Background" Value="{{Red}}"/>
+                                <Setter Property="Foreground" Value="{{Base}}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -441,9 +469,9 @@ function Get-ThemeResourcesXaml {
 
         <!-- ContextMenu -->
         <Style TargetType="ContextMenu">
-            <Setter Property="Background" Value="#313244"/>
-            <Setter Property="Foreground" Value="#f4cde4ff"/>
-            <Setter Property="BorderBrush" Value="#45475a"/>
+            <Setter Property="Background" Value="{{Surface0}}"/>
+            <Setter Property="Foreground" Value="{{Text}}"/>
+            <Setter Property="BorderBrush" Value="{{Surface1}}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="2"/>
         </Style>
@@ -457,13 +485,13 @@ function Get-ThemeResourcesXaml {
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Thumb">
-                        <Border x:Name="thumbBorder" Background="#45475a" CornerRadius="4"/>
+                        <Border x:Name="thumbBorder" Background="{{Surface1}}" CornerRadius="4"/>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="thumbBorder" Property="Background" Value="#585b70"/>
+                                <Setter TargetName="thumbBorder" Property="Background" Value="{{Surface2}}"/>
                             </Trigger>
                             <Trigger Property="IsDragging" Value="True">
-                                <Setter TargetName="thumbBorder" Property="Background" Value="#6c7086"/>
+                                <Setter TargetName="thumbBorder" Property="Background" Value="{{Overlay0}}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -494,14 +522,14 @@ function Get-ThemeResourcesXaml {
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RepeatButton">
-                        <Border x:Name="arrowBorder" Background="#1e1e2e" BorderThickness="0">
+                        <Border x:Name="arrowBorder" Background="{{Base}}" BorderThickness="0">
                             <Path x:Name="arrowPath" HorizontalAlignment="Center"
-                                  VerticalAlignment="Center" Fill="#585b70"
+                                  VerticalAlignment="Center" Fill="{{Surface2}}"
                                   Data="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="arrowPath" Property="Fill" Value="#a6adc8"/>
+                                <Setter TargetName="arrowPath" Property="Fill" Value="{{Subtext0}}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -517,7 +545,7 @@ function Get-ThemeResourcesXaml {
                     <RowDefinition Height="0.00001*"/>
                     <RowDefinition MaxHeight="14"/>
                 </Grid.RowDefinitions>
-                <Border Grid.RowSpan="3" Background="#1e1e2e"/>
+                <Border Grid.RowSpan="3" Background="{{Base}}"/>
                 <RepeatButton Grid.Row="0" Style="{StaticResource ScrollBarLineButton}"
                               Height="14" Command="ScrollBar.LineUpCommand"
                               Content="M 0 4 L 4 0 L 8 4 Z"/>
@@ -548,7 +576,7 @@ function Get-ThemeResourcesXaml {
                     <ColumnDefinition Width="0.00001*"/>
                     <ColumnDefinition MaxWidth="14"/>
                 </Grid.ColumnDefinitions>
-                <Border Grid.ColumnSpan="3" Background="#1e1e2e"/>
+                <Border Grid.ColumnSpan="3" Background="{{Base}}"/>
                 <RepeatButton Grid.Column="0" Style="{StaticResource ScrollBarLineButton}"
                               Width="14" Command="ScrollBar.LineLeftCommand"
                               Content="M 4 0 L 0 4 L 4 8 Z"/>
@@ -588,6 +616,43 @@ function Get-ThemeResourcesXaml {
                 </Trigger>
             </Style.Triggers>
         </Style>
-
 '@
+
+    # Replacement
+    foreach ($key in $c.Keys) {
+        $xaml = $xaml.Replace("{{$key}}", $c[$key])
+    }
+
+    return $xaml
+}
+
+function Get-ThemeColors {
+    param([string]$ThemeName = "Default")
+    
+    $themes = @{
+        "Default" = @{
+            Base      = "#1e1e2e"; Mantle = "#181825"; Crust = "#11111b"
+            Text      = "#cdd6f4"; Subtext0 = "#a6adc8"; Subtext1 = "#bac2de"
+            Surface0  = "#313244"; Surface1 = "#45475a"; Surface2 = "#585b70"
+            Overlay0  = "#6c7086"; Overlay1 = "#7f849c"; Overlay2 = "#9399b2"
+            Blue      = "#89b4fa"; Lavender = "#b4befe"; Sapphire = "#74c7ec"; Sky = "#89dceb"
+            Mauve     = "#cba6f7"; Pink = "#f5c2e7"; Flamingo = "#f2cdcd"; Rosewater = "#f5e0dc"
+            Red       = "#f38ba8"; Peach = "#fab387"; Yellow = "#f9e2af"; Green = "#a6e3a1"
+            Teal      = "#94e2d5"; Maroon = "#eba0ac"
+        }
+        "GitHub" = @{
+            Base      = "#0d1117"; Mantle = "#010409"; Crust = "#010409"
+            Text      = "#c9d1d9"; Subtext0 = "#8b949e"; Subtext1 = "#b1bac4"
+            Surface0  = "#161b22"; Surface1 = "#30363d"; Surface2 = "#484f58"
+            Overlay0  = "#6e7681"; Overlay1 = "#8b949e"; Overlay2 = "#b1bac4"
+            Blue      = "#58a6ff"; Lavender = "#a5d6ff"; Sapphire = "#388bfd"; Sky = "#79c0ff"
+            Mauve     = "#58a6ff"; Pink = "#ff7b72"; Flamingo = "#ffa198"; Rosewater = "#ff7b72"
+            Red       = "#f85149"; Peach = "#ffa657"; Yellow = "#d29922"; Green = "#3fb950"
+            Teal      = "#39d353"; Maroon = "#f85149"
+        }
+    }
+    
+    $c = $themes[$ThemeName]
+    if ($null -eq $c) { $c = $themes["Default"] }
+    return $c
 }

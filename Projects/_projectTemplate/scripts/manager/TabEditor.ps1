@@ -231,14 +231,12 @@ function New-AvalonEditEditor {
     param([string]$ManagerDir)
 
     $editor = New-Object ICSharpCode.AvalonEdit.TextEditor
+    $c = Get-ThemeColors -ThemeName $script:AppState.Theme
 
-    # Catppuccin Mocha theme styling
     $editor.FontFamily = New-Object System.Windows.Media.FontFamily("Consolas, MS Gothic, Courier New")
     $editor.FontSize = 14
-    $editor.Background = [System.Windows.Media.SolidColorBrush](
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#181825"))
-    $editor.Foreground = [System.Windows.Media.SolidColorBrush](
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#cdd6f4"))
+    $editor.Background = New-ColorBrush $c.Mantle
+    $editor.Foreground = New-ColorBrush $c.Text
     $editor.BorderThickness = New-Object System.Windows.Thickness(0)
     $editor.Padding = New-Object System.Windows.Thickness(12)
     $editor.ShowLineNumbers = $true
@@ -248,44 +246,59 @@ function New-AvalonEditEditor {
     $editor.IsReadOnly = $true
 
     # Line number colors
-    $editor.LineNumbersForeground = [System.Windows.Media.SolidColorBrush](
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#45475a"))
+    $editor.LineNumbersForeground = New-ColorBrush $c.Surface2
 
     # Caret and selection colors
-    $editor.TextArea.Caret.CaretBrush = [System.Windows.Media.SolidColorBrush](
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#cdd6f4"))
-    $editor.TextArea.SelectionBrush = [System.Windows.Media.SolidColorBrush](
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#45475a"))
+    $editor.TextArea.Caret.CaretBrush = New-ColorBrush $c.Text
+    $editor.TextArea.SelectionBrush = New-ColorBrush $c.Surface1
     $editor.TextArea.SelectionForeground = $null  # Use syntax colors in selection
 
-    # Remove built-in LinkElementGenerator (overrides xshd URL colors with system blue)
+    # Remove built-in LinkElementGenerator
     $generators = $editor.TextArea.TextView.ElementGenerators
     $toRemove = @($generators | Where-Object { $_.GetType().Name -eq "LinkElementGenerator" })
     foreach ($g in $toRemove) { $generators.Remove($g) | Out-Null }
 
     # Current line highlight
-    $editor.TextArea.TextView.CurrentLineBackground = [System.Windows.Media.SolidColorBrush](
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#11b4befe"))
+    $editor.TextArea.TextView.CurrentLineBackground = New-ColorBrush ("#11" + $c.Lavender.TrimStart('#'))
     $editor.TextArea.TextView.CurrentLineBorder = New-Object System.Windows.Media.Pen(
-        [System.Windows.Media.SolidColorBrush](
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#11b4befe")), 1)
+        New-ColorBrush ("#11" + $c.Lavender.TrimStart('#')), 1)
 
     # Load Markdown syntax highlighting
     $xshdPath = Join-Path $ManagerDir "lib\Markdown.xshd"
     if (Test-Path $xshdPath) {
         try {
-            $xshdStream = [System.IO.File]::OpenRead($xshdPath)
-            $xmlReader = [System.Xml.XmlReader]::Create($xshdStream)
+            $xshdContent = Get-Content $xshdPath -Raw
+            
+            # Apply dynamic replacements based on theme
+            if ($script:AppState.Theme -eq "GitHub") {
+                $replacements = @{
+                    "#cba6f7" = $c.Blue
+                    "#f5c2e7" = $c.Mauve
+                    "#a6e3a1" = $c.Green
+                    "#9399b2" = $c.Overlay1
+                    "#74c7ec" = $c.Sapphire
+                    "#94e2d5" = $c.Teal
+                    "#f9e2af" = $c.Yellow
+                    "#6c7086" = $c.Overlay0
+                    "#313244" = $c.Surface1
+                }
+                foreach ($oldHex in $replacements.Keys) {
+                    $xshdContent = $xshdContent.Replace($oldHex, $replacements[$oldHex])
+                }
+            }
+
+            $sr = New-Object System.IO.StringReader($xshdContent)
+            $xmlReader = [System.Xml.XmlReader]::Create($sr)
             $highlighting = [ICSharpCode.AvalonEdit.Highlighting.Xshd.HighlightingLoader]::Load(
                 $xmlReader,
                 [ICSharpCode.AvalonEdit.Highlighting.HighlightingManager]::Instance
             )
             $editor.SyntaxHighlighting = $highlighting
             $xmlReader.Close()
-            $xshdStream.Close()
+            $sr.Close()
         }
         catch {
-            # Silently fall back to no syntax highlighting
+            Write-Error "Failed to load syntax highlighting: $($_.Exception.Message)"
         }
     }
 

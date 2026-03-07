@@ -2,22 +2,25 @@
 # Builds the complete XAML string for the Project Manager window
 
 function Build-MainWindowXaml {
-    $styles = Get-ThemeResourcesXaml
+    param([string]$ThemeName = "Default")
+
+    $styles = Get-ThemeResourcesXaml -ThemeName $ThemeName
+    $c = Get-ThemeColors -ThemeName $ThemeName
 
     # Tab indices: 0=Dashboard, 1=Editor, 2=Timeline, 3=Setup, 4=AI Context, 5=Check, 6=Archive, 7=Convert, 8=Asana Sync, 9=Settings
-    return @"
+    $xamlTemplate = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Project Manager" Height="800" Width="1150"
         MinHeight="600" MinWidth="900"
         WindowStartupLocation="CenterScreen" ResizeMode="CanResizeWithGrip"
         WindowStyle="None" AllowsTransparency="True"
-        Background="Transparent" Foreground="#cdd6f4">
+        Background="Transparent" Foreground="{{Text}}">
     <Window.Resources>
-$styles
+{{Styles}}
     </Window.Resources>
 
-    <Border Background="#1e1e2e" BorderBrush="#45475a" BorderThickness="1" CornerRadius="8">
+    <Border Background="{{Base}}" BorderBrush="{{Surface1}}" BorderThickness="1" CornerRadius="8">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="36"/>
@@ -26,28 +29,28 @@ $styles
             </Grid.RowDefinitions>
 
             <!-- ===== Title Bar ===== -->
-            <Grid Grid.Row="0" Background="#181825" x:Name="titleBar">
+            <Grid Grid.Row="0" Background="{{Mantle}}" x:Name="titleBar">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Orientation="Horizontal"
                             Margin="12,0,0,0" VerticalAlignment="Center">
-                    <TextBlock Text="&#x25C8;" Foreground="#cba6f7" FontSize="14"
+                    <TextBlock Text="&#x25C8;" Foreground="{{Mauve}}" FontSize="14"
                                Margin="0,0,8,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="Project Manager" Foreground="#a6adc8"
+                    <TextBlock Text="Project Manager" Foreground="{{Subtext0}}"
                                FontSize="12" VerticalAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button x:Name="btnMaximize" Content="&#x25A1;" FontSize="13"
-                            Foreground="#a6adc8" Style="{StaticResource TitleBarButton}"/>
+                            Foreground="{{Subtext0}}" Style="{StaticResource TitleBarButton}"/>
                     <Button x:Name="btnClose"    Content="&#x2715;" FontSize="12"
-                            Foreground="#a6adc8" Style="{StaticResource TitleBarCloseButton}"/>
+                            Foreground="{{Subtext0}}" Style="{StaticResource TitleBarCloseButton}"/>
                 </StackPanel>
             </Grid>
 
             <!-- ===== Tab Control ===== -->
-            <TabControl Grid.Row="1" x:Name="tabMain" BorderBrush="#45475a" Margin="8,8,8,0">
+            <TabControl Grid.Row="1" x:Name="tabMain" BorderBrush="{{Surface1}}" Margin="8,8,8,0">
 
                 <!-- Tab 0: Dashboard -->
                 <TabItem Header="Dashboard">
@@ -69,10 +72,10 @@ $styles
                             <Button x:Name="btnDashRefresh" Content="Refresh"
                                     Grid.Column="0" Style="{StaticResource SmallButton}" Margin="0,0,8,0"/>
                             <CheckBox x:Name="chkShowHidden" Grid.Column="2" Content="Show Hidden"
-                                      Foreground="#a6adc8" FontSize="12" VerticalAlignment="Center"
+                                      Foreground="{{Subtext0}}" FontSize="12" VerticalAlignment="Center"
                                       Margin="0,0,16,0"/>
                             <TextBlock Grid.Column="3" Text="Filter: " VerticalAlignment="Center"
-                                       Foreground="#a6adc8" Margin="0,0,4,0" FontSize="12"/>
+                                       Foreground="{{Subtext0}}" Margin="0,0,4,0" FontSize="12"/>
                             <TextBox x:Name="txtDashFilter" Grid.Column="4" FontSize="12" Padding="6,4"/>
                         </Grid>
 
@@ -103,7 +106,7 @@ $styles
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="Project: " VerticalAlignment="Center"
-                                       Foreground="#a6adc8" Margin="0,0,4,0" FontSize="12"/>
+                                       Foreground="{{Subtext0}}" Margin="0,0,4,0" FontSize="12"/>
                             <ComboBox x:Name="editorProjectCombo" Grid.Column="1" Margin="0,0,8,0"/>
                              <Button x:Name="btnNewDecisionLog" Grid.Column="3"
                                      Content="+ Decision Log"
@@ -127,19 +130,19 @@ $styles
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 <TextBlock Grid.Row="0" Text="Project Files"
-                                           Foreground="#6c7086" FontSize="11"
+                                           Foreground="{{Overlay0}}" FontSize="11"
                                            Margin="4,0,0,4"/>
                                 <TreeView x:Name="editorFileTree" Grid.Row="1" Margin="0,0,0,4"
                                           MinHeight="80"/>
                                 <TextBlock Grid.Row="2" Text="Workspace Files"
-                                           Foreground="#6c7086" FontSize="11"
+                                           Foreground="{{Overlay0}}" FontSize="11"
                                            Margin="4,4,0,4"/>
                                 <TreeView x:Name="editorWorkspaceTree" Grid.Row="3" MinHeight="80"/>
                             </Grid>
 
                             <!-- Splitter -->
                             <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"
-                                          Background="#45475a" ShowsPreview="True">
+                                          Background="{{Surface1}}" ShowsPreview="True">
                                 <GridSplitter.Template>
                                     <ControlTemplate TargetType="GridSplitter">
                                         <Border Background="{TemplateBinding Background}"/>
@@ -148,8 +151,8 @@ $styles
                             </GridSplitter>
 
                             <!-- Text editor (AvalonEdit host) -->
-                            <Border Grid.Column="2" Background="#181825" CornerRadius="4"
-                                    BorderBrush="#313244" BorderThickness="1">
+                            <Border Grid.Column="2" Background="{{Mantle}}" CornerRadius="4"
+                                    BorderBrush="{{Surface0}}" BorderThickness="1">
                                 <ContentControl x:Name="editorHost" />
                             </Border>
                         </Grid>
@@ -187,10 +190,10 @@ $styles
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="Project: " VerticalAlignment="Center"
-                                       Foreground="#a6adc8" Margin="0,0,4,0" FontSize="12"/>
+                                       Foreground="{{Subtext0}}" Margin="0,0,4,0" FontSize="12"/>
                             <ComboBox x:Name="timelineProjectCombo" Grid.Column="1" Margin="0,0,8,0"/>
                             <TextBlock Grid.Column="2" Text="Period: " VerticalAlignment="Center"
-                                       Foreground="#a6adc8" Margin="0,0,4,0" FontSize="12"/>
+                                       Foreground="{{Subtext0}}" Margin="0,0,4,0" FontSize="12"/>
                             <ComboBox x:Name="timelinePeriodCombo" Grid.Column="3" Width="120">
                                 <ComboBoxItem Content="30 days" IsSelected="True"/>
                                 <ComboBoxItem Content="90 days"/>
@@ -199,8 +202,8 @@ $styles
                         </Grid>
 
                         <!-- Timeline entries -->
-                        <Border Grid.Row="1" Background="#181825" CornerRadius="4"
-                                BorderBrush="#313244" BorderThickness="1">
+                        <Border Grid.Row="1" Background="{{Mantle}}" CornerRadius="4"
+                                BorderBrush="{{Surface0}}" BorderThickness="1">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel x:Name="timelineEntries" Margin="8"/>
                             </ScrollViewer>
@@ -210,7 +213,7 @@ $styles
                         <Border Grid.Row="2" Margin="0,8,0,0">
                             <StackPanel x:Name="timelineStats" Orientation="Horizontal">
                                 <TextBlock x:Name="timelineStatText" Text="" FontSize="11"
-                                           Foreground="#6c7086" VerticalAlignment="Center"/>
+                                           Foreground="{{Overlay0}}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -249,7 +252,7 @@ $styles
                                     <TextBox x:Name="setupExternalShared" Grid.Column="0" Margin="0,0,8,0"
                                              AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44" MaxHeight="88"
                                              VerticalScrollBarVisibility="Auto"/>
-                                    <Button x:Name="btnSetupBrowseExternalShared" Grid.Column="1" Content="Add..." Width="40" Height="22" VerticalAlignment="Top" Background="#313244" Foreground="#cdd6f4" BorderBrush="#45475a"/>
+                                    <Button x:Name="btnSetupBrowseExternalShared" Grid.Column="1" Content="Add..." Width="40" Height="22" VerticalAlignment="Top" Background="{{Surface0}}" Foreground="{{Text}}" BorderBrush="{{Surface1}}"/>
                                 </Grid>
                                 <Button x:Name="btnSetup" Content="Run Setup"
                                         Style="{StaticResource RunButton}"/>
@@ -257,25 +260,25 @@ $styles
                         </ScrollViewer>
 
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
-                            <TextBlock Text="Output" FontSize="12" Foreground="#a6adc8"
+                            <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
                                        VerticalAlignment="Center"/>
                             <Button x:Name="btnSetupClear" Content="Clear"
                                     Margin="10,0,0,0" Padding="8,3"
-                                    Background="Transparent" Foreground="#6c7086"
-                                    BorderBrush="#45475a" BorderThickness="1"
+                                    Background="Transparent" Foreground="{{Overlay0}}"
+                                    BorderBrush="{{Surface1}}" BorderThickness="1"
                                     Cursor="Hand" FontSize="11"/>
                         </StackPanel>
-                        <Border Grid.Row="2" Background="#181825" CornerRadius="6"
-                                BorderBrush="#313244" BorderThickness="1" Margin="16,0,16,16">
+                        <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
+                                BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
                             <TextBox x:Name="txtSetupOutput" IsReadOnly="True" TextWrapping="Wrap"
                                      VerticalScrollBarVisibility="Auto" Background="Transparent"
-                                     Foreground="#a6e3a1" FontFamily="Consolas" FontSize="12"
+                                     Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
                                      BorderThickness="0" Padding="10" AcceptsReturn="True"/>
                         </Border>
                     </Grid>
                 </TabItem>
 
-                <!-- Tab 3: AI Context Setup -->
+                <!-- Tab 4: AI Context -->
                 <TabItem Header="AI Context">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -298,25 +301,25 @@ $styles
                         </ScrollViewer>
 
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
-                            <TextBlock Text="Output" FontSize="12" Foreground="#a6adc8"
+                            <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
                                        VerticalAlignment="Center"/>
                             <Button x:Name="btnCtxClear" Content="Clear"
                                     Margin="10,0,0,0" Padding="8,3"
-                                    Background="Transparent" Foreground="#6c7086"
-                                    BorderBrush="#45475a" BorderThickness="1"
+                                    Background="Transparent" Foreground="{{Overlay0}}"
+                                    BorderBrush="{{Surface1}}" BorderThickness="1"
                                     Cursor="Hand" FontSize="11"/>
                         </StackPanel>
-                        <Border Grid.Row="2" Background="#181825" CornerRadius="6"
-                                BorderBrush="#313244" BorderThickness="1" Margin="16,0,16,16">
+                        <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
+                                BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
                             <TextBox x:Name="txtCtxOutput" IsReadOnly="True" TextWrapping="Wrap"
                                      VerticalScrollBarVisibility="Auto" Background="Transparent"
-                                     Foreground="#a6e3a1" FontFamily="Consolas" FontSize="12"
+                                     Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
                                      BorderThickness="0" Padding="10" AcceptsReturn="True"/>
                         </Border>
                     </Grid>
                 </TabItem>
 
-                <!-- Tab 4: Check -->
+                <!-- Tab 5: Check -->
                 <TabItem Header="Check">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -339,25 +342,25 @@ $styles
                         </ScrollViewer>
 
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
-                            <TextBlock Text="Output" FontSize="12" Foreground="#a6adc8"
+                            <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
                                        VerticalAlignment="Center"/>
                             <Button x:Name="btnCheckClear" Content="Clear"
                                     Margin="10,0,0,0" Padding="8,3"
-                                    Background="Transparent" Foreground="#6c7086"
-                                    BorderBrush="#45475a" BorderThickness="1"
+                                    Background="Transparent" Foreground="{{Overlay0}}"
+                                    BorderBrush="{{Surface1}}" BorderThickness="1"
                                     Cursor="Hand" FontSize="11"/>
                         </StackPanel>
-                        <Border Grid.Row="2" Background="#181825" CornerRadius="6"
-                                BorderBrush="#313244" BorderThickness="1" Margin="16,0,16,16">
+                        <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
+                                BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
                             <TextBox x:Name="txtCheckOutput" IsReadOnly="True" TextWrapping="Wrap"
                                      VerticalScrollBarVisibility="Auto" Background="Transparent"
-                                     Foreground="#a6e3a1" FontFamily="Consolas" FontSize="12"
+                                     Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
                                      BorderThickness="0" Padding="10" AcceptsReturn="True"/>
                         </Border>
                     </Grid>
                 </TabItem>
 
-                <!-- Tab 5: Archive -->
+                <!-- Tab 6: Archive -->
                 <TabItem Header="Archive">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -383,25 +386,25 @@ $styles
                         </ScrollViewer>
 
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
-                            <TextBlock Text="Output" FontSize="12" Foreground="#a6adc8"
+                            <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
                                        VerticalAlignment="Center"/>
                             <Button x:Name="btnArchiveClear" Content="Clear"
                                     Margin="10,0,0,0" Padding="8,3"
-                                    Background="Transparent" Foreground="#6c7086"
-                                    BorderBrush="#45475a" BorderThickness="1"
+                                    Background="Transparent" Foreground="{{Overlay0}}"
+                                    BorderBrush="{{Surface1}}" BorderThickness="1"
                                     Cursor="Hand" FontSize="11"/>
                         </StackPanel>
-                        <Border Grid.Row="2" Background="#181825" CornerRadius="6"
-                                BorderBrush="#313244" BorderThickness="1" Margin="16,0,16,16">
+                        <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
+                                BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
                             <TextBox x:Name="txtArchiveOutput" IsReadOnly="True" TextWrapping="Wrap"
                                      VerticalScrollBarVisibility="Auto" Background="Transparent"
-                                     Foreground="#a6e3a1" FontFamily="Consolas" FontSize="12"
+                                     Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
                                      BorderThickness="0" Padding="10" AcceptsReturn="True"/>
                         </Border>
                     </Grid>
                 </TabItem>
 
-                <!-- Tab 6: Convert Tier -->
+                <!-- Tab 7: Convert Tier -->
                 <TabItem Header="Convert">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -429,25 +432,25 @@ $styles
                         </ScrollViewer>
 
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
-                            <TextBlock Text="Output" FontSize="12" Foreground="#a6adc8"
+                            <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
                                        VerticalAlignment="Center"/>
                             <Button x:Name="btnConvertClear" Content="Clear"
                                     Margin="10,0,0,0" Padding="8,3"
-                                    Background="Transparent" Foreground="#6c7086"
-                                    BorderBrush="#45475a" BorderThickness="1"
+                                    Background="Transparent" Foreground="{{Overlay0}}"
+                                    BorderBrush="{{Surface1}}" BorderThickness="1"
                                     Cursor="Hand" FontSize="11"/>
                         </StackPanel>
-                        <Border Grid.Row="2" Background="#181825" CornerRadius="6"
-                                BorderBrush="#313244" BorderThickness="1" Margin="16,0,16,16">
+                        <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
+                                BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
                             <TextBox x:Name="txtConvertOutput" IsReadOnly="True" TextWrapping="Wrap"
                                      VerticalScrollBarVisibility="Auto" Background="Transparent"
-                                     Foreground="#a6e3a1" FontFamily="Consolas" FontSize="12"
+                                     Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
                                      BorderThickness="0" Padding="10" AcceptsReturn="True"/>
                         </Border>
                     </Grid>
                 </TabItem>
 
-                <!-- Tab 7: Asana Sync -->
+                <!-- Tab 8: Asana Sync -->
                 <TabItem Header="Asana Sync">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -458,57 +461,57 @@ $styles
 
                         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="280">
                             <StackPanel Margin="16">
-                                <TextBlock Text="Manual Execution" Foreground="#cba6f7" FontSize="15"
+                                <TextBlock Text="Manual Execution" Foreground="{{Mauve}}" FontSize="15"
                                            FontWeight="SemiBold" Margin="0,0,0,8"/>
                                 <Button x:Name="btnAsanaSync" Content="Run Sync Now"
                                         Style="{StaticResource RunButton}"/>
 
-                                <TextBlock Text="Scheduled Execution" Foreground="#cba6f7" FontSize="15"
+                                <TextBlock Text="Scheduled Execution" Foreground="{{Mauve}}" FontSize="15"
                                            FontWeight="SemiBold" Margin="0,20,0,8"/>
                                 <CheckBox x:Name="chkAsanaSchedule"
                                           Content="Enable scheduled sync"
                                           Margin="0,0,0,8"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <TextBlock Text="Interval (min): " Foreground="#a6adc8" FontSize="13"
+                                    <TextBlock Text="Interval (min): " Foreground="{{Subtext0}}" FontSize="13"
                                                VerticalAlignment="Center"/>
                                     <TextBox x:Name="txtAsanaInterval" Text="60" Width="80"
                                              HorizontalAlignment="Left"/>
                                 </StackPanel>
 
                                 <Button x:Name="btnAsanaSaveSchedule" Content="Save Schedule"
-                                        Padding="12,4" Background="#45475a" Foreground="#cdd6f4"
-                                        BorderBrush="#585b70" BorderThickness="1" Cursor="Hand"
+                                        Padding="12,4" Background="{{Surface1}}" Foreground="{{Text}}"
+                                        BorderBrush="{{Surface2}}" BorderThickness="1" Cursor="Hand"
                                         FontSize="12" HorizontalAlignment="Left" Margin="0,0,0,12"/>
 
                                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                    <TextBlock Text="Last Sync: " Foreground="#a6adc8" FontSize="13"
+                                    <TextBlock Text="Last Sync: " Foreground="{{Subtext0}}" FontSize="13"
                                                VerticalAlignment="Center"/>
-                                    <TextBlock x:Name="lblAsanaLastSync" Text="---" Foreground="#a6e3a1"
+                                    <TextBlock x:Name="lblAsanaLastSync" Text="---" Foreground="{{Green}}"
                                                FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </StackPanel>
                         </ScrollViewer>
 
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
-                            <TextBlock Text="Output" FontSize="12" Foreground="#a6adc8"
+                            <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
                                        VerticalAlignment="Center"/>
                             <Button x:Name="btnAsanaClear" Content="Clear"
                                     Margin="10,0,0,0" Padding="8,3"
-                                    Background="Transparent" Foreground="#6c7086"
-                                    BorderBrush="#45475a" BorderThickness="1"
+                                    Background="Transparent" Foreground="{{Overlay0}}"
+                                    BorderBrush="{{Surface1}}" BorderThickness="1"
                                     Cursor="Hand" FontSize="11"/>
                         </StackPanel>
-                        <Border Grid.Row="2" Background="#181825" CornerRadius="6"
-                                BorderBrush="#313244" BorderThickness="1" Margin="16,0,16,16">
+                        <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
+                                BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
                             <TextBox x:Name="txtAsanaOutput" IsReadOnly="True" TextWrapping="Wrap"
                                      VerticalScrollBarVisibility="Auto" Background="Transparent"
-                                     Foreground="#a6e3a1" FontFamily="Consolas" FontSize="12"
+                                     Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
                                      BorderThickness="0" Padding="10" AcceptsReturn="True"/>
                         </Border>
                     </Grid>
                 </TabItem>
 
-                <!-- Tab 8: Settings -->
+                <!-- Tab 9: Settings -->
                 <TabItem Header="Settings">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -519,13 +522,22 @@ $styles
 
                         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="360">
                             <StackPanel Margin="16">
-                                <!-- Current Hotkey Display -->
-                                <TextBlock Text="Global Hotkey" Foreground="#cba6f7" FontSize="15"
+                                <!-- Theme Selection -->
+                                <TextBlock Text="Appearance" Foreground="{{Mauve}}" FontSize="15"
+                                           FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <Label Content="Color Theme"/>
+                                <ComboBox x:Name="settingsThemeCombo" Width="200" HorizontalAlignment="Left" Margin="0,0,0,16">
+                                    <ComboBoxItem Content="Default"/>
+                                    <ComboBoxItem Content="GitHub"/>
+                                </ComboBox>
+
+                                <!-- Global Hotkey -->
+                                <TextBlock Text="Global Hotkey" Foreground="{{Mauve}}" FontSize="15"
                                            FontWeight="SemiBold" Margin="0,0,0,8"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                                    <TextBlock Text="Current: " Foreground="#a6adc8" FontSize="13"
+                                    <TextBlock Text="Current: " Foreground="{{Subtext0}}" FontSize="13"
                                                VerticalAlignment="Center"/>
-                                    <TextBlock x:Name="settingsCurrentHotkey" Text="..." Foreground="#a6e3a1"
+                                    <TextBlock x:Name="settingsCurrentHotkey" Text="..." Foreground="{{Green}}"
                                                FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 </StackPanel>
 
@@ -544,7 +556,7 @@ $styles
                                          MaxLength="5"/>
 
                                 <!-- Startup -->
-                                <TextBlock Text="Startup" Foreground="#cba6f7" FontSize="15"
+                                <TextBlock Text="Startup" Foreground="{{Mauve}}" FontSize="15"
                                            FontWeight="SemiBold" Margin="0,20,0,8"/>
                                 <CheckBox x:Name="settingsStartup"
                                           Content="Launch at Windows startup"
@@ -556,19 +568,19 @@ $styles
                         </ScrollViewer>
 
                         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
-                            <TextBlock Text="Output" FontSize="12" Foreground="#a6adc8"
+                            <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
                                        VerticalAlignment="Center"/>
                             <Button x:Name="btnSettingsClear" Content="Clear"
                                     Margin="10,0,0,0" Padding="8,3"
-                                    Background="Transparent" Foreground="#6c7086"
-                                    BorderBrush="#45475a" BorderThickness="1"
+                                    Background="Transparent" Foreground="{{Overlay0}}"
+                                    BorderBrush="{{Surface1}}" BorderThickness="1"
                                     Cursor="Hand" FontSize="11"/>
                         </StackPanel>
-                        <Border Grid.Row="2" Background="#181825" CornerRadius="6"
-                                BorderBrush="#313244" BorderThickness="1" Margin="16,0,16,16">
+                        <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
+                                BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
                             <TextBox x:Name="txtSettingsOutput" IsReadOnly="True" TextWrapping="Wrap"
                                      VerticalScrollBarVisibility="Auto" Background="Transparent"
-                                     Foreground="#a6e3a1" FontFamily="Consolas" FontSize="12"
+                                     Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
                                      BorderThickness="0" Padding="10" AcceptsReturn="True"/>
                         </Border>
                     </Grid>
@@ -578,9 +590,9 @@ $styles
 
             <!-- ===== Command Palette Overlay ===== -->
             <Border x:Name="cmdPaletteOverlay" Grid.Row="1"
-                    Background="#CC1e1e2e" Visibility="Collapsed"
+                    Background="#CC{{BaseWithoutHash}}" Visibility="Collapsed"
                     Panel.ZIndex="100">
-                <Border Background="#313244" BorderBrush="#cba6f7" BorderThickness="1"
+                <Border Background="{{Surface0}}" BorderBrush="{{Mauve}}" BorderThickness="1"
                         CornerRadius="8" Padding="0"
                         VerticalAlignment="Top" MaxWidth="600" MaxHeight="500"
                         HorizontalAlignment="Center" Margin="0,40,0,0">
@@ -591,19 +603,19 @@ $styles
                         </Grid.RowDefinitions>
                         <TextBox x:Name="cmdPaletteInput" Grid.Row="0"
                                  FontSize="16" Padding="12,10"
-                                 Background="#1e1e2e" Foreground="#cdd6f4"
-                                 BorderThickness="0,0,0,1" BorderBrush="#45475a"
-                                 CaretBrush="#cdd6f4"/>
+                                 Background="{{Base}}" Foreground="{{Text}}"
+                                 BorderThickness="0,0,0,1" BorderBrush="{{Surface1}}"
+                                 CaretBrush="{{Text}}"/>
                         <ListBox x:Name="cmdPaletteList" Grid.Row="1"
                                  Background="Transparent" BorderThickness="0"
-                                 Foreground="#cdd6f4" MaxHeight="400"
+                                 Foreground="{{Text}}" MaxHeight="400"
                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
                     </Grid>
                 </Border>
             </Border>
 
             <!-- ===== Status Bar ===== -->
-            <Border Grid.Row="2" Background="#181825" BorderBrush="#45475a" BorderThickness="0,1,0,0">
+            <Border Grid.Row="2" Background="{{Mantle}}" BorderBrush="{{Surface1}}" BorderThickness="0,1,0,0">
                 <Grid Margin="12,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -612,20 +624,32 @@ $styles
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock x:Name="statusProject" Grid.Column="0" Text="Ready"
-                               Foreground="#6c7086" FontSize="11" VerticalAlignment="Center"/>
+                               Foreground="{{Overlay0}}" FontSize="11" VerticalAlignment="Center"/>
                     <TextBlock x:Name="statusFile" Grid.Column="1" Text=""
-                               Foreground="#6c7086" FontSize="11" VerticalAlignment="Center"
+                               Foreground="{{Overlay0}}" FontSize="11" VerticalAlignment="Center"
                                Margin="16,0"/>
                     <TextBlock x:Name="statusEncoding" Grid.Column="2" Text=""
-                               Foreground="#6c7086" FontSize="11" VerticalAlignment="Center"
+                               Foreground="{{Overlay0}}" FontSize="11" VerticalAlignment="Center"
                                Margin="0,0,16,0"/>
                     <TextBlock x:Name="statusDirty" Grid.Column="3" Text=""
-                               Foreground="#f9e2af" FontSize="11" VerticalAlignment="Center"/>
+                               Foreground="{{Yellow}}" FontSize="11" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
 
         </Grid>
     </Border>
 </Window>
-"@
+'@
+
+    # Replacement
+    $xaml = $xamlTemplate.Replace("{{Styles}}", $styles)
+    foreach ($key in $c.Keys) {
+        $xaml = $xaml.Replace("{{$key}}", $c[$key])
+    }
+    
+    # Handle specific key for transparent overlay
+    $baseWithoutHash = $c.Base.TrimStart('#')
+    $xaml = $xaml.Replace("{{BaseWithoutHash}}", $baseWithoutHash)
+
+    return $xaml
 }

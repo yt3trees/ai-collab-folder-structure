@@ -6,16 +6,18 @@ function Get-FreshnessColor {
     param(
         [object]$Days,       # int or $null
         [int]$WarnAt,        # days threshold for yellow
-        [int]$AlertAt        # days threshold for red
+        [int]$AlertAt,       # days threshold for red
+        [hashtable]$ThemeColors
     )
-    if ($null -eq $Days) { return "#f38ba8" }  # red (missing)
-    if ($Days -le $WarnAt) { return "#a6e3a1" }  # green
-    if ($Days -le $AlertAt) { return "#f9e2af" }  # yellow
-    return "#f38ba8"                              # red
+    if ($null -eq $Days) { return $ThemeColors.Red }  # red (missing)
+    if ($Days -le $WarnAt) { return $ThemeColors.Green }  # green
+    if ($Days -le $AlertAt) { return $ThemeColors.Yellow }  # yellow
+    return $ThemeColors.Red                              # red
 }
 
 function New-ColorBrush {
     param([string]$Hex)
+    if ([string]::IsNullOrWhiteSpace($Hex)) { $Hex = "#FF00FF" } # Fallback
     return [System.Windows.Media.SolidColorBrush](
         [System.Windows.Media.ColorConverter]::ConvertFromString($Hex)
     )
@@ -59,13 +61,15 @@ function New-ProjectCard {
         [bool]$IsHidden = $false
     )
 
+    $c = Get-ThemeColors -ThemeName $script:AppState.Theme
+
     # Outer card border
     $card = New-Object System.Windows.Controls.Border
     $card.Width = 260
     $card.MinHeight = 160
     $card.Margin = New-Object System.Windows.Thickness(0, 0, 8, 8)
-    $card.Background = New-ColorBrush "#313244"
-    $card.BorderBrush = New-ColorBrush "#45475a"
+    $card.Background = New-ColorBrush $c.Surface0
+    $card.BorderBrush = New-ColorBrush $c.Surface1
     $card.BorderThickness = New-Object System.Windows.Thickness(1)
     $card.CornerRadius = New-Object System.Windows.CornerRadius(6)
     $card.Padding = New-Object System.Windows.Thickness(12)
@@ -89,7 +93,7 @@ function New-ProjectCard {
     $titleBlock.Text = $Info.Name
     $titleBlock.FontSize = 14
     $titleBlock.FontWeight = [System.Windows.FontWeights]::SemiBold
-    $titleColor = if ($Info.Category -eq "domain") { "#94e2d5" } else { "#cba6f7" }
+    $titleColor = if ($Info.Category -eq "domain") { $c.Teal } else { $c.Mauve }
     $titleBlock.Foreground = New-ColorBrush $titleColor
 
     $tierBadge = New-Object System.Windows.Controls.TextBlock
@@ -99,7 +103,7 @@ function New-ProjectCard {
     else { " [F]" }
     $tierBadge.Text = $badgeText
     $tierBadge.FontSize = 11
-    $tierBadge.Foreground = New-ColorBrush "#a6adc8"
+    $tierBadge.Foreground = New-ColorBrush $c.Subtext1
     $tierBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
     $titleRow.Children.Add($titleBlock) | Out-Null
@@ -109,7 +113,7 @@ function New-ProjectCard {
         $hiddenBadge = New-Object System.Windows.Controls.TextBlock
         $hiddenBadge.Text = " [H]"
         $hiddenBadge.FontSize = 11
-        $hiddenBadge.Foreground = New-ColorBrush "#f38ba8"
+        $hiddenBadge.Foreground = New-ColorBrush $c.Red
         $hiddenBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
         $titleRow.Children.Add($hiddenBadge) | Out-Null
     }
@@ -117,20 +121,22 @@ function New-ProjectCard {
     $stack.Children.Add($titleRow) | Out-Null
 
     # --- Focus freshness ---
-    $focusText = if ($null -eq $Info.FocusAge) { "Focus: --" } elseif ($Info.FocusAge -eq 0) { "Focus: today" } else { "Focus: $($Info.FocusAge)d ago" }
+    $focusAge = $Info.FocusAge
+    $focusText = if ($null -eq $focusAge) { "Focus: --" } elseif ($focusAge -eq 0) { "Focus: today" } else { "Focus: $($focusAge)d ago" }
     $focusBlock = New-Object System.Windows.Controls.TextBlock
     $focusBlock.Text = $focusText
     $focusBlock.FontSize = 12
-    $focusBlock.Foreground = New-ColorBrush (Get-FreshnessColor -Days $Info.FocusAge -WarnAt 7 -AlertAt 14)
+    $focusBlock.Foreground = New-ColorBrush (Get-FreshnessColor -Days $focusAge -WarnAt 7 -AlertAt 14 -ThemeColors $c)
     $focusBlock.Margin = New-Object System.Windows.Thickness(0, 2, 0, 0)
     $stack.Children.Add($focusBlock) | Out-Null
 
     # --- Summary freshness ---
-    $summText = if ($null -eq $Info.SummaryAge) { "Summary: --" } elseif ($Info.SummaryAge -eq 0) { "Summary: today" } else { "Summary: $($Info.SummaryAge)d ago" }
+    $summAge = $Info.SummaryAge
+    $summText = if ($null -eq $summAge) { "Summary: --" } elseif ($summAge -eq 0) { "Summary: today" } else { "Summary: $($summAge)d ago" }
     $summBlock = New-Object System.Windows.Controls.TextBlock
     $summBlock.Text = $summText
     $summBlock.FontSize = 12
-    $summBlock.Foreground = New-ColorBrush (Get-FreshnessColor -Days $Info.SummaryAge -WarnAt 14 -AlertAt 30)
+    $summBlock.Foreground = New-ColorBrush (Get-FreshnessColor -Days $summAge -WarnAt 14 -AlertAt 30 -ThemeColors $c)
     $summBlock.Margin = New-Object System.Windows.Thickness(0, 2, 0, 0)
     $stack.Children.Add($summBlock) | Out-Null
 
@@ -139,7 +145,7 @@ function New-ProjectCard {
         $dlBlock = New-Object System.Windows.Controls.TextBlock
         $dlBlock.Text = "Decisions: $($Info.DecisionLogCount)"
         $dlBlock.FontSize = 11
-        $dlBlock.Foreground = New-ColorBrush "#89b4fa"
+        $dlBlock.Foreground = New-ColorBrush $c.Blue
         $dlBlock.Margin = New-Object System.Windows.Thickness(0, 2, 0, 0)
         $stack.Children.Add($dlBlock) | Out-Null
     }
@@ -187,7 +193,7 @@ function New-ProjectCard {
     $activityLabel = New-Object System.Windows.Controls.TextBlock
     $activityLabel.Text = $labelText
     $activityLabel.FontSize = 11
-    $labelColor = if ($recent30 -ge 10) { "#a6e3a1" } elseif ($recent30 -ge 3) { "#89dceb" } elseif ($totalDates -gt 0) { "#89b4fa" } else { "#6c7086" }
+    $labelColor = if ($recent30 -ge 10) { $c.Green } elseif ($recent30 -ge 3) { $c.Sky } elseif ($totalDates -gt 0) { $c.Blue } else { $c.Overlay0 }
     $activityLabel.Foreground = New-ColorBrush $labelColor
     $activityLabel.Margin = New-Object System.Windows.Thickness(0, 6, 0, 2)
     $activityGroup.Children.Add($activityLabel) | Out-Null
@@ -202,7 +208,7 @@ function New-ProjectCard {
         $rect.Margin = New-Object System.Windows.Thickness(0.5)
         $rect.RadiusX = 1
         $rect.RadiusY = 1
-        $color = if ($historySet.ContainsKey($day.ToString("yyyy-MM-dd"))) { "#a6e3a1" } else { "#45475a" }
+        $color = if ($historySet.ContainsKey($day.ToString("yyyy-MM-dd"))) { $c.Green } else { $c.Surface1 }
         $rect.Fill = New-ColorBrush $color
         $rect.ToolTip = $day.ToString("MM/dd (ddd)")
         $barPanel.Children.Add($rect) | Out-Null
@@ -232,16 +238,23 @@ function New-ProjectCard {
     $btnPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
     $btnPanel.Margin = New-Object System.Windows.Thickness(0, 10, 0, 0)
 
+    # Helper for card buttons to ensure theme consistency
+    $createCardButton = {
+        param($label, $margin)
+        $btn = New-Object System.Windows.Controls.Button
+        $btn.Content = $label
+        $btn.FontSize = 11
+        $btn.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
+        $btn.Margin = $margin
+        $btn.Background = New-ColorBrush $c.Surface1
+        $btn.Foreground = New-ColorBrush $c.Text
+        $btn.BorderThickness = New-Object System.Windows.Thickness(0)
+        $btn.Cursor = [System.Windows.Input.Cursors]::Hand
+        return $btn
+    }
+
     # [Check] button
-    $btnCheck = New-Object System.Windows.Controls.Button
-    $btnCheck.Content = "Check"
-    $btnCheck.FontSize = 11
-    $btnCheck.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
-    $btnCheck.Margin = New-Object System.Windows.Thickness(0, 0, 6, 0)
-    $btnCheck.Background = New-ColorBrush "#45475a"
-    $btnCheck.Foreground = New-ColorBrush "#cdd6f4"
-    $btnCheck.BorderThickness = New-Object System.Windows.Thickness(0)
-    $btnCheck.Cursor = [System.Windows.Input.Cursors]::Hand
+    $btnCheck = &$createCardButton "Check" (New-Object System.Windows.Thickness(0, 0, 6, 0))
     $btnCheck.Tag = @{ ProjName = $localProjName; IsMini = $localIsMini; IsDomain = $localIsDomain }
     $btnCheck.Add_Click({
             param($sender, $e)
@@ -257,15 +270,7 @@ function New-ProjectCard {
     $btnCheck.Add_MouseRightButtonUp({ param($sender, $e) $e.Handled = $true })
 
     # [Edit] button
-    $btnEdit = New-Object System.Windows.Controls.Button
-    $btnEdit.Content = "Edit"
-    $btnEdit.FontSize = 11
-    $btnEdit.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
-    $btnEdit.Margin = New-Object System.Windows.Thickness(0, 0, 0, 0)
-    $btnEdit.Background = New-ColorBrush "#45475a"
-    $btnEdit.Foreground = New-ColorBrush "#cdd6f4"
-    $btnEdit.BorderThickness = New-Object System.Windows.Thickness(0)
-    $btnEdit.Cursor = [System.Windows.Input.Cursors]::Hand
+    $btnEdit = &$createCardButton "Edit" (New-Object System.Windows.Thickness(0, 0, 0, 0))
     $btnEdit.Tag = $exactDisplayName
     $btnEdit.Add_Click({
             param($sender, $e)
@@ -284,15 +289,7 @@ function New-ProjectCard {
     $btnEdit.Add_MouseRightButtonUp({ param($sender, $e) $e.Handled = $true })
 
     # [Term] button
-    $btnTerm = New-Object System.Windows.Controls.Button
-    $btnTerm.Content = "Term"
-    $btnTerm.FontSize = 11
-    $btnTerm.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
-    $btnTerm.Margin = New-Object System.Windows.Thickness(6, 0, 0, 0)
-    $btnTerm.Background = New-ColorBrush "#45475a"
-    $btnTerm.Foreground = New-ColorBrush "#cdd6f4"
-    $btnTerm.BorderThickness = New-Object System.Windows.Thickness(0)
-    $btnTerm.Cursor = [System.Windows.Input.Cursors]::Hand
+    $btnTerm = &$createCardButton "Term" (New-Object System.Windows.Thickness(6, 0, 0, 0))
     $btnTerm.Tag = $localProjPath
     $btnTerm.Add_Click({ param($sender, $e) Open-TerminalAtPath -Path $sender.Tag })
     $btnTerm.Add_MouseRightButtonUp({
@@ -304,13 +301,13 @@ function New-ProjectCard {
             $popup.StaysOpen = $false
             $popup.AllowsTransparency = $true
             $border = New-Object System.Windows.Controls.Border
-            $border.Background = New-ColorBrush "#313244"; $border.BorderBrush = New-ColorBrush "#45475a"; $border.BorderThickness = New-Object System.Windows.Thickness(1); $border.Padding = New-Object System.Windows.Thickness(2)
+            $border.Background = New-ColorBrush $c.Surface0; $border.BorderBrush = New-ColorBrush $c.Surface1; $border.BorderThickness = New-Object System.Windows.Thickness(1); $border.Padding = New-Object System.Windows.Thickness(2)
             $menuStack = New-Object System.Windows.Controls.StackPanel
             foreach ($agentDef in @(@{ Label = "Claude"; Cmd = "claude" }, @{ Label = "Gemini"; Cmd = "gemini" }, @{ Label = "Codex"; Cmd = "codex" })) {
                 $menuItem = New-Object System.Windows.Controls.TextBlock
-                $menuItem.Text = $agentDef.Label; $menuItem.Foreground = New-ColorBrush "#cdd6f4"; $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5); $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
+                $menuItem.Text = $agentDef.Label; $menuItem.Foreground = New-ColorBrush $c.Text; $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5); $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
                 $menuItem.Tag = @{ Path = $termPath; Cmd = $agentDef.Cmd; Popup = $popup }
-                $menuItem.Add_MouseEnter({ $this.Background = New-ColorBrush "#45475a" }); $menuItem.Add_MouseLeave({ $this.Background = New-ColorBrush "#313244" })
+                $menuItem.Add_MouseEnter({ $this.Background = New-ColorBrush $c.Surface1 }); $menuItem.Add_MouseLeave({ $this.Background = New-ColorBrush $c.Surface0 })
                 $menuItem.Add_MouseLeftButtonDown({
                         param($s, $ev)
                         $ev.Handled = $true
@@ -324,15 +321,7 @@ function New-ProjectCard {
         })
 
     # [Dir] button
-    $btnDir = New-Object System.Windows.Controls.Button
-    $btnDir.Content = "Dir"
-    $btnDir.FontSize = 11
-    $btnDir.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
-    $btnDir.Margin = New-Object System.Windows.Thickness(6, 0, 0, 0)
-    $btnDir.Background = New-ColorBrush "#45475a"
-    $btnDir.Foreground = New-ColorBrush "#cdd6f4"
-    $btnDir.BorderThickness = New-Object System.Windows.Thickness(0)
-    $btnDir.Cursor = [System.Windows.Input.Cursors]::Hand
+    $btnDir = &$createCardButton "Dir" (New-Object System.Windows.Thickness(6, 0, 0, 0))
     $btnDir.Tag = $localProjPath
     $btnDir.Add_Click({ param($sender, $e) if (Test-Path $sender.Tag) { Start-Process explorer.exe -ArgumentList $sender.Tag } })
     $btnDir.Add_MouseRightButtonUp({
@@ -358,13 +347,13 @@ function New-ProjectCard {
             $popup.StaysOpen = $false
             $popup.AllowsTransparency = $true
             $border = New-Object System.Windows.Controls.Border
-            $border.Background = New-ColorBrush "#313244"; $border.BorderBrush = New-ColorBrush "#45475a"; $border.BorderThickness = New-Object System.Windows.Thickness(1); $border.Padding = New-Object System.Windows.Thickness(2)
+            $border.Background = New-ColorBrush $c.Surface0; $border.BorderBrush = New-ColorBrush $c.Surface1; $border.BorderThickness = New-Object System.Windows.Thickness(1); $border.Padding = New-Object System.Windows.Thickness(2)
             $menuStack = New-Object System.Windows.Controls.StackPanel
             $actionLabel = if ($data.IsHidden) { "Unhide from Dashboard" } else { "Hide from Dashboard" }
             $menuItem = New-Object System.Windows.Controls.TextBlock
-            $menuItem.Text = $actionLabel; $menuItem.Foreground = New-ColorBrush "#cdd6f4"; $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5); $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
+            $menuItem.Text = $actionLabel; $menuItem.Foreground = New-ColorBrush $c.Text; $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5); $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
             $menuItem.Background = New-ColorBrush "Transparent"  # Ensure clickability
-            $menuItem.Add_MouseEnter({ $this.Background = New-ColorBrush "#45475a" }); $menuItem.Add_MouseLeave({ $this.Background = New-ColorBrush "Transparent" })
+            $menuItem.Add_MouseEnter({ $this.Background = New-ColorBrush $c.Surface1 }); $menuItem.Add_MouseLeave({ $this.Background = New-ColorBrush "Transparent" })
             $menuItem.Add_MouseLeftButtonDown({
                     param($s, $ev)
                     $ev.Handled = $true

@@ -5,6 +5,7 @@ $script:AppState = @{
     WorkspaceRoot   = ""
     ScriptDir       = ""
     PathsConfig     = $null
+    Theme           = "Default"
     Projects        = @()
     HiddenProjects  = @()
     SelectedProject = $null
@@ -69,6 +70,41 @@ function Initialize-AppConfig {
     }
 
     Load-HiddenProjects
+    Load-AppSettings
+}
+
+# ---- App Settings (UI Preferences) ----
+
+function Get-AppSettingsPath {
+    $configDir = Join-Path $script:AppState.WorkspaceRoot "_config"
+    return Join-Path $configDir "settings.json"
+}
+
+function Load-AppSettings {
+    $path = Get-AppSettingsPath
+    if (Test-Path $path) {
+        try {
+            $json   = Get-Content $path -Raw -Encoding UTF8
+            $loaded = $json | ConvertFrom-Json
+            if ($null -ne $loaded.Theme) {
+                $script:AppState.Theme = $loaded.Theme
+            }
+        }
+        catch {
+            # Use defaults
+        }
+    }
+}
+
+function Save-AppSettings {
+    $path = Get-AppSettingsPath
+    $dir  = Split-Path $path
+    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+
+    $settings = @{
+        Theme = $script:AppState.Theme
+    }
+    $settings | ConvertTo-Json | Set-Content $path -Encoding UTF8
 }
 
 # ---- Hidden Projects (Dashboard) ----

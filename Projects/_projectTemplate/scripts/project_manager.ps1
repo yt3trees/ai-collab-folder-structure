@@ -70,7 +70,7 @@ $projectNameList = Get-ProjectNameList   # simple names for dropdowns
 
 # --- Build XAML and create window ---
 try {
-    $xamlString = Build-MainWindowXaml
+    $xamlString = Build-MainWindowXaml -ThemeName $script:AppState.Theme
     [xml]$xaml = $xamlString
 }
 catch {

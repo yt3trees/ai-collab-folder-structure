@@ -6,6 +6,20 @@ function Initialize-TabSettings {
         [string]$ScriptDir
     )
 
+    # --- Theme selection ---
+    $cmbTheme = $Window.FindName("settingsThemeCombo")
+    if ($null -ne $cmbTheme) {
+        $found = $false
+        for ($i = 0; $i -lt $cmbTheme.Items.Count; $i++) {
+            if ($cmbTheme.Items[$i].Content -eq $script:AppState.Theme) {
+                $cmbTheme.SelectedIndex = $i
+                $found = $true
+                break
+            }
+        }
+        if (-not $found) { $cmbTheme.SelectedIndex = 0 }
+    }
+
     # --- Modifier checkboxes ---
     $chkCtrl = $Window.FindName("settingsModCtrl")
     $chkShift = $Window.FindName("settingsModShift")
@@ -33,6 +47,7 @@ function Initialize-TabSettings {
 
     # Save button handler
     $btnSave.Add_Click({
+            $cmbTheme = $Window.FindName("settingsThemeCombo")
             $chkCtrl = $Window.FindName("settingsModCtrl")
             $chkShift = $Window.FindName("settingsModShift")
             $chkAlt = $Window.FindName("settingsModAlt")
@@ -43,6 +58,17 @@ function Initialize-TabSettings {
             $txtOutput = $Window.FindName("txtSettingsOutput")
 
             $txtOutput.Text = ""
+            $restartRequired = $false
+
+            # Handle Theme Save
+            if ($null -ne $cmbTheme) {
+                $selectedTheme = $cmbTheme.SelectedItem.Content
+                if ($selectedTheme -ne $script:AppState.Theme) {
+                    $script:AppState.Theme = $selectedTheme
+                    Save-AppSettings
+                    $restartRequired = $true
+                }
+            }
 
             # Build modifiers string
             $mods = @()
@@ -122,6 +148,10 @@ function Initialize-TabSettings {
                     Unregister-Startup | Out-Null
                     $txtOutput.Text += "`nStartup registration: Disabled"
                 }
+            }
+            
+            if ($restartRequired) {
+                $txtOutput.Text += "`nNote: Theme change will be applied after application restart."
             }
         })
 
