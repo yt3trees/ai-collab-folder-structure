@@ -14,16 +14,6 @@ function Get-FreshnessColor {
     return "#f38ba8"                              # red
 }
 
-function Get-JunctionColor {
-    param([string]$Status)
-    switch ($Status) {
-        "OK" { return "#a6e3a1" }
-        "Missing" { return "#f38ba8" }
-        "Broken" { return "#fab387" }
-        default { return "#6c7086" }
-    }
-}
-
 function New-ColorBrush {
     param([string]$Hex)
     return [System.Windows.Media.SolidColorBrush](
