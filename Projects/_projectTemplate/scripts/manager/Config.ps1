@@ -101,7 +101,8 @@ function Save-HiddenProjects {
         Set-Content $path -Value "[]" -Encoding UTF8
     }
     else {
-        $script:AppState.HiddenProjects | ConvertTo-Json | Set-Content $path -Encoding UTF8
+        # Use -InputObject to prevent unrolling of single-item arrays
+        ConvertTo-Json -InputObject @($script:AppState.HiddenProjects) | Set-Content $path -Encoding UTF8
     }
 }
 

@@ -348,7 +348,7 @@ function New-ProjectCard {
     $stack.Children.Add($btnPanel)    | Out-Null
 
     # Right-click: Hide / Unhide
-    $card.Tag = @{ Info = $Info; IsHidden = $IsHidden; Window = $Window }
+    $card.Tag = @{ Info = $Info; IsHidden = $IsHidden; Window = $Window; ScriptDir = $ScriptDir }
     $card.Add_MouseRightButtonUp({
             param($sender, $e)
             $e.Handled = $true
@@ -363,13 +363,15 @@ function New-ProjectCard {
             $actionLabel = if ($data.IsHidden) { "Unhide from Dashboard" } else { "Hide from Dashboard" }
             $menuItem = New-Object System.Windows.Controls.TextBlock
             $menuItem.Text = $actionLabel; $menuItem.Foreground = New-ColorBrush "#cdd6f4"; $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5); $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
-            $menuItem.Add_MouseEnter({ $this.Background = New-ColorBrush "#45475a" }); $menuItem.Add_MouseLeave({ $this.Background = New-ColorBrush "#313244" })
+            $menuItem.Background = New-ColorBrush "Transparent"  # Ensure clickability
+            $menuItem.Add_MouseEnter({ $this.Background = New-ColorBrush "#45475a" }); $menuItem.Add_MouseLeave({ $this.Background = New-ColorBrush "Transparent" })
             $menuItem.Add_MouseLeftButtonDown({
                     param($s, $ev)
+                    $ev.Handled = $true
                     $popup.IsOpen = $false
                     Set-ProjectHidden -Info $data.Info -Hidden (-not $data.IsHidden)
-                    Update-Dashboard -Window $data.Window -ShowHidden ([bool]($data.Window.FindName("chkShowHidden").IsChecked)) -Force
-                })
+                    Update-Dashboard -Window $data.Window -ShowHidden ([bool]($data.Window.FindName("chkShowHidden").IsChecked)) -Force -ScriptDir $data.ScriptDir
+                }.GetNewClosure())
             $menuStack.Children.Add($menuItem) | Out-Null
             $border.Child = $menuStack; $popup.Child = $border; $popup.IsOpen = $true
         })
@@ -379,8 +381,9 @@ function New-ProjectCard {
 }
 
 function Update-Dashboard {
-    param([System.Windows.Window]$Window, [string]$FilterText = "", [bool]$ShowHidden = $false, [switch]$Force)
+    param([System.Windows.Window]$Window, [string]$FilterText = "", [bool]$ShowHidden = $false, [switch]$Force, [string]$ScriptDir = "")
     $cardsPanel = $Window.FindName("dashboardCards")
+    if ($null -eq $cardsPanel) { return }
     $cardsPanel.Children.Clear()
     $projects = Get-ProjectInfoList -Force:$Force
     $filter = $FilterText.Trim().ToLower()
@@ -388,22 +391,58 @@ function Update-Dashboard {
         $isHidden = Test-ProjectHidden -Info $proj
         if ($isHidden -and -not $ShowHidden) { continue }
         if ($filter -ne "" -and $proj.Name.ToLower() -notlike "*$filter*") { continue }
-        $cardsPanel.Children.Add((New-ProjectCard -Info $proj -Window $Window -IsHidden $isHidden)) | Out-Null
+        $cardsPanel.Children.Add((New-ProjectCard -Info $proj -Window $Window -IsHidden $isHidden -ScriptDir $ScriptDir)) | Out-Null
     }
 }
 
 function Initialize-TabDashboard {
     param([System.Windows.Window]$Window, [string]$ScriptDir)
+    
+    # Initial load
+    Update-Dashboard -Window $Window -Force -ScriptDir $ScriptDir
+    
     $btnDashRefresh = $Window.FindName("btnDashRefresh")
     $txtDashFilter = $Window.FindName("txtDashFilter")
     $chkShowHidden = $Window.FindName("chkShowHidden")
-    Update-Dashboard -Window $Window -Force
-    $btnDashRefresh.Add_Click({ Update-Dashboard -Window $Window -FilterText $txtDashFilter.Text -ShowHidden ([bool]$chkShowHidden.IsChecked) -Force })
-    $txtDashFilter.Add_TextChanged({ Update-Dashboard -Window $Window -FilterText $txtDashFilter.Text -ShowHidden ([bool]$chkShowHidden.IsChecked) })
-    $chkShowHidden.Add_Click({ Update-Dashboard -Window $Window -FilterText $txtDashFilter.Text -ShowHidden ([bool]$chkShowHidden.IsChecked) })
-    $Window.FindName("tabMain").Add_SelectionChanged({
+    
+    if ($null -ne $btnDashRefresh) {
+        $btnDashRefresh.Add_Click({
+            $win = $Window
+            $filter = $win.FindName("txtDashFilter").Text
+            $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
+            Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -Force -ScriptDir $ScriptDir
+        }.GetNewClosure())
+    }
+    
+    if ($null -ne $txtDashFilter) {
+        $txtDashFilter.Add_TextChanged({
+            $win = $Window
+            $filter = $win.FindName("txtDashFilter").Text
+            $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
+            Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -ScriptDir $ScriptDir
+        }.GetNewClosure())
+    }
+    
+    if ($null -ne $chkShowHidden) {
+        $chkShowHidden.Add_Click({
+            $win = $Window
+            $filter = $win.FindName("txtDashFilter").Text
+            $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
+            Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -ScriptDir $ScriptDir
+        }.GetNewClosure())
+    }
+    
+    $tabMain = $Window.FindName("tabMain")
+    if ($null -ne $tabMain) {
+        $tabMain.Add_SelectionChanged({
             param($s, $e)
             if ($e.OriginalSource -ne $s) { return }
-            if ($s.SelectedIndex -eq 0) { Update-Dashboard -Window $Window -FilterText $txtDashFilter.Text -ShowHidden ([bool]$chkShowHidden.IsChecked) }
-        })
+            if ($s.SelectedIndex -eq 0) {
+                $win = $Window
+                $filter = $win.FindName("txtDashFilter").Text
+                $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
+                Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -ScriptDir $ScriptDir
+            }
+        }.GetNewClosure())
+    }
 }
