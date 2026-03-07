@@ -62,6 +62,11 @@ function Get-ProjectParams {
     $isMini = [bool]$MiniChecked
     $isDomain = [bool]$DomainChecked
 
+    # Strip [BOX] suffix (projects discovered from BOX but not yet set up locally)
+    if ($name -match '^(.+)\s+\[BOX\]$') {
+        $name = $Matches[1].Trim()
+    }
+
     # Parse suffixes: [Domain][Mini], [Domain], [Mini]
     if ($name -match '^(.+)\s+\[Domain\]\[Mini\]$') {
         $name = $Matches[1]

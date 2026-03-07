@@ -542,7 +542,7 @@ if ($DryRun) {
 else {
     if (-not (Test-Path $boxAgents)) {
         Write-Host "  AGENTS.md not found on BOX. Creating default file..." -ForegroundColor Cyan
-        $defaultContent = "# Project: $ProjectName`n`nSee _ProjectTemplate/AGENTS.md for full template."
+        $defaultContent = "# Project: $ProjectName`n`nSee _ProjectTemplate/context-compression-layer/templates/AGENTS.md for full template."
         New-Item -Path $boxAgents -ItemType File -Value $defaultContent -Force | Out-Null
         Write-Host "  Created: $boxAgents" -ForegroundColor Green
     }

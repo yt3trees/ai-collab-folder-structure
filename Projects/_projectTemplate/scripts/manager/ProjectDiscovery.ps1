@@ -39,7 +39,70 @@ function Get-ProjectNameList {
         }
     }
 
+    # Append BOX-only projects (exist in BOX but not yet set up locally)
+    $projects += Get-BoxOnlyProjects
+
     return ($projects | Sort-Object)
+}
+
+# Returns projects that exist in Box/Projects/ but are not yet set up locally.
+# Results are formatted as "Name [Domain][Mini] [BOX]" for use in dropdowns.
+function Get-BoxOnlyProjects {
+    $cfg = $script:AppState.PathsConfig
+    if ($null -eq $cfg) { return @() }
+
+    $boxRoot = $cfg.boxProjectsRoot
+    if ([string]::IsNullOrWhiteSpace($boxRoot) -or -not (Test-Path $boxRoot)) { return @() }
+
+    $root = $script:AppState.WorkspaceRoot
+    $result = @()
+
+    # Full-tier projects: Box/Projects/{Name}/
+    $dirs = Get-ChildItem -Path $boxRoot -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notmatch '^[_\.]' }
+    foreach ($d in $dirs) {
+        if (-not (Test-Path (Join-Path $root $d.Name))) {
+            $result += "$($d.Name) [BOX]"
+        }
+    }
+
+    # Mini-tier: Box/Projects/_mini/{Name}/
+    $boxMiniDir = Join-Path $boxRoot "_mini"
+    if (Test-Path $boxMiniDir) {
+        $sDirs = Get-ChildItem -Path $boxMiniDir -Directory -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -notmatch '^[_\.]' }
+        foreach ($d in $sDirs) {
+            if (-not (Test-Path (Join-Path $root "_mini\$($d.Name)"))) {
+                $result += "$($d.Name) [Mini] [BOX]"
+            }
+        }
+    }
+
+    # Domain full-tier: Box/Projects/_domains/{Name}/
+    $boxDomainsDir = Join-Path $boxRoot "_domains"
+    if (Test-Path $boxDomainsDir) {
+        $dDirs = Get-ChildItem -Path $boxDomainsDir -Directory -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -notmatch '^[_\.]' }
+        foreach ($d in $dDirs) {
+            if (-not (Test-Path (Join-Path $root "_domains\$($d.Name)"))) {
+                $result += "$($d.Name) [Domain] [BOX]"
+            }
+        }
+
+        # Domain mini-tier: Box/Projects/_domains/_mini/{Name}/
+        $boxDomainMiniDir = Join-Path $boxDomainsDir "_mini"
+        if (Test-Path $boxDomainMiniDir) {
+            $dmDirs = Get-ChildItem -Path $boxDomainMiniDir -Directory -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -notmatch '^[_\.]' }
+            foreach ($d in $dmDirs) {
+                if (-not (Test-Path (Join-Path $root "_domains\_mini\$($d.Name)"))) {
+                    $result += "$($d.Name) [Domain][Mini] [BOX]"
+                }
+            }
+        }
+    }
+
+    return $result
 }
 
 # Returns array of ProjectInfo hashtables (for dashboard cards)

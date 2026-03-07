@@ -243,13 +243,18 @@ function New-ProjectCard {
         param($label, $margin)
         $btn = New-Object System.Windows.Controls.Button
         $btn.Content = $label
-        $btn.FontSize = 11
-        $btn.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
         $btn.Margin = $margin
-        $btn.Background = New-ColorBrush $c.Surface1
-        $btn.Foreground = New-ColorBrush $c.Text
-        $btn.BorderThickness = New-Object System.Windows.Thickness(0)
         $btn.Cursor = [System.Windows.Input.Cursors]::Hand
+        $cardStyle = $Window.TryFindResource("CardButton")
+        if ($null -ne $cardStyle) {
+            $btn.Style = $cardStyle
+        } else {
+            $btn.FontSize = 11
+            $btn.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
+            $btn.Background = New-ColorBrush $c.Surface1
+            $btn.Foreground = New-ColorBrush $c.Text
+            $btn.BorderThickness = New-Object System.Windows.Thickness(0)
+        }
         return $btn
     }
 
@@ -296,18 +301,20 @@ function New-ProjectCard {
             param($sender, $e)
             $e.Handled = $true
             $termPath = $sender.Tag
+            $tc = Get-ThemeColors -ThemeName $script:AppState.Theme
             $popup = New-Object System.Windows.Controls.Primitives.Popup
             $popup.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Mouse
             $popup.StaysOpen = $false
             $popup.AllowsTransparency = $true
             $border = New-Object System.Windows.Controls.Border
-            $border.Background = New-ColorBrush $c.Surface0; $border.BorderBrush = New-ColorBrush $c.Surface1; $border.BorderThickness = New-Object System.Windows.Thickness(1); $border.Padding = New-Object System.Windows.Thickness(2)
+            $border.Background = New-ColorBrush $tc.Surface0; $border.BorderBrush = New-ColorBrush $tc.Surface1; $border.BorderThickness = New-Object System.Windows.Thickness(1); $border.Padding = New-Object System.Windows.Thickness(2)
             $menuStack = New-Object System.Windows.Controls.StackPanel
             foreach ($agentDef in @(@{ Label = "Claude"; Cmd = "claude" }, @{ Label = "Gemini"; Cmd = "gemini" }, @{ Label = "Codex"; Cmd = "codex" })) {
                 $menuItem = New-Object System.Windows.Controls.TextBlock
-                $menuItem.Text = $agentDef.Label; $menuItem.Foreground = New-ColorBrush $c.Text; $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5); $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
-                $menuItem.Tag = @{ Path = $termPath; Cmd = $agentDef.Cmd; Popup = $popup }
-                $menuItem.Add_MouseEnter({ $this.Background = New-ColorBrush $c.Surface1 }); $menuItem.Add_MouseLeave({ $this.Background = New-ColorBrush $c.Surface0 })
+                $menuItem.Text = $agentDef.Label; $menuItem.Foreground = New-ColorBrush $tc.Text; $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5); $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
+                $menuItem.Tag = @{ Path = $termPath; Cmd = $agentDef.Cmd; Popup = $popup; Colors = $tc }
+                $menuItem.Add_MouseEnter({ $this.Background = New-ColorBrush $this.Tag.Colors.Surface1 })
+                $menuItem.Add_MouseLeave({ $this.Background = New-ColorBrush $this.Tag.Colors.Surface0 })
                 $menuItem.Add_MouseLeftButtonDown({
                         param($s, $ev)
                         $ev.Handled = $true
@@ -342,25 +349,28 @@ function New-ProjectCard {
             param($sender, $e)
             $e.Handled = $true
             $data = $sender.Tag
+            $tc = Get-ThemeColors -ThemeName $script:AppState.Theme
             $popup = New-Object System.Windows.Controls.Primitives.Popup
             $popup.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Mouse
             $popup.StaysOpen = $false
             $popup.AllowsTransparency = $true
             $border = New-Object System.Windows.Controls.Border
-            $border.Background = New-ColorBrush $c.Surface0; $border.BorderBrush = New-ColorBrush $c.Surface1; $border.BorderThickness = New-Object System.Windows.Thickness(1); $border.Padding = New-Object System.Windows.Thickness(2)
+            $border.Background = New-ColorBrush $tc.Surface0; $border.BorderBrush = New-ColorBrush $tc.Surface1; $border.BorderThickness = New-Object System.Windows.Thickness(1); $border.Padding = New-Object System.Windows.Thickness(2)
             $menuStack = New-Object System.Windows.Controls.StackPanel
             $actionLabel = if ($data.IsHidden) { "Unhide from Dashboard" } else { "Hide from Dashboard" }
             $menuItem = New-Object System.Windows.Controls.TextBlock
-            $menuItem.Text = $actionLabel; $menuItem.Foreground = New-ColorBrush $c.Text; $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5); $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
+            $menuItem.Text = $actionLabel; $menuItem.Foreground = New-ColorBrush $tc.Text; $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5); $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
             $menuItem.Background = New-ColorBrush "Transparent"  # Ensure clickability
-            $menuItem.Add_MouseEnter({ $this.Background = New-ColorBrush $c.Surface1 }); $menuItem.Add_MouseLeave({ $this.Background = New-ColorBrush "Transparent" })
+            $menuItem.Tag = @{ CardData = $data; Popup = $popup; Colors = $tc }
+            $menuItem.Add_MouseEnter({ $this.Background = New-ColorBrush $this.Tag.Colors.Surface1 }); $menuItem.Add_MouseLeave({ $this.Background = New-ColorBrush "Transparent" })
             $menuItem.Add_MouseLeftButtonDown({
                     param($s, $ev)
                     $ev.Handled = $true
-                    $popup.IsOpen = $false
-                    Set-ProjectHidden -Info $data.Info -Hidden (-not $data.IsHidden)
-                    Update-Dashboard -Window $data.Window -ShowHidden ([bool]($data.Window.FindName("chkShowHidden").IsChecked)) -Force -ScriptDir $data.ScriptDir
-                }.GetNewClosure())
+                    $d = $s.Tag.CardData
+                    $s.Tag.Popup.IsOpen = $false
+                    Set-ProjectHidden -Info $d.Info -Hidden (-not $d.IsHidden)
+                    Update-Dashboard -Window $d.Window -ShowHidden ([bool]($d.Window.FindName("chkShowHidden").IsChecked)) -Force -ScriptDir $d.ScriptDir
+                })
             $menuStack.Children.Add($menuItem) | Out-Null
             $border.Child = $menuStack; $popup.Child = $border; $popup.IsOpen = $true
         })

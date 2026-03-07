@@ -361,7 +361,7 @@ Write-Host "[AI Instruction Files]" -ForegroundColor Yellow
 $boxAgents = "$boxShared\AGENTS.md"
 if (-not (Test-Path $boxAgents)) {
     Write-Host "  AGENTS.md not found on BOX. Creating from template..." -ForegroundColor Cyan
-    $templateAgentsPath = Join-Path (Split-Path $PSScriptRoot) "AGENTS.md"
+    $templateAgentsPath = Join-Path (Split-Path $PSScriptRoot) "context-compression-layer\templates\AGENTS.md"
     if (Test-Path $templateAgentsPath) {
         $creationDate = (Get-Date).ToString("yyyy-MM-dd")
         $defaultContent = (Get-Content $templateAgentsPath -Raw -Encoding UTF8) `
