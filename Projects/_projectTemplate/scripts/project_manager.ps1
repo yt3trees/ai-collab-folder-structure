@@ -61,6 +61,7 @@ else {
 . "$managerDir\TabConvert.ps1"
 . "$managerDir\TabAsanaSync.ps1"
 . "$managerDir\TabSettings.ps1"
+. "$managerDir\TabTimeline.ps1"
 . "$managerDir\CommandPalette.ps1"
 
 # --- Initialize config and discover projects ---
@@ -138,6 +139,7 @@ $window.Add_PreviewKeyDown({
                 { $_ -eq [System.Windows.Input.Key]::D7 -or $_ -eq [System.Windows.Input.Key]::NumPad7 } { $tabIndex = 6 }
                 { $_ -eq [System.Windows.Input.Key]::D8 -or $_ -eq [System.Windows.Input.Key]::NumPad8 } { $tabIndex = 7 }
                 { $_ -eq [System.Windows.Input.Key]::D9 -or $_ -eq [System.Windows.Input.Key]::NumPad9 } { $tabIndex = 8 }
+                { $_ -eq [System.Windows.Input.Key]::D0 -or $_ -eq [System.Windows.Input.Key]::NumPad0 } { $tabIndex = 9 }
             }
             if ($tabIndex -ge 0 -and $tabIndex -lt $tabMain.Items.Count) {
                 $tabMain.SelectedIndex = $tabIndex
@@ -256,6 +258,7 @@ Initialize-TabContextSetup -Window $window -ScriptDir $scriptDir -ProjectList $p
 Initialize-TabConvert      -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabAsanaSync  -Window $window -ScriptDir $scriptDir
 Initialize-TabSettings     -Window $window -ScriptDir $scriptDir
+Initialize-TabTimeline     -Window $window
 Initialize-CommandPalette  -Window $window
 
 # --- Initialize system tray ---

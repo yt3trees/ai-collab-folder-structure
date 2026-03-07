@@ -28,7 +28,8 @@ function Build-CommandList {
         @{ Index = 5; Label = "Archive" },
         @{ Index = 6; Label = "Convert" },
         @{ Index = 7; Label = "Asana Sync" },
-        @{ Index = 8; Label = "Settings" }
+        @{ Index = 8; Label = "Settings" },
+        @{ Index = 9; Label = "Timeline" }
     )
 
     foreach ($tab in $tabDefs) {
@@ -143,6 +144,28 @@ function Build-CommandList {
                                 $editorCombo.SelectedIndex = -1
                             }
                             $editorCombo.SelectedIndex = $i
+                            break
+                        }
+                    }
+                }.GetNewClosure()
+            }) | Out-Null
+
+        # > timeline ProjectName
+        $commands.Add(@{
+                Label    = "timeline $localName"
+                Category = "project"
+                Display  = "[>]  timeline $displayName"
+                Action   = {
+                    param($w)
+                    $tabMain = $w.FindName("tabMain")
+                    $tabMain.SelectedIndex = 9
+                    $tlCombo = $w.FindName("timelineProjectCombo")
+                    for ($i = 0; $i -lt $tlCombo.Items.Count; $i++) {
+                        if ($tlCombo.Items[$i].ToString() -eq $displayName) {
+                            if ($tlCombo.SelectedIndex -eq $i) {
+                                $tlCombo.SelectedIndex = -1
+                            }
+                            $tlCombo.SelectedIndex = $i
                             break
                         }
                     }

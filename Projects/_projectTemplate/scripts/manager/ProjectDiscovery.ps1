@@ -98,6 +98,39 @@ function Get-ProjectInfoList {
         return ($mdFiles | Measure-Object).Count
     }
 
+    # Helper: collect focus_history snapshot dates
+    function Get-FocusHistoryDates {
+        param([string]$AiContextPath)
+        $histDir = Join-Path $AiContextPath "context\focus_history"
+        if (-not (Test-Path $histDir)) { return @() }
+        $dates = @()
+        Get-ChildItem $histDir -Filter "*.md" -ErrorAction SilentlyContinue |
+        ForEach-Object {
+            if ($_.BaseName -match '^\d{4}-\d{2}-\d{2}$') {
+                $dates += [datetime]::ParseExact($_.BaseName, "yyyy-MM-dd", $null)
+            }
+        }
+        return ($dates | Sort-Object)
+    }
+
+    # Helper: collect decision_log entry dates
+    function Get-DecisionLogDates {
+        param([string]$AiContextPath)
+        $logDir = Join-Path $AiContextPath "context\decision_log"
+        if (-not (Test-Path $logDir)) { return @() }
+        $dates = @()
+        Get-ChildItem $logDir -Filter "*.md" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -ne "TEMPLATE.md" } |
+        ForEach-Object {
+            # Format: YYYY-MM-DD_topic.md
+            if ($_.BaseName -match '^(\d{4}-\d{2}-\d{2})_') {
+                $dateStr = $Matches[1]
+                $dates += [datetime]::ParseExact($dateStr, "yyyy-MM-dd", $null)
+            }
+        }
+        return ($dates | Sort-Object)
+    }
+
     # Process a single project directory
     function New-ProjectInfo {
         param([string]$Name, [string]$Path, [string]$Tier, [string]$Category = "project")
@@ -134,6 +167,10 @@ function Get-ProjectInfoList {
             SummaryAge           = Get-FileAgeDays $summaryFile
             # Decision log count
             DecisionLogCount     = Get-DecisionLogCount $aiCtx
+            # Focus history snapshot dates
+            FocusHistoryDates    = Get-FocusHistoryDates $aiCtx
+            # Decision log dates
+            DecisionLogDates     = Get-DecisionLogDates $aiCtx
         }
         return $info
     }

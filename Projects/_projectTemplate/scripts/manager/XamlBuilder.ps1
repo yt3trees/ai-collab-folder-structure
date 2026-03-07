@@ -4,7 +4,7 @@
 function Build-MainWindowXaml {
     $styles = Get-ThemeResourcesXaml
 
-    # Tab indices: 0=Dashboard, 1=Editor, 2=Setup, 3=AI Context, 4=Check, 5=Archive, 6=Convert, 7=Asana Sync, 8=Settings
+    # Tab indices: 0=Dashboard, 1=Editor, 2=Setup, 3=AI Context, 4=Check, 5=Archive, 6=Convert, 7=Asana Sync, 8=Settings, 9=Timeline
     return @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -522,6 +522,54 @@ $styles
                                      VerticalScrollBarVisibility="Auto" Background="Transparent"
                                      Foreground="#a6e3a1" FontFamily="Consolas" FontSize="12"
                                      BorderThickness="0" Padding="10" AcceptsReturn="True"/>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+                <!-- Tab 9: Timeline -->
+                <TabItem Header="Timeline">
+                    <Grid Margin="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Toolbar -->
+                        <Grid Grid.Row="0" Margin="0,4,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Project: " VerticalAlignment="Center"
+                                       Foreground="#a6adc8" Margin="0,0,4,0" FontSize="12"/>
+                            <ComboBox x:Name="timelineProjectCombo" Grid.Column="1" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="2" Text="Period: " VerticalAlignment="Center"
+                                       Foreground="#a6adc8" Margin="0,0,4,0" FontSize="12"/>
+                            <ComboBox x:Name="timelinePeriodCombo" Grid.Column="3" Width="120">
+                                <ComboBoxItem Content="30 days" IsSelected="True"/>
+                                <ComboBoxItem Content="90 days"/>
+                                <ComboBoxItem Content="All"/>
+                            </ComboBox>
+                        </Grid>
+
+                        <!-- Timeline entries -->
+                        <Border Grid.Row="1" Background="#181825" CornerRadius="4"
+                                BorderBrush="#313244" BorderThickness="1">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel x:Name="timelineEntries" Margin="8"/>
+                            </ScrollViewer>
+                        </Border>
+
+                        <!-- Stats bar -->
+                        <Border Grid.Row="2" Margin="0,8,0,0">
+                            <StackPanel x:Name="timelineStats" Orientation="Horizontal">
+                                <TextBlock x:Name="timelineStatText" Text="" FontSize="11"
+                                           Foreground="#6c7086" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </Border>
                     </Grid>
                 </TabItem>

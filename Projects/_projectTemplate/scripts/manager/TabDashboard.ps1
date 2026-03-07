@@ -181,6 +181,64 @@ function New-ProjectCard {
         $stack.Children.Add($dlBlock) | Out-Null
     }
 
+    # --- Activity bar (30 days) ---
+    $today = (Get-Date).Date
+    $historyDates = @()
+    if ($null -ne $Info.FocusHistoryDates) { $historyDates += $Info.FocusHistoryDates }
+    if ($null -ne $Info.DecisionLogDates) { $historyDates += $Info.DecisionLogDates }
+    
+    $historySet = @{}
+    $historyDates = $historyDates | Sort-Object
+    $totalDates = 0
+    $recent30 = 0
+
+    if ($historyDates.Count -gt 0) {
+        foreach ($d in $historyDates) {
+            $dateStr = $d.Date.ToString("yyyy-MM-dd")
+            if (-not $historySet.ContainsKey($dateStr)) {
+                $historySet[$dateStr] = $true
+                $totalDates++
+                if (($today - $d.Date).TotalDays -lt 30) { $recent30++ }
+            }
+        }
+    }
+
+    # Build label: "Activity: 3/30d (12 total, since 01/15)"
+    $labelText = if ($totalDates -eq 0) {
+        "Activity (30d): --"
+    }
+    else {
+        $oldest = $historyDates[0].ToString("MM/dd")
+        "Activity: ${recent30}/30d ($totalDates total, since $oldest)"
+    }
+
+    $activityLabel = New-Object System.Windows.Controls.TextBlock
+    $activityLabel.Text = $labelText
+    $activityLabel.FontSize = 11
+    $labelColor = if ($recent30 -ge 10) { "#a6e3a1" } elseif ($recent30 -ge 3) { "#89dceb" } elseif ($totalDates -gt 0) { "#89b4fa" } else { "#6c7086" }
+    $activityLabel.Foreground = New-ColorBrush $labelColor
+    $activityLabel.Margin = New-Object System.Windows.Thickness(0, 6, 0, 2)
+    $stack.Children.Add($activityLabel) | Out-Null
+
+    $barPanel = New-Object System.Windows.Controls.StackPanel
+    $barPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    for ($i = 29; $i -ge 0; $i--) {
+        $day = $today.AddDays(-$i)
+        $rect = New-Object System.Windows.Shapes.Rectangle
+        $rect.Width = 7
+        $rect.Height = 12
+        $rect.Margin = New-Object System.Windows.Thickness(0.5)
+        $rect.RadiusX = 1
+        $rect.RadiusY = 1
+        $color = if ($historySet.ContainsKey($day.ToString("yyyy-MM-dd"))) { "#a6e3a1" } else { "#45475a" }
+        $rect.Fill = New-ColorBrush $color
+        $rect.ToolTip = $day.ToString("MM/dd (ddd)")
+        $barPanel.Children.Add($rect) | Out-Null
+    }
+    $stack.Children.Add($barPanel) | Out-Null
+
+
+
     # --- Action buttons ---
     $btnPanel = New-Object System.Windows.Controls.StackPanel
     $btnPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
