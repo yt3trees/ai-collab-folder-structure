@@ -9,57 +9,94 @@ $script:AsanaSyncState = @{
     Restoring  = $false
 }
 
-function Invoke-PythonScriptWithOutput {
+function Invoke-PythonScriptAsync {
     param(
         [string]$ScriptPath,
         [System.Windows.Controls.TextBox]$OutputBox,
-        [System.Windows.Window]$WindowRef
+        [scriptblock]$OnComplete
     )
 
     if ($null -eq $OutputBox) { return }
 
-    try {
-        $OutputBox.AppendText(">>> python $ScriptPath`r`n")
-        $OutputBox.AppendText("---`r`n")
+    $OutputBox.AppendText(">>> python $ScriptPath`r`n---`r`n")
+    $OutputBox.ScrollToEnd()
 
-        # Force UI repaint before blocking
-        if ($null -ne $WindowRef) {
-            $WindowRef.Dispatcher.Invoke(
-                [Action] {},
-                [System.Windows.Threading.DispatcherPriority]::Background
-            )
+    # Synchronized hashtable for sharing results between runspaces
+    # (Start-Job is unusable in WPF: $app.Run() blocks PS job state updates)
+    $syncState = [hashtable]::Synchronized(@{
+        Completed    = $false
+        Stdout       = ''
+        Stderr       = ''
+        ExitCode     = 0
+        ErrorMessage = ''
+    })
+
+    # Dedicated runspace: uses .NET ThreadPool, unaffected by WPF Dispatcher
+    $rs = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspace()
+    $rs.Open()
+    $ps = [System.Management.Automation.PowerShell]::Create()
+    $ps.Runspace = $rs
+    $rs.SessionStateProxy.SetVariable('ScriptPath', $ScriptPath)
+    $rs.SessionStateProxy.SetVariable('syncState', $syncState)
+
+    $ps.AddScript({
+        try {
+            $psi = New-Object System.Diagnostics.ProcessStartInfo
+            $psi.FileName = "python"
+            $psi.Arguments = "`"$ScriptPath`""
+            $psi.RedirectStandardOutput = $true
+            $psi.RedirectStandardError = $true
+            $psi.UseShellExecute = $false
+            $psi.CreateNoWindow = $true
+            $psi.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+            $psi.StandardErrorEncoding = [System.Text.Encoding]::UTF8
+            $psi.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8"
+
+            $proc = [System.Diagnostics.Process]::Start($psi)
+            $syncState.Stdout   = $proc.StandardOutput.ReadToEnd()
+            $syncState.Stderr   = $proc.StandardError.ReadToEnd()
+            $proc.WaitForExit()
+            $syncState.ExitCode = $proc.ExitCode
         }
-
-        $psi = New-Object System.Diagnostics.ProcessStartInfo
-        $psi.FileName = "python"
-        $psi.Arguments = "`"$ScriptPath`""
-        $psi.RedirectStandardOutput = $true
-        $psi.RedirectStandardError = $true
-        $psi.UseShellExecute = $false
-        $psi.CreateNoWindow = $true
-        $psi.StandardOutputEncoding = [System.Text.Encoding]::UTF8
-        $psi.StandardErrorEncoding = [System.Text.Encoding]::UTF8
-        $psi.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8"
-
-        $process = [System.Diagnostics.Process]::Start($psi)
-        $stdout = $process.StandardOutput.ReadToEnd()
-        $stderr = $process.StandardError.ReadToEnd()
-        $process.WaitForExit()
-
-        if ($stdout) { $OutputBox.AppendText($stdout) }
-        if ($stderr) {
-            $OutputBox.AppendText("`r`n[STDERR]`r`n$stderr")
+        catch {
+            $syncState.ErrorMessage = $_.Exception.Message
+            $syncState.ExitCode     = -1
         }
-        $OutputBox.AppendText("`r`n--- Done (exit: $($process.ExitCode)) ---`r`n")
-    }
-    catch {
-        $OutputBox.AppendText("`r`n[ERROR] $($_.Exception.Message)`r`n")
-        $OutputBox.AppendText("$($_.ScriptStackTrace)`r`n")
-        $OutputBox.AppendText("`r`n--- Done (error) ---`r`n")
-    }
-    finally {
-        $OutputBox.ScrollToEnd()
-    }
+        $syncState.Completed = $true
+    }) | Out-Null
+
+    $ps.BeginInvoke() | Out-Null
+
+    # DispatcherTimer polls syncState.Completed (pure .NET flag, no PS job system needed)
+    $pollTimer       = New-Object System.Windows.Threading.DispatcherTimer
+    $pollTimer.Interval = [TimeSpan]::FromMilliseconds(500)
+    $capturedState    = $syncState
+    $capturedOutput   = $OutputBox
+    $capturedOnComplete = $OnComplete
+    $capturedTimer    = $pollTimer
+    $capturedPs       = $ps
+    $capturedRs       = $rs
+
+    $pollTimer.Add_Tick(({
+        if ($capturedState.Completed) {
+            $capturedTimer.Stop()
+            $capturedPs.Dispose()
+            $capturedRs.Dispose()
+
+            if ($capturedState.ErrorMessage) {
+                $capturedOutput.AppendText("`r`n[ERROR] $($capturedState.ErrorMessage)`r`n")
+                $capturedOutput.AppendText("`r`n--- Done (error) ---`r`n")
+            }
+            else {
+                if ($capturedState.Stdout) { $capturedOutput.AppendText($capturedState.Stdout) }
+                if ($capturedState.Stderr) { $capturedOutput.AppendText("`r`n[STDERR]`r`n$($capturedState.Stderr)") }
+                $capturedOutput.AppendText("`r`n--- Done (exit: $($capturedState.ExitCode)) ---`r`n")
+            }
+            $capturedOutput.ScrollToEnd()
+            if ($null -ne $capturedOnComplete) { & $capturedOnComplete }
+        }
+    }).GetNewClosure())
+    $pollTimer.Start()
 }
 
 # --- Config persistence (paths.json "asanaSync" property) ---
@@ -191,18 +228,23 @@ function Invoke-AsanaSync {
         )
     }
 
-    Invoke-PythonScriptWithOutput -ScriptPath $script:AsanaSyncState.SyncScript `
-        -OutputBox $txtOutput -WindowRef $w
+    Invoke-PythonScriptAsync -ScriptPath $script:AsanaSyncState.SyncScript `
+        -OutputBox $txtOutput `
+        -OnComplete {
+            $w = $script:AsanaSyncState.Window
+            $lblLastSync = $w.FindName("lblAsanaLastSync")
+            $btnSync = $w.FindName("btnAsanaSync")
 
-    $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $script:AsanaSyncState.LastSync = $now
-    if ($null -ne $lblLastSync) { $lblLastSync.Text = $now }
+            $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+            $script:AsanaSyncState.LastSync = $now
+            if ($null -ne $lblLastSync) { $lblLastSync.Text = $now }
 
-    $script:AsanaSyncState.Running = $false
-    if ($null -ne $btnSync) {
-        $btnSync.IsEnabled = $true
-        $btnSync.Content = "Run Sync Now"
-    }
+            $script:AsanaSyncState.Running = $false
+            if ($null -ne $btnSync) {
+                $btnSync.IsEnabled = $true
+                $btnSync.Content = "Run Sync Now"
+            }
+        }
 }
 
 # --- Tab initialization ---
