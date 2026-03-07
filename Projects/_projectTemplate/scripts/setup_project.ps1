@@ -165,32 +165,6 @@ foreach ($folder in $obsidianFolders) {
     }
 }
 
-# Copy templates to ai-context/ (only if not already present)
-Write-Host ""
-Write-Host "[AI Context Templates]" -ForegroundColor Yellow
-$templateDir = Join-Path $PSScriptRoot "..\context-compression-layer\templates"
-$obsAiCtx = "$obsidianProject\ai-context"
-$templateFiles = @(
-    @{ Src = "project_summary.md"; Dst = "$obsAiCtx\project_summary.md" }
-    @{ Src = "current_focus.md"; Dst = "$obsAiCtx\current_focus.md" }
-    @{ Src = "file_map.md"; Dst = "$obsAiCtx\file_map.md" }
-    @{ Src = "tensions.md"; Dst = "$obsAiCtx\tensions.md" }
-)
-foreach ($t in $templateFiles) {
-    $src = Join-Path $templateDir $t.Src
-    $dst = $t.Dst
-    if (Test-Path $dst) {
-        Write-Host "  Exists: $([System.IO.Path]::GetFileName($dst))" -ForegroundColor Gray
-    }
-    elseif (Test-Path $src) {
-        Copy-Item -Path $src -Destination $dst -Force
-        Write-Host "  Created: $([System.IO.Path]::GetFileName($dst))" -ForegroundColor Green
-    }
-    else {
-        Write-Host "  Skip (template not found): $($t.Src)" -ForegroundColor DarkGray
-    }
-}
-
 # Create Project Index File
 $indexFile = "$obsidianProject\00_$ProjectName-Index.md"
 if (-not (Test-Path $indexFile)) {
