@@ -98,11 +98,32 @@ catch {
 # --- Tray mode: hide from taskbar ---
 $window.ShowInTaskbar = $false
 
-# --- Escape key: hide to tray ---
+# --- Keyboard shortcuts ---
 $window.Add_PreviewKeyDown({
         if ($_.Key -eq [System.Windows.Input.Key]::Escape) {
             $window.Hide()
             $_.Handled = $true
+        }
+
+        # Ctrl+Number: switch tabs (1=Dashboard, 2=Editor, ..., 9=Settings)
+        if ([System.Windows.Input.Keyboard]::Modifiers -eq [System.Windows.Input.ModifierKeys]::Control) {
+            $tabMain = $window.FindName("tabMain")
+            $tabIndex = -1
+            switch ($_.Key) {
+                { $_ -eq [System.Windows.Input.Key]::D1 -or $_ -eq [System.Windows.Input.Key]::NumPad1 } { $tabIndex = 0 }
+                { $_ -eq [System.Windows.Input.Key]::D2 -or $_ -eq [System.Windows.Input.Key]::NumPad2 } { $tabIndex = 1 }
+                { $_ -eq [System.Windows.Input.Key]::D3 -or $_ -eq [System.Windows.Input.Key]::NumPad3 } { $tabIndex = 2 }
+                { $_ -eq [System.Windows.Input.Key]::D4 -or $_ -eq [System.Windows.Input.Key]::NumPad4 } { $tabIndex = 3 }
+                { $_ -eq [System.Windows.Input.Key]::D5 -or $_ -eq [System.Windows.Input.Key]::NumPad5 } { $tabIndex = 4 }
+                { $_ -eq [System.Windows.Input.Key]::D6 -or $_ -eq [System.Windows.Input.Key]::NumPad6 } { $tabIndex = 5 }
+                { $_ -eq [System.Windows.Input.Key]::D7 -or $_ -eq [System.Windows.Input.Key]::NumPad7 } { $tabIndex = 6 }
+                { $_ -eq [System.Windows.Input.Key]::D8 -or $_ -eq [System.Windows.Input.Key]::NumPad8 } { $tabIndex = 7 }
+                { $_ -eq [System.Windows.Input.Key]::D9 -or $_ -eq [System.Windows.Input.Key]::NumPad9 } { $tabIndex = 8 }
+            }
+            if ($tabIndex -ge 0 -and $tabIndex -lt $tabMain.Items.Count) {
+                $tabMain.SelectedIndex = $tabIndex
+                $_.Handled = $true
+            }
         }
     })
 
