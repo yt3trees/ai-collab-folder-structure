@@ -72,7 +72,7 @@ def discover_projects(box_projects_root):
         if not os.path.isdir(scan_dir):
             continue
         for entry in os.scandir(scan_dir):
-            if not entry.is_dir() or entry.name.startswith('_'):
+            if not entry.is_dir() or (entry.name.startswith('_') and entry.name != '_INHOUSE'):
                 continue
             config_file = os.path.join(entry.path, 'asana_config.json')
             asana_config = {}
@@ -509,7 +509,10 @@ def sync_from_asana():
 
     for proj_data in all_project_data:
         proj = proj_data['project']
-        obsidian_path = os.path.join(obsidian_vault_root, proj['relative_path'])
+        if proj['name'] == '_INHOUSE':
+            obsidian_path = os.path.join(obsidian_vault_root, '_INHOUSE')
+        else:
+            obsidian_path = os.path.join(obsidian_vault_root, proj['relative_path'])
         output_path = os.path.join(obsidian_path, 'asana-tasks.md')
 
         has_tasks = bool(proj_data['sections'] or proj_data['personal_tasks'])

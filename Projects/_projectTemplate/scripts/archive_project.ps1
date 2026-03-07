@@ -15,20 +15,20 @@
 #   - Confirmation prompt before execution (unless -Force)
 
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [string]$ProjectName,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$Mini,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet("project", "domain")]
     [string]$Category = "project",
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$DryRun,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$Force
 )
 
@@ -51,7 +51,8 @@ $categoryPrefix = if ($Category -eq "domain") { "_domains\" } else { "" }
 if ($Mini) {
     $projectSubPath = "${categoryPrefix}_mini\$ProjectName"
     $archiveSubPath = "_archive\${categoryPrefix}_mini\$ProjectName"
-} else {
+}
+else {
     $projectSubPath = "${categoryPrefix}$ProjectName"
     $archiveSubPath = "_archive\${categoryPrefix}$ProjectName"
 }
@@ -59,12 +60,22 @@ if ($Mini) {
 # Source paths
 $docRoot = Join-Path $localProjectsRoot $projectSubPath
 $boxShared = Join-Path $boxProjectsRoot $projectSubPath
-$obsidianProject = Join-Path $obsidianVaultRoot "Projects\$projectSubPath"
+if ($ProjectName -eq "_INHOUSE") {
+    $obsidianProject = Join-Path $obsidianVaultRoot "_INHOUSE"
+}
+else {
+    $obsidianProject = Join-Path $obsidianVaultRoot "Projects\$projectSubPath"
+}
 
 # Archive destinations
 $localArchive = Join-Path $localProjectsRoot $archiveSubPath
 $boxArchive = Join-Path $boxProjectsRoot $archiveSubPath
-$obsidianArchive = Join-Path $obsidianVaultRoot "Projects\$archiveSubPath"
+if ($ProjectName -eq "_INHOUSE") {
+    $obsidianArchive = Join-Path $obsidianVaultRoot "_archive\_INHOUSE"
+}
+else {
+    $obsidianArchive = Join-Path $obsidianVaultRoot "Projects\$archiveSubPath"
+}
 
 # Obsidian index file
 $projectsIndex = Join-Path $obsidianVaultRoot "Projects\00_Projects-Index.md"
@@ -83,21 +94,24 @@ $projectExists = $false
 if (Test-Path $docRoot) {
     Write-Host "  Layer 1 (Local):    $docRoot" -ForegroundColor Gray
     $projectExists = $true
-} else {
+}
+else {
     Write-Host "  Layer 1 (Local):    Not found" -ForegroundColor DarkYellow
 }
 
 if (Test-Path $boxShared) {
     Write-Host "  Layer 3 (BOX):      $boxShared" -ForegroundColor Gray
     $projectExists = $true
-} else {
+}
+else {
     Write-Host "  Layer 3 (BOX):      Not found" -ForegroundColor DarkYellow
 }
 
 if (Test-Path $obsidianProject) {
     Write-Host "  Layer 2 (Obsidian): $obsidianProject" -ForegroundColor Gray
     $projectExists = $true
-} else {
+}
+else {
     Write-Host "  Layer 2 (Obsidian): Not found" -ForegroundColor DarkYellow
 }
 
@@ -156,12 +170,14 @@ function Remove-JunctionSafely {
     if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
         if ($DryRun) {
             Write-Host "  [DRY] Would remove junction: $Label" -ForegroundColor Magenta
-        } else {
+        }
+        else {
             # Remove junction without deleting target contents
             $item.Delete()
             Write-Host "  Removed junction: $Label" -ForegroundColor Green
         }
-    } else {
+    }
+    else {
         Write-Warning "  $Label is not a junction/symlink (regular folder/file). Skipping removal."
         Write-Host "    Path: $Path" -ForegroundColor DarkYellow
     }
@@ -179,11 +195,13 @@ function Remove-SymlinkSafely {
     if ($item.LinkType -eq 'SymbolicLink') {
         if ($DryRun) {
             Write-Host "  [DRY] Would remove symlink: $Label" -ForegroundColor Magenta
-        } else {
+        }
+        else {
             Remove-Item $Path -Force
             Write-Host "  Removed symlink: $Label" -ForegroundColor Green
         }
-    } else {
+    }
+    else {
         Write-Host "  $Label is a regular file (will be moved)" -ForegroundColor Gray
     }
 }
@@ -201,7 +219,8 @@ function Move-ToArchive {
     if (-not (Test-Path $archiveParent)) {
         if ($DryRun) {
             Write-Host "  [DRY] Would create: $archiveParent" -ForegroundColor Magenta
-        } else {
+        }
+        else {
             New-Item -Path $archiveParent -ItemType Directory -Force | Out-Null
         }
     }
@@ -210,7 +229,8 @@ function Move-ToArchive {
         Write-Host "  [DRY] Would move: $Label" -ForegroundColor Magenta
         Write-Host "    From: $Source" -ForegroundColor DarkGray
         Write-Host "    To:   $Destination" -ForegroundColor DarkGray
-    } else {
+    }
+    else {
         Move-Item -Path $Source -Destination $Destination -Force
         Write-Host "  Moved: $Label" -ForegroundColor Green
     }
@@ -260,17 +280,20 @@ Write-Host "[Step 5] Update Projects Index" -ForegroundColor Yellow
 if (Test-Path $projectsIndex) {
     if ($DryRun) {
         Write-Host "  [DRY] Would check 00_Projects-Index.md for references to $ProjectName" -ForegroundColor Magenta
-    } else {
+    }
+    else {
         $indexContent = Get-Content $projectsIndex -Raw -Encoding UTF8
         if ($indexContent -match $ProjectName) {
             Write-Host "  Found references to '$ProjectName' in 00_Projects-Index.md" -ForegroundColor DarkYellow
             Write-Host "  Please manually move the entry to an 'Archived' section" -ForegroundColor DarkYellow
             Write-Host "  File: $projectsIndex" -ForegroundColor DarkGray
-        } else {
+        }
+        else {
             Write-Host "  No references found in 00_Projects-Index.md" -ForegroundColor Gray
         }
     }
-} else {
+}
+else {
     Write-Host "  Skip: 00_Projects-Index.md not found" -ForegroundColor Gray
 }
 
@@ -279,7 +302,8 @@ Write-Host ""
 if ($DryRun) {
     Write-Host "=== DRY RUN Complete ===" -ForegroundColor Magenta
     Write-Host "No changes were made. Remove -DryRun to execute." -ForegroundColor Magenta
-} else {
+}
+else {
     Write-Host "=== Archive Complete ===" -ForegroundColor Green
     Write-Host ""
     Write-Host "Archived locations:" -ForegroundColor Cyan

@@ -39,7 +39,12 @@ else {
 
 $docRoot = Join-Path $localProjectsRoot $projectSubPath
 $boxShared = Join-Path $boxProjectsRoot $projectSubPath
-$obsidianProject = Join-Path $obsidianVaultRoot "Projects\$projectSubPath"
+if ($ProjectName -eq "_INHOUSE") {
+    $obsidianProject = Join-Path $obsidianVaultRoot "_INHOUSE"
+}
+else {
+    $obsidianProject = Join-Path $obsidianVaultRoot "Projects\$projectSubPath"
+}
 
 Write-Host "=== $ProjectName Health Check ===" -ForegroundColor Cyan
 if ($Mini) {

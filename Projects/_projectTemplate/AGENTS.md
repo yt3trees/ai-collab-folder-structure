@@ -7,6 +7,15 @@
 ## IMPORTANT: Context Path
 ALL AGENTS MUST READ CONTEXT FROM: `_ai-context/context/`
 The directory `_ai-context/` contains junctions to BOX/Obsidian.
+
+## Key Paths
+
+- Obsidian Vault: `%USERPROFILE%\Box\Obsidian-Vault\`
+- BOX Projects: `%USERPROFILE%\Box\Projects\`
+- ProjectA: `ProjectA\development\source\`
+- **Note:** The `_INHOUSE` project maps its Obsidian Vault direct to `Box\Obsidian-Vault\_INHOUSE`, circumventing the `Projects\` subdirectory.
+- Global AI Knowledge: `{obsidianVaultRoot}\ai-context\` (paths.json 参照)
+
 - Do not use: `.claude/context` (Legacy path, deprecated)
 - Use: `_ai-context/context/` for AI context files (project_summary, current_focus, decision_log)
 - Use: `_ai-context/obsidian_notes/` for accessing full Obsidian Knowledge Layer

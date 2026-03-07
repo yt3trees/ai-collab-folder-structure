@@ -83,6 +83,7 @@ _domains/<project>/
 - Obsidian Vault: `%USERPROFILE%\Box\Obsidian-Vault\`
 - BOX Projects: `%USERPROFILE%\Box\Projects\`
 - ProjectA: `ProjectA\development\source\`
+- **Note:** The `_INHOUSE` project maps its Obsidian Vault direct to `Box\Obsidian-Vault\_INHOUSE`, circumventing the `Projects\` subdirectory.
 - Global AI Knowledge: `{obsidianVaultRoot}\ai-context\` (paths.json 参照)
   - tech-patterns/: Cross-project reusable code/design patterns
   - lessons-learned/: Failures and insights (tagged by project)

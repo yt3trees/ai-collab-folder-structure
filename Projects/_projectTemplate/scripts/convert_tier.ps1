@@ -56,8 +56,15 @@ $srcLocal = Join-Path $localProjectsRoot $srcSubPath
 $dstLocal = Join-Path $localProjectsRoot $dstSubPath
 $srcBox = Join-Path $boxProjectsRoot $srcSubPath
 $dstBox = Join-Path $boxProjectsRoot $dstSubPath
-$srcObsidian = Join-Path $obsidianVaultRoot "Projects\$srcSubPath"
-$dstObsidian = Join-Path $obsidianVaultRoot "Projects\$dstSubPath"
+if ($ProjectName -eq "_INHOUSE") {
+    # _INHOUSE should map directly to vault root, but we include tier-subpath for completeness even if unlikely
+    $srcObsidian = Join-Path $obsidianVaultRoot $srcSubPath
+    $dstObsidian = Join-Path $obsidianVaultRoot $dstSubPath
+}
+else {
+    $srcObsidian = Join-Path $obsidianVaultRoot "Projects\$srcSubPath"
+    $dstObsidian = Join-Path $obsidianVaultRoot "Projects\$dstSubPath"
+}
 
 # === Header ===
 Write-Host ""
