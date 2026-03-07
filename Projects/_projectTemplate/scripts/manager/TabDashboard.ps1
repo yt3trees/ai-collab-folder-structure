@@ -275,6 +275,7 @@ function New-ProjectCard {
             $checkMiniBox = $Window.FindName("checkMini")
             $checkMiniBox.IsChecked = $data.IsMini
         })
+    $btnCheck.Add_MouseRightButtonUp({ param($sender, $e) $e.Handled = $true })
 
     # [Edit] button
     $btnEdit = New-Object System.Windows.Controls.Button
@@ -301,6 +302,7 @@ function New-ProjectCard {
                 }
             }
         })
+    $btnEdit.Add_MouseRightButtonUp({ param($sender, $e) $e.Handled = $true })
 
     # [Term] button
     $btnTerm = New-Object System.Windows.Controls.Button
@@ -314,6 +316,33 @@ function New-ProjectCard {
     $btnTerm.Cursor = [System.Windows.Input.Cursors]::Hand
     $btnTerm.Tag = $localProjPath
     $btnTerm.Add_Click({ param($sender, $e) Open-TerminalAtPath -Path $sender.Tag })
+    $btnTerm.Add_MouseRightButtonUp({
+            param($sender, $e)
+            $e.Handled = $true
+            $termPath = $sender.Tag
+            $popup = New-Object System.Windows.Controls.Primitives.Popup
+            $popup.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Mouse
+            $popup.StaysOpen = $false
+            $popup.AllowsTransparency = $true
+            $border = New-Object System.Windows.Controls.Border
+            $border.Background = New-ColorBrush "#313244"; $border.BorderBrush = New-ColorBrush "#45475a"; $border.BorderThickness = New-Object System.Windows.Thickness(1); $border.Padding = New-Object System.Windows.Thickness(2)
+            $menuStack = New-Object System.Windows.Controls.StackPanel
+            foreach ($agentDef in @(@{ Label = "Claude"; Cmd = "claude" }, @{ Label = "Gemini"; Cmd = "gemini" }, @{ Label = "Codex"; Cmd = "codex" })) {
+                $menuItem = New-Object System.Windows.Controls.TextBlock
+                $menuItem.Text = $agentDef.Label; $menuItem.Foreground = New-ColorBrush "#cdd6f4"; $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5); $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
+                $menuItem.Tag = @{ Path = $termPath; Cmd = $agentDef.Cmd; Popup = $popup }
+                $menuItem.Add_MouseEnter({ $this.Background = New-ColorBrush "#45475a" }); $menuItem.Add_MouseLeave({ $this.Background = New-ColorBrush "#313244" })
+                $menuItem.Add_MouseLeftButtonDown({
+                        param($s, $ev)
+                        $ev.Handled = $true
+                        $d = $s.Tag
+                        $d.Popup.IsOpen = $false
+                        Open-AgentAtPath -Path $d.Path -Agent $d.Cmd
+                    })
+                $menuStack.Children.Add($menuItem) | Out-Null
+            }
+            $border.Child = $menuStack; $popup.Child = $border; $popup.IsOpen = $true
+        })
 
     # [Dir] button
     $btnDir = New-Object System.Windows.Controls.Button
@@ -327,6 +356,11 @@ function New-ProjectCard {
     $btnDir.Cursor = [System.Windows.Input.Cursors]::Hand
     $btnDir.Tag = $localProjPath
     $btnDir.Add_Click({ param($sender, $e) if (Test-Path $sender.Tag) { Start-Process explorer.exe -ArgumentList $sender.Tag } })
+    $btnDir.Add_MouseRightButtonUp({
+            param($sender, $e)
+            $e.Handled = $true
+            if (Test-Path $sender.Tag) { Start-Process code -ArgumentList "`"$($sender.Tag)`"" }
+        })
 
     $btnPanel.Children.Add($btnCheck) | Out-Null
     $btnPanel.Children.Add($btnEdit)  | Out-Null
