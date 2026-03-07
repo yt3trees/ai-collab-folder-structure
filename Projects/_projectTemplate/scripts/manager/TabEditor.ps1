@@ -275,7 +275,7 @@ function New-AvalonEditEditor {
                     "#cba6f7" = $c.Blue
                     "#f5c2e7" = $c.Mauve
                     "#a6e3a1" = $c.Green
-                    "#9399b2" = $c.Overlay1
+                    "#9399b2" = $c.Subtext0  # Comment / BlockQuote
                     "#74c7ec" = $c.Sapphire
                     "#94e2d5" = $c.Teal
                     "#f9e2af" = $c.Yellow

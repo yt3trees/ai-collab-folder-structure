@@ -13,6 +13,7 @@
   <Color name="ListMarker"     foreground="#f9e2af" />
   <Color name="HorizontalRule" foreground="#6c7086" />
   <Color name="LineBreak"      background="#313244" />
+  <Color name="Comment"        foreground="#9399b2" />
 
   <RuleSet ignoreCase="true">
     <Rule color="Heading">
@@ -66,6 +67,11 @@
     <Span color="BlockQuote" multiline="true">
       <Begin>^&gt;</Begin>
       <End>^(?!&gt;)</End>
+    </Span>
+
+    <Span color="Comment" multiline="true">
+      <Begin>&lt;!--</Begin>
+      <End>--&gt;</End>
     </Span>
 
     <Rule color="Image">

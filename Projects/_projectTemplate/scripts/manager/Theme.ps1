@@ -22,8 +22,8 @@ function Get-ThemeResourcesXaml {
             Overlay0  = "#6e7681"; Overlay1 = "#8b949e"; Overlay2 = "#b1bac4"
             Blue      = "#58a6ff"; Lavender = "#a5d6ff"; Sapphire = "#388bfd"; Sky = "#79c0ff"
             Mauve     = "#58a6ff"; Pink = "#ff7b72"; Flamingo = "#ffa198"; Rosewater = "#ff7b72"
-            Red       = "#f85149"; Peach = "#ffa657"; Yellow = "#d29922"; Green = "#3fb950"
-            Teal      = "#39d353"; Maroon = "#f85149"
+            Red       = "#f85149"; Peach = "#ffa657"; Yellow = "#e3b341"; Green = "#7ee787"
+            Teal      = "#7ee787"; Maroon = "#f85149"
         }
     }
 
@@ -647,8 +647,8 @@ function Get-ThemeColors {
             Overlay0  = "#6e7681"; Overlay1 = "#8b949e"; Overlay2 = "#b1bac4"
             Blue      = "#58a6ff"; Lavender = "#a5d6ff"; Sapphire = "#388bfd"; Sky = "#79c0ff"
             Mauve     = "#58a6ff"; Pink = "#ff7b72"; Flamingo = "#ffa198"; Rosewater = "#ff7b72"
-            Red       = "#f85149"; Peach = "#ffa657"; Yellow = "#d29922"; Green = "#3fb950"
-            Teal      = "#39d353"; Maroon = "#f85149"
+            Red       = "#f85149"; Peach = "#ffa657"; Yellow = "#e3b341"; Green = "#7ee787"
+            Teal      = "#7ee787"; Maroon = "#f85149"
         }
     }
     
