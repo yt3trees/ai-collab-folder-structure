@@ -14,6 +14,7 @@ function Get-ProjectAIFiles {
     $candidates = @(
         @{ Label = "current_focus.md"; Path = Join-Path $aiCtxContent "current_focus.md" }
         @{ Label = "project_summary.md"; Path = Join-Path $aiCtxContent "project_summary.md" }
+        @{ Label = "tensions.md"; Path = Join-Path $aiCtxContent "tensions.md" }
         @{ Label = "file_map.md"; Path = Join-Path $aiCtxContent "file_map.md" }
         @{ Label = "AGENTS.md"; Path = Join-Path $projPath "AGENTS.md" }
         @{ Label = "CLAUDE.md"; Path = Join-Path $projPath "CLAUDE.md" }
@@ -64,6 +65,7 @@ function Get-WorkspaceAIFiles {
     $candidates = @(
         "active_projects.md"
         "current_focus.md"
+        "tensions.md"
         "workspace_summary.md"
     )
 

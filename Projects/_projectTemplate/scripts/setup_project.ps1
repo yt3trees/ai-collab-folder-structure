@@ -174,6 +174,7 @@ $templateFiles = @(
     @{ Src = "project_summary.md"; Dst = "$obsAiCtx\project_summary.md" }
     @{ Src = "current_focus.md"; Dst = "$obsAiCtx\current_focus.md" }
     @{ Src = "file_map.md"; Dst = "$obsAiCtx\file_map.md" }
+    @{ Src = "tensions.md"; Dst = "$obsAiCtx\tensions.md" }
 )
 foreach ($t in $templateFiles) {
     $src = Join-Path $templateDir $t.Src

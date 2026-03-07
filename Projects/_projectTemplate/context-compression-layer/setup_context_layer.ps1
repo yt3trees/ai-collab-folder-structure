@@ -67,6 +67,7 @@ function Setup-Workspace {
     Copy-IfNotExists (Join-Path $TemplateDir "workspace_summary.md") (Join-Path $ctx "workspace_summary.md")
     Copy-IfNotExists (Join-Path $TemplateDir "current_focus.md") (Join-Path $ctx "current_focus.md")
     Copy-IfNotExists (Join-Path $TemplateDir "active_projects.md") (Join-Path $ctx "active_projects.md")
+    Copy-IfNotExists (Join-Path $TemplateDir "tensions.md") (Join-Path $ctx "tensions.md")
 
     # Global AI Context (Obsidian Vault)
     $globalAiCtx = Join-Path $obsidianVaultRoot "ai-context"

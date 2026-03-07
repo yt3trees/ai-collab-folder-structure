@@ -15,10 +15,10 @@
 
 1. `_ai-context/context/current_focus.md` を読む（目安 ~500 tokens）
 2. `_ai-context/context/project_summary.md` を読む（目安 ~300 tokens）
-3. `_ai-context/context/tensions.md` を読む（未解決課題の把握）
+3. `_ai-context/context/tensions.md` を読む（未解決課題・技術的制約の把握）
 4. `_ai-context/obsidian_notes/asana-tasks.md` があれば読む（Asana タスク状況の把握）
 5. `file_map.md`・`obsidian_notes/` の他ファイルはオンデマンドのみ
-6. 未完了事項を1〜2行でサマリー提示する
+6. 未完了事項を1〜2行でサマリー提示する（Tensionがあればそれも踏まえる）
 7. 更新が3日以上前なら進捗を1回確認する
 8. ユーザーの指示を待つ
 
@@ -32,9 +32,10 @@
 | Notify | tensions.md・decision_log (低影響) | 1行報告後に実行 |
 | Confirm | project_summary.md・decision_log (高影響) | 確認を取る |
 
-#### 未解決課題
-トレードオフ・懸念を検出 → 「⚠️ tensions.md に記録しますか？ → {要約}」
-解決時は削除を提案し decision_log への昇格を促す。最大2回/セッション。
+#### 未解決課題 (Tensions)
+- `tensions.md` に記載された制約やトレードオフに反する提案をしない（もし提案が必要ならその Tension に言及する）。
+- トレードオフ・懸念を検出 → 「⚠️ tensions.md に記録しますか？ → {要約}」
+- 解決時は削除を提案し decision_log への昇格を促す。最大2回/セッション。
 
 #### 意思決定
 アーキテクチャ・技術選定の決定を検出 → 「💡 Decision Logに記録しますか？ → {要約}」
