@@ -6,9 +6,9 @@
 function Get-ProjectAIFiles {
     param([hashtable]$ProjectInfo)
 
-    $aiCtx        = $ProjectInfo.AiContextPath
+    $aiCtx = $ProjectInfo.AiContextPath
     $aiCtxContent = Join-Path $aiCtx "context"
-    $projPath     = $ProjectInfo.Path
+    $projPath = $ProjectInfo.Path
     $files = [System.Collections.Generic.List[hashtable]]::new()
 
     $candidates = @(
@@ -480,7 +480,7 @@ function Initialize-TabEditor {
             foreach ($agentDef in @(
                     @{ Label = "Claude"; Cmd = "claude" },
                     @{ Label = "Gemini"; Cmd = "gemini" },
-                    @{ Label = "Codex";  Cmd = "codex"  }
+                    @{ Label = "Codex"; Cmd = "codex" }
                 )) {
                 $menuItem = New-Object System.Windows.Controls.TextBlock
                 $menuItem.Text = $agentDef.Label

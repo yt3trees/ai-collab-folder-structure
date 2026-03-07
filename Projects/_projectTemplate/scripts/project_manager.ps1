@@ -61,6 +61,7 @@ else {
 . "$managerDir\TabConvert.ps1"
 . "$managerDir\TabAsanaSync.ps1"
 . "$managerDir\TabSettings.ps1"
+. "$managerDir\CommandPalette.ps1"
 
 # --- Initialize config and discover projects ---
 Initialize-AppConfig -ScriptDir $scriptDir
@@ -100,8 +101,26 @@ $window.ShowInTaskbar = $false
 
 # --- Keyboard shortcuts ---
 $window.Add_PreviewKeyDown({
+        # Escape: close palette first, then hide window
         if ($_.Key -eq [System.Windows.Input.Key]::Escape) {
-            $window.Hide()
+            if (Test-CommandPaletteVisible) {
+                Hide-CommandPalette
+            }
+            else {
+                $window.Hide()
+            }
+            $_.Handled = $true
+        }
+
+        # Ctrl+K: toggle command palette
+        if ([System.Windows.Input.Keyboard]::Modifiers -eq [System.Windows.Input.ModifierKeys]::Control -and
+            $_.Key -eq [System.Windows.Input.Key]::K) {
+            if (Test-CommandPaletteVisible) {
+                Hide-CommandPalette
+            }
+            else {
+                Show-CommandPalette
+            }
             $_.Handled = $true
         }
 
@@ -237,6 +256,7 @@ Initialize-TabContextSetup -Window $window -ScriptDir $scriptDir -ProjectList $p
 Initialize-TabConvert      -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabAsanaSync  -Window $window -ScriptDir $scriptDir
 Initialize-TabSettings     -Window $window -ScriptDir $scriptDir
+Initialize-CommandPalette  -Window $window
 
 # --- Initialize system tray ---
 Initialize-TrayIcon -Window $window

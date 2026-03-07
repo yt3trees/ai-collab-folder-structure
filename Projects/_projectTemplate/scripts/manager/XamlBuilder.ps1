@@ -528,6 +528,32 @@ $styles
 
             </TabControl>
 
+            <!-- ===== Command Palette Overlay ===== -->
+            <Border x:Name="cmdPaletteOverlay" Grid.Row="1"
+                    Background="#CC1e1e2e" Visibility="Collapsed"
+                    Panel.ZIndex="100">
+                <Border Background="#313244" BorderBrush="#cba6f7" BorderThickness="1"
+                        CornerRadius="8" Padding="0"
+                        VerticalAlignment="Top" MaxWidth="600" MaxHeight="500"
+                        HorizontalAlignment="Center" Margin="0,40,0,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBox x:Name="cmdPaletteInput" Grid.Row="0"
+                                 FontSize="16" Padding="12,10"
+                                 Background="#1e1e2e" Foreground="#cdd6f4"
+                                 BorderThickness="0,0,0,1" BorderBrush="#45475a"
+                                 CaretBrush="#cdd6f4"/>
+                        <ListBox x:Name="cmdPaletteList" Grid.Row="1"
+                                 Background="Transparent" BorderThickness="0"
+                                 Foreground="#cdd6f4" MaxHeight="400"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                    </Grid>
+                </Border>
+            </Border>
+
             <!-- ===== Status Bar ===== -->
             <Border Grid.Row="2" Background="#181825" BorderBrush="#45475a" BorderThickness="0,1,0,0">
                 <Grid Margin="12,0">
