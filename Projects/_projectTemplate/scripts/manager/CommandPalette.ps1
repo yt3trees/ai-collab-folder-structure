@@ -22,14 +22,14 @@ function Build-CommandList {
     $tabDefs = @(
         @{ Index = 0; Label = "Dashboard" },
         @{ Index = 1; Label = "Editor" },
-        @{ Index = 2; Label = "Setup" },
-        @{ Index = 3; Label = "AI Context" },
-        @{ Index = 4; Label = "Check" },
-        @{ Index = 5; Label = "Archive" },
-        @{ Index = 6; Label = "Convert" },
-        @{ Index = 7; Label = "Asana Sync" },
-        @{ Index = 8; Label = "Settings" },
-        @{ Index = 9; Label = "Timeline" }
+        @{ Index = 2; Label = "Timeline" },
+        @{ Index = 3; Label = "Setup" },
+        @{ Index = 4; Label = "AI Context" },
+        @{ Index = 5; Label = "Check" },
+        @{ Index = 6; Label = "Archive" },
+        @{ Index = 7; Label = "Convert" },
+        @{ Index = 8; Label = "Asana Sync" },
+        @{ Index = 9; Label = "Settings" }
     )
 
     foreach ($tab in $tabDefs) {
@@ -74,7 +74,7 @@ function Build-CommandList {
                 Action   = {
                     param($w)
                     $tabMain = $w.FindName("tabMain")
-                    $tabMain.SelectedIndex = 4
+                    $tabMain.SelectedIndex = 5
                     $combo = $w.FindName("checkProjectCombo")
                     $combo.Text = $displayName
                     $w.FindName("checkMini").IsChecked = $localIsMini
@@ -158,7 +158,7 @@ function Build-CommandList {
                 Action   = {
                     param($w)
                     $tabMain = $w.FindName("tabMain")
-                    $tabMain.SelectedIndex = 9
+                    $tabMain.SelectedIndex = 2
                     $tlCombo = $w.FindName("timelineProjectCombo")
                     for ($i = 0; $i -lt $tlCombo.Items.Count; $i++) {
                         if ($tlCombo.Items[$i].ToString() -eq $displayName) {

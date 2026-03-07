@@ -11,7 +11,7 @@
 # 2. Timeline Tab Display:
 #    - Both sources are merged chronologically into a single timeline.
 #    - Focus History shows a preview of the "## 今やってること" (Now doing) section.
-#    - Decision Log shows the topic with a "⭐ [Decision Log]" prefix.
+#    - Decision Log shows the topic with a "[Decision]" prefix.
 #    - Periods with no activity are indicated with a "-- N days gap --" block.
 #    - Clicking any entry opens the corresponding markdown file in the Editor tab.
 #    - The bottom status bar shows the total number of entries, the number of 
@@ -71,6 +71,7 @@ function New-TimelineEntry {
         [datetime]$Date,
         [string]$Preview,
         [string]$FilePath,
+        [string]$ProjectName,
         [System.Windows.Window]$Window
     )
 
@@ -89,14 +90,15 @@ function New-TimelineEntry {
 
     $grid = New-Object System.Windows.Controls.Grid
     $col0 = New-Object System.Windows.Controls.ColumnDefinition
-    $col0.Width = [System.Windows.GridLength]::new(100)
+    $col0.Width = [System.Windows.GridLength]::new(110)
     $col1 = New-Object System.Windows.Controls.ColumnDefinition
     $col1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
     $grid.ColumnDefinitions.Add($col0) | Out-Null
     $grid.ColumnDefinitions.Add($col1) | Out-Null
 
+    $dayOfWeek = $Date.ToString("ddd")
     $dateBlock = New-Object System.Windows.Controls.TextBlock
-    $dateBlock.Text = $Date.ToString("yyyy-MM-dd")
+    $dateBlock.Text = "$($Date.ToString('yyyy-MM-dd')) $dayOfWeek"
     $dateBlock.FontSize = 12
     $dateBlock.FontWeight = [System.Windows.FontWeights]::SemiBold
     $dateBlock.Foreground = [System.Windows.Media.SolidColorBrush](
@@ -104,9 +106,6 @@ function New-TimelineEntry {
     )
     $dateBlock.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     [System.Windows.Controls.Grid]::SetColumn($dateBlock, 0)
-
-    $dayOfWeek = $Date.ToString("ddd")
-    $dateBlock.Text = "$($Date.ToString('yyyy-MM-dd')) $dayOfWeek"
 
     $previewBlock = New-Object System.Windows.Controls.TextBlock
     $previewBlock.Text = if ([string]::IsNullOrEmpty($Preview)) { "(no preview)" } else { $Preview }
@@ -136,19 +135,31 @@ function New-TimelineEntry {
         })
 
     # Click: open in Editor tab
-    $localFilePath = $FilePath
-    $border.Tag = @{ FilePath = $localFilePath; Window = $Window }
+    $border.Tag = @{ FilePath = $FilePath; ProjectName = $ProjectName; Window = $Window }
     $border.Add_MouseLeftButtonDown({
             param($s, $e)
             $data = $s.Tag
             $w = $data.Window
             $fp = $data.FilePath
+            $pn = $data.ProjectName
 
-            # Switch to Editor tab
+            # 1. Switch to Editor tab
             $tabMain = $w.FindName("tabMain")
             $tabMain.SelectedIndex = 1
 
-            # Open the file
+            # 2. Sync project combo in Editor tab (this triggers tree population)
+            $editorProjectCombo = $w.FindName("editorProjectCombo")
+            if ($null -ne $editorProjectCombo -and $null -ne $pn) {
+                # Find matching item in combo
+                foreach ($item in $editorProjectCombo.Items) {
+                    if ($item.ToString() -eq $pn) {
+                        $editorProjectCombo.SelectedItem = $item
+                        break
+                    }
+                }
+            }
+
+            # 3. Open the specific file (after project switch logic runs)
             Open-FileInEditor -FilePath $fp -Window $w
             $e.Handled = $true
         })
@@ -265,13 +276,13 @@ function Update-TimelineView {
         }
 
         if ($entry.Type -eq "Focus") {
-            $preview = Get-FocusPreview -FilePath $entry.Path
+            $preview = "[Focus] " + (Get-FocusPreview -FilePath $entry.Path)
         }
         else {
-            $preview = "⭐ [Decision Log] $($entry.Topic)"
+            $preview = "[Decision] $($entry.Topic)"
         }
         
-        $timelineEntry = New-TimelineEntry -Date $entry.Date -Preview $preview -FilePath $entry.Path -Window $Window
+        $timelineEntry = New-TimelineEntry -Date $entry.Date -Preview $preview -FilePath $entry.Path -ProjectName $ProjectInfo.Name -Window $Window
         $entriesPanel.Children.Add($timelineEntry) | Out-Null
 
         $prevDate = $entry.Date
@@ -323,7 +334,8 @@ function Initialize-TabTimeline {
     # Project selection changed
     $projectCombo.Add_SelectionChanged({
             $combo = $Window.FindName("timelineProjectCombo")
-            $comboText = if ($null -ne $combo.SelectedItem) { $combo.SelectedItem.ToString() } else { "" }
+            if ($null -eq $combo.SelectedItem) { return }
+            $comboText = $combo.SelectedItem.ToString()
             if ([string]::IsNullOrWhiteSpace($comboText)) { return }
 
             $proj = Get-SelectedEditorProject -ComboText $comboText
@@ -337,7 +349,8 @@ function Initialize-TabTimeline {
     # Period selection changed
     $periodCombo.Add_SelectionChanged({
             $combo = $Window.FindName("timelineProjectCombo")
-            $comboText = if ($null -ne $combo.SelectedItem) { $combo.SelectedItem.ToString() } else { "" }
+            if ($null -eq $combo.SelectedItem) { return }
+            $comboText = $combo.SelectedItem.ToString()
             if ([string]::IsNullOrWhiteSpace($comboText)) { return }
 
             $proj = Get-SelectedEditorProject -ComboText $comboText
@@ -346,5 +359,28 @@ function Initialize-TabTimeline {
             $pCombo = $Window.FindName("timelinePeriodCombo")
             $days = Get-SelectedDaysBack -Combo $pCombo
             Update-TimelineView -Window $Window -ProjectInfo $proj -DaysBack $days
+        })
+
+    # Refresh timeline when the Timeline tab becomes active
+    $tabMain = $Window.FindName("tabMain")
+    $tabMain.Add_SelectionChanged({
+            param($sender, $e)
+            # Only respond to the TabControl itself, not bubbling events from ComboBoxes
+            if ($e.OriginalSource -ne $sender) { return }
+
+            $tab = $sender
+            if ($tab.SelectedIndex -eq 2) { # Timeline tab
+                $combo = $Window.FindName("timelineProjectCombo")
+                if ($null -eq $combo.SelectedItem) { return }
+                $comboText = $combo.SelectedItem.ToString()
+                if ([string]::IsNullOrWhiteSpace($comboText)) { return }
+
+                $proj = Get-SelectedEditorProject -ComboText $comboText
+                if ($null -eq $proj) { return }
+
+                $pCombo = $Window.FindName("timelinePeriodCombo")
+                $days = Get-SelectedDaysBack -Combo $pCombo
+                Update-TimelineView -Window $Window -ProjectInfo $proj -DaysBack $days
+            }
         })
 }

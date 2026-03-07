@@ -84,6 +84,12 @@ function New-ProjectCard {
 
     $stack = New-Object System.Windows.Controls.StackPanel
 
+    # Store project info in variables for the closures
+    $localProjName = $Info.Name
+    $localIsMini = ($Info.Tier -eq "mini")
+    $localIsDomain = ($Info.Category -eq "domain")
+    $localProjPath = $Info.Path
+
     # --- Title row ---
     $titleRow = New-Object System.Windows.Controls.StackPanel
     $titleRow.Orientation = [System.Windows.Controls.Orientation]::Horizontal
@@ -121,15 +127,7 @@ function New-ProjectCard {
     $stack.Children.Add($titleRow) | Out-Null
 
     # --- Focus freshness ---
-    $focusText = if ($null -eq $Info.FocusAge) {
-        "Focus: --"
-    }
-    elseif ($Info.FocusAge -eq 0) {
-        "Focus: today"
-    }
-    else {
-        "Focus: $($Info.FocusAge)d ago"
-    }
+    $focusText = if ($null -eq $Info.FocusAge) { "Focus: --" } elseif ($Info.FocusAge -eq 0) { "Focus: today" } else { "Focus: $($Info.FocusAge)d ago" }
     $focusBlock = New-Object System.Windows.Controls.TextBlock
     $focusBlock.Text = $focusText
     $focusBlock.FontSize = 12
@@ -138,15 +136,7 @@ function New-ProjectCard {
     $stack.Children.Add($focusBlock) | Out-Null
 
     # --- Summary freshness ---
-    $summText = if ($null -eq $Info.SummaryAge) {
-        "Summary: --"
-    }
-    elseif ($Info.SummaryAge -eq 0) {
-        "Summary: today"
-    }
-    else {
-        "Summary: $($Info.SummaryAge)d ago"
-    }
+    $summText = if ($null -eq $Info.SummaryAge) { "Summary: --" } elseif ($Info.SummaryAge -eq 0) { "Summary: today" } else { "Summary: $($Info.SummaryAge)d ago" }
     $summBlock = New-Object System.Windows.Controls.TextBlock
     $summBlock.Text = $summText
     $summBlock.FontSize = 12
@@ -155,15 +145,9 @@ function New-ProjectCard {
     $stack.Children.Add($summBlock) | Out-Null
 
     # --- Junction status ---
-    $junctionColor = if ($Info.JunctionShared -eq "OK" -and $Info.JunctionObsidian -eq "OK" -and $Info.JunctionContext -eq "OK") {
-        "#a6e3a1"
-    }
-    elseif ($Info.JunctionShared -eq "Missing" -or $Info.JunctionObsidian -eq "Missing" -or $Info.JunctionContext -eq "Missing") {
-        "#f38ba8"
-    }
-    else {
-        "#fab387"
-    }
+    $junctionColor = if ($Info.JunctionShared -eq "OK" -and $Info.JunctionObsidian -eq "OK" -and $Info.JunctionContext -eq "OK") { "#a6e3a1" }
+    elseif ($Info.JunctionShared -eq "Missing" -or $Info.JunctionObsidian -eq "Missing" -or $Info.JunctionContext -eq "Missing") { "#f38ba8" }
+    else { "#fab387" }
     $junctionBlock = New-Object System.Windows.Controls.TextBlock
     $junctionBlock.Text = "Junctions: $($Info.JunctionShared) / $($Info.JunctionObsidian) / $($Info.JunctionContext)"
     $junctionBlock.FontSize = 11
@@ -203,14 +187,23 @@ function New-ProjectCard {
         }
     }
 
-    # Build label: "Activity: 3/30d (12 total, since 01/15)"
-    $labelText = if ($totalDates -eq 0) {
-        "Activity (30d): --"
-    }
-    else {
+    $labelText = if ($totalDates -eq 0) { "Activity (30d): --" } else {
         $oldest = $historyDates[0].ToString("MM/dd")
         "Activity: ${recent30}/30d ($totalDates total, since $oldest)"
     }
+
+    # Build activity group (Label + Bar) - Clickable to jump to Timeline
+    $activityGroup = New-Object System.Windows.Controls.StackPanel
+    $activityGroup.Background = New-ColorBrush "Transparent"
+    $activityGroup.Cursor = [System.Windows.Input.Cursors]::Hand
+    $activityGroup.ToolTip = "Click to view full timeline"
+    
+    # Pre-calculate the exact display name used in dropdowns
+    $exactDisplayName = $localProjName
+    if ($localIsDomain -and $localIsMini) { $exactDisplayName += " [Domain][Mini]" }
+    elseif ($localIsDomain) { $exactDisplayName += " [Domain]" }
+    elseif ($localIsMini) { $exactDisplayName += " [Mini]" }
+    $activityGroup.Tag = $exactDisplayName
 
     $activityLabel = New-Object System.Windows.Controls.TextBlock
     $activityLabel.Text = $labelText
@@ -218,7 +211,7 @@ function New-ProjectCard {
     $labelColor = if ($recent30 -ge 10) { "#a6e3a1" } elseif ($recent30 -ge 3) { "#89dceb" } elseif ($totalDates -gt 0) { "#89b4fa" } else { "#6c7086" }
     $activityLabel.Foreground = New-ColorBrush $labelColor
     $activityLabel.Margin = New-Object System.Windows.Thickness(0, 6, 0, 2)
-    $stack.Children.Add($activityLabel) | Out-Null
+    $activityGroup.Children.Add($activityLabel) | Out-Null
 
     $barPanel = New-Object System.Windows.Controls.StackPanel
     $barPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
@@ -235,20 +228,30 @@ function New-ProjectCard {
         $rect.ToolTip = $day.ToString("MM/dd (ddd)")
         $barPanel.Children.Add($rect) | Out-Null
     }
-    $stack.Children.Add($barPanel) | Out-Null
+    $activityGroup.Children.Add($barPanel) | Out-Null
 
+    $activityGroup.Add_MouseLeftButtonUp({
+            param($sender, $e)
+            $targetName = $sender.Tag
+            $tabMain = $Window.FindName("tabMain")
+            $timelineCombo = $Window.FindName("timelineProjectCombo")
 
+            for ($i = 0; $i -lt $timelineCombo.Items.Count; $i++) {
+                if ($timelineCombo.Items[$i].ToString() -eq $targetName) {
+                    if ($timelineCombo.SelectedIndex -eq $i) { $timelineCombo.SelectedIndex = -1 }
+                    $timelineCombo.SelectedIndex = $i
+                    break
+                }
+            }
+            $tabMain.SelectedIndex = 2
+            $e.Handled = $true
+        })
+    $stack.Children.Add($activityGroup) | Out-Null
 
     # --- Action buttons ---
     $btnPanel = New-Object System.Windows.Controls.StackPanel
     $btnPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
     $btnPanel.Margin = New-Object System.Windows.Thickness(0, 10, 0, 0)
-
-    # Store project info in variables for the closures
-    $localProjName = $Info.Name
-    $localIsMini = ($Info.Tier -eq "mini")
-    $localIsDomain = ($Info.Category -eq "domain")
-    $localProjPath = $Info.Path
 
     # [Check] button
     $btnCheck = New-Object System.Windows.Controls.Button
@@ -260,24 +263,15 @@ function New-ProjectCard {
     $btnCheck.Foreground = New-ColorBrush "#cdd6f4"
     $btnCheck.BorderThickness = New-Object System.Windows.Thickness(0)
     $btnCheck.Cursor = [System.Windows.Input.Cursors]::Hand
-    # Store data in Tag property
     $btnCheck.Tag = @{ ProjName = $localProjName; IsMini = $localIsMini; IsDomain = $localIsDomain }
-
     $btnCheck.Add_Click({
             param($sender, $e)
             $data = $sender.Tag
-
             $tabMain = $Window.FindName("tabMain")
-            $tabMain.SelectedIndex = 4  # Check tab
-
+            $tabMain.SelectedIndex = 5
             $checkCombo = $Window.FindName("checkProjectCombo")
-            # Build display name with appropriate suffix
-            $suffix = if ($data.IsDomain -and $data.IsMini) { " [Domain][Mini]" }
-            elseif ($data.IsDomain) { " [Domain]" }
-            elseif ($data.IsMini) { " [Mini]" }
-            else { "" }
+            $suffix = if ($data.IsDomain -and $data.IsMini) { " [Domain][Mini]" } elseif ($data.IsDomain) { " [Domain]" } elseif ($data.IsMini) { " [Mini]" } else { "" }
             $checkCombo.Text = "$($data.ProjName)$suffix"
-
             $checkMiniBox = $Window.FindName("checkMini")
             $checkMiniBox.IsChecked = $data.IsMini
         })
@@ -292,31 +286,16 @@ function New-ProjectCard {
     $btnEdit.Foreground = New-ColorBrush "#cdd6f4"
     $btnEdit.BorderThickness = New-Object System.Windows.Thickness(0)
     $btnEdit.Cursor = [System.Windows.Input.Cursors]::Hand
-    # Store data in Tag property
-    $btnEdit.Tag = @{ ProjName = $localProjName; IsMini = $localIsMini; IsDomain = $localIsDomain }
-
+    $btnEdit.Tag = $exactDisplayName
     $btnEdit.Add_Click({
             param($sender, $e)
-            $data = $sender.Tag
-
+            $target = $sender.Tag
             $tabMain = $Window.FindName("tabMain")
-            $tabMain.SelectedIndex = 1  # Editor tab
-
+            $tabMain.SelectedIndex = 1
             $editorCombo = $Window.FindName("editorProjectCombo")
-            # Build display name matching the combo format
-            $suffix = if ($data.IsDomain -and $data.IsMini) { " [Domain][Mini]" }
-            elseif ($data.IsDomain) { " [Domain]" }
-            elseif ($data.IsMini) { " [Mini]" }
-            else { "" }
-            $displayName = "$($data.ProjName)$suffix"
-            
             for ($i = 0; $i -lt $editorCombo.Items.Count; $i++) {
-                $itemText = $editorCombo.Items[$i].ToString()
-                if ($itemText -eq $displayName) {
-                    # Force re-selection to trigger handler (and auto-open file)
-                    if ($editorCombo.SelectedIndex -eq $i) {
-                        $editorCombo.SelectedIndex = -1
-                    }
+                if ($editorCombo.Items[$i].ToString() -eq $target) {
+                    if ($editorCombo.SelectedIndex -eq $i) { $editorCombo.SelectedIndex = -1 }
                     $editorCombo.SelectedIndex = $i
                     break
                 }
@@ -334,69 +313,9 @@ function New-ProjectCard {
     $btnTerm.BorderThickness = New-Object System.Windows.Thickness(0)
     $btnTerm.Cursor = [System.Windows.Input.Cursors]::Hand
     $btnTerm.Tag = $localProjPath
+    $btnTerm.Add_Click({ param($sender, $e) Open-TerminalAtPath -Path $sender.Tag })
 
-    $btnTerm.Add_Click({
-            param($sender, $e)
-            Open-TerminalAtPath -Path $sender.Tag
-        })
-
-    # Right-click: custom popup menu (avoids default MenuItem icon column)
-    $btnTerm.Add_MouseRightButtonUp({
-            param($sender, $e)
-            $e.Handled = $true
-            $termPath = $sender.Tag
-
-            if ($null -ne $script:currentTermPopup) {
-                $script:currentTermPopup.IsOpen = $false
-                $script:currentTermPopup = $null
-            }
-
-            $popup = New-Object System.Windows.Controls.Primitives.Popup
-            $popup.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Mouse
-            $popup.PlacementTarget = $sender
-            $popup.StaysOpen = $false
-            $popup.AllowsTransparency = $true
-
-            $border = New-Object System.Windows.Controls.Border
-            $border.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244"))
-            $border.BorderBrush = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#45475a"))
-            $border.BorderThickness = New-Object System.Windows.Thickness(1)
-            $border.Padding = New-Object System.Windows.Thickness(2)
-
-            $menuStack = New-Object System.Windows.Controls.StackPanel
-
-            foreach ($agentDef in @(
-                    @{ Label = "Claude"; Cmd = "claude" },
-                    @{ Label = "Gemini"; Cmd = "gemini" },
-                    @{ Label = "Codex"; Cmd = "codex" }
-                )) {
-                $menuItem = New-Object System.Windows.Controls.TextBlock
-                $menuItem.Text = $agentDef.Label
-                $menuItem.Foreground = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#cdd6f4"))
-                $menuItem.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244"))
-                $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5)
-                $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
-                $menuItem.Tag = @{ Path = $termPath; Cmd = $agentDef.Cmd; Popup = $popup }
-                $menuItem.Add_MouseEnter({ $this.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#45475a")) })
-                $menuItem.Add_MouseLeave({ $this.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244")) })
-                $menuItem.Add_MouseLeftButtonDown({
-                        param($sender, $e)
-                        $e.Handled = $true
-                        $d = $sender.Tag
-                        $d.Popup.IsOpen = $false
-                        $script:currentTermPopup = $null
-                        Open-AgentAtPath -Path $d.Path -Agent $d.Cmd
-                    })
-                $menuStack.Children.Add($menuItem) | Out-Null
-            }
-
-            $border.Child = $menuStack
-            $popup.Child = $border
-            $script:currentTermPopup = $popup
-            $popup.IsOpen = $true
-        })
-
-    # [Dir] button - open project folder in Explorer
+    # [Dir] button
     $btnDir = New-Object System.Windows.Controls.Button
     $btnDir.Content = "Dir"
     $btnDir.FontSize = 11
@@ -407,14 +326,7 @@ function New-ProjectCard {
     $btnDir.BorderThickness = New-Object System.Windows.Thickness(0)
     $btnDir.Cursor = [System.Windows.Input.Cursors]::Hand
     $btnDir.Tag = $localProjPath
-
-    $btnDir.Add_Click({
-            param($sender, $e)
-            $path = $sender.Tag
-            if (Test-Path $path) {
-                Start-Process explorer.exe -ArgumentList $path
-            }
-        })
+    $btnDir.Add_Click({ param($sender, $e) if (Test-Path $sender.Tag) { Start-Process explorer.exe -ArgumentList $sender.Tag } })
 
     $btnPanel.Children.Add($btnCheck) | Out-Null
     $btnPanel.Children.Add($btnEdit)  | Out-Null
@@ -423,149 +335,62 @@ function New-ProjectCard {
     $stack.Children.Add($btnPanel)    | Out-Null
 
     # Right-click: Hide / Unhide
-    $localIsHidden = $IsHidden
-    $localInfoRef = $Info
-    $card.Tag = @{ Info = $localInfoRef; IsHidden = $localIsHidden; Window = $Window }
-
+    $card.Tag = @{ Info = $Info; IsHidden = $IsHidden; Window = $Window }
     $card.Add_MouseRightButtonUp({
             param($sender, $e)
             $e.Handled = $true
             $data = $sender.Tag
-
-            if ($null -ne $script:currentTermPopup) {
-                $script:currentTermPopup.IsOpen = $false
-                $script:currentTermPopup = $null
-            }
-
             $popup = New-Object System.Windows.Controls.Primitives.Popup
             $popup.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Mouse
-            $popup.PlacementTarget = $sender
             $popup.StaysOpen = $false
             $popup.AllowsTransparency = $true
-
             $border = New-Object System.Windows.Controls.Border
-            $border.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244"))
-            $border.BorderBrush = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#45475a"))
-            $border.BorderThickness = New-Object System.Windows.Thickness(1)
-            $border.Padding = New-Object System.Windows.Thickness(2)
-
+            $border.Background = New-ColorBrush "#313244"; $border.BorderBrush = New-ColorBrush "#45475a"; $border.BorderThickness = New-Object System.Windows.Thickness(1); $border.Padding = New-Object System.Windows.Thickness(2)
             $menuStack = New-Object System.Windows.Controls.StackPanel
-
             $actionLabel = if ($data.IsHidden) { "Unhide from Dashboard" } else { "Hide from Dashboard" }
             $menuItem = New-Object System.Windows.Controls.TextBlock
-            $menuItem.Text = $actionLabel
-            $menuItem.Foreground = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#cdd6f4"))
-            $menuItem.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244"))
-            $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5)
-            $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
-            $menuItem.Tag = @{ Info = $data.Info; IsHidden = $data.IsHidden; Popup = $popup; Window = $data.Window }
-            $menuItem.Add_MouseEnter({ $this.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#45475a")) })
-            $menuItem.Add_MouseLeave({ $this.Background = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#313244")) })
+            $menuItem.Text = $actionLabel; $menuItem.Foreground = New-ColorBrush "#cdd6f4"; $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5); $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
+            $menuItem.Add_MouseEnter({ $this.Background = New-ColorBrush "#45475a" }); $menuItem.Add_MouseLeave({ $this.Background = New-ColorBrush "#313244" })
             $menuItem.Add_MouseLeftButtonDown({
-                    param($sender, $e)
-                    $e.Handled = $true
-                    $d = $sender.Tag
-                    $d.Popup.IsOpen = $false
-                    $script:currentTermPopup = $null
-                    Set-ProjectHidden -Info $d.Info -Hidden (-not $d.IsHidden)
-                    $chk = $d.Window.FindName("chkShowHidden")
-                    $filter = $d.Window.FindName("txtDashFilter")
-                    Update-Dashboard -Window $d.Window -FilterText $filter.Text -ShowHidden ([bool]$chk.IsChecked) -Force
+                    param($s, $ev)
+                    $popup.IsOpen = $false
+                    Set-ProjectHidden -Info $data.Info -Hidden (-not $data.IsHidden)
+                    Update-Dashboard -Window $data.Window -ShowHidden ([bool]($data.Window.FindName("chkShowHidden").IsChecked)) -Force
                 })
-
             $menuStack.Children.Add($menuItem) | Out-Null
-            $border.Child = $menuStack
-            $popup.Child = $border
-            $script:currentTermPopup = $popup
-            $popup.IsOpen = $true
+            $border.Child = $menuStack; $popup.Child = $border; $popup.IsOpen = $true
         })
 
     $card.Child = $stack
     return $card
 }
 
-# ---- Refresh the dashboard ----
-
 function Update-Dashboard {
-    param(
-        [System.Windows.Window]$Window,
-        [string]$FilterText = "",
-        [bool]$ShowHidden = $false,
-        [switch]$Force
-    )
-
+    param([System.Windows.Window]$Window, [string]$FilterText = "", [bool]$ShowHidden = $false, [switch]$Force)
     $cardsPanel = $Window.FindName("dashboardCards")
     $cardsPanel.Children.Clear()
-
     $projects = Get-ProjectInfoList -Force:$Force
-
     $filter = $FilterText.Trim().ToLower()
-
     foreach ($proj in $projects) {
         $isHidden = Test-ProjectHidden -Info $proj
         if ($isHidden -and -not $ShowHidden) { continue }
         if ($filter -ne "" -and $proj.Name.ToLower() -notlike "*$filter*") { continue }
-
-        $card = New-ProjectCard -Info $proj -Window $Window -IsHidden $isHidden
-        $cardsPanel.Children.Add($card) | Out-Null
-    }
-
-    if ($cardsPanel.Children.Count -eq 0) {
-        $emptyBlock = New-Object System.Windows.Controls.TextBlock
-        $emptyBlock.Text = "No projects found."
-        $emptyBlock.Foreground = [System.Windows.Media.SolidColorBrush](
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#6c7086")
-        )
-        $emptyBlock.FontSize = 13
-        $emptyBlock.Margin = New-Object System.Windows.Thickness(8)
-        $cardsPanel.Children.Add($emptyBlock) | Out-Null
+        $cardsPanel.Children.Add((New-ProjectCard -Info $proj -Window $Window -IsHidden $isHidden)) | Out-Null
     }
 }
 
-# ---- Initialize ----
-
 function Initialize-TabDashboard {
-    param(
-        [System.Windows.Window]$Window,
-        [string]$ScriptDir
-    )
-
+    param([System.Windows.Window]$Window, [string]$ScriptDir)
     $btnDashRefresh = $Window.FindName("btnDashRefresh")
     $txtDashFilter = $Window.FindName("txtDashFilter")
     $chkShowHidden = $Window.FindName("chkShowHidden")
-    $tabMain = $Window.FindName("tabMain")
-
-    # Initial load
     Update-Dashboard -Window $Window -Force
-
-    # Refresh button
-    $btnDashRefresh.Add_Click({
-            $filter = $Window.FindName("txtDashFilter")
-            $chk = $Window.FindName("chkShowHidden")
-            Update-Dashboard -Window $Window -FilterText $filter.Text -ShowHidden ([bool]$chk.IsChecked) -Force
-        })
-
-    # Live filter
-    $txtDashFilter.Add_TextChanged({
-            $filter = $Window.FindName("txtDashFilter")
-            $chk = $Window.FindName("chkShowHidden")
-            Update-Dashboard -Window $Window -FilterText $filter.Text -ShowHidden ([bool]$chk.IsChecked)
-        })
-
-    # Show Hidden checkbox
-    $chkShowHidden.Add_Click({
-            $filter = $Window.FindName("txtDashFilter")
-            $chk = $Window.FindName("chkShowHidden")
-            Update-Dashboard -Window $Window -FilterText $filter.Text -ShowHidden ([bool]$chk.IsChecked)
-        })
-
-    # Reload dashboard when switching back to the Dashboard tab
-    $tabMain.Add_SelectionChanged({
-            $tab = $Window.FindName("tabMain")
-            if ($tab.SelectedIndex -eq 0) {
-                $filter = $Window.FindName("txtDashFilter")
-                $chk = $Window.FindName("chkShowHidden")
-                Update-Dashboard -Window $Window -FilterText $filter.Text -ShowHidden ([bool]$chk.IsChecked)
-            }
+    $btnDashRefresh.Add_Click({ Update-Dashboard -Window $Window -FilterText $txtDashFilter.Text -ShowHidden ([bool]$chkShowHidden.IsChecked) -Force })
+    $txtDashFilter.Add_TextChanged({ Update-Dashboard -Window $Window -FilterText $txtDashFilter.Text -ShowHidden ([bool]$chkShowHidden.IsChecked) })
+    $chkShowHidden.Add_Click({ Update-Dashboard -Window $Window -FilterText $txtDashFilter.Text -ShowHidden ([bool]$chkShowHidden.IsChecked) })
+    $Window.FindName("tabMain").Add_SelectionChanged({
+            param($s, $e)
+            if ($e.OriginalSource -ne $s) { return }
+            if ($s.SelectedIndex -eq 0) { Update-Dashboard -Window $Window -FilterText $txtDashFilter.Text -ShowHidden ([bool]$chkShowHidden.IsChecked) }
         })
 }

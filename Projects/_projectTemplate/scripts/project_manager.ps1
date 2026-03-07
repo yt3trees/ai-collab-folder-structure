@@ -125,7 +125,7 @@ $window.Add_PreviewKeyDown({
             $_.Handled = $true
         }
 
-        # Ctrl+Number: switch tabs (1=Dashboard, 2=Editor, ..., 9=Settings)
+        # Ctrl+Number: switch tabs (1=Dashboard, 2=Editor, 3=Timeline, ..., 0=Settings)
         if ([System.Windows.Input.Keyboard]::Modifiers -eq [System.Windows.Input.ModifierKeys]::Control) {
             $tabMain = $window.FindName("tabMain")
             $tabIndex = -1
