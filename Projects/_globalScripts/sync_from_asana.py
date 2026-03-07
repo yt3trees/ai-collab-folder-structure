@@ -235,6 +235,16 @@ def write_task_line(f, task, role, existing_memos):
 
     f.write(f"- [{checkbox}] {role_tag}{anken_tag}{task['name']}{due} [[Asana](https://app.asana.com/0/0/{gid})]\n")
 
+    notes = (task.get('notes') or '').strip()
+    if notes:
+        lines = notes.splitlines()
+        if len(lines) > 20:
+            out_lines = lines[:20] + ["..."]
+        else:
+            out_lines = lines
+        for l in out_lines:
+            f.write(f"    > {l}\n" if l else "    >\n")
+
     if not task.get('completed'):
         f.write(f"    - <!-- Memo area for {gid} -->\n")
         if gid in existing_memos and existing_memos[gid].strip():
