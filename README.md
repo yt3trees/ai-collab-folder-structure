@@ -383,9 +383,12 @@ Features:
 - Global hotkey: Toggle window visibility (default: Ctrl+Shift+P, configurable per-PC via paths.json)
 - Esc key: Hide window to tray
 - Close button: Hide to tray (Shift+Click to fully exit)
-- Dashboard tab: Project overview with quick actions
-- Editor tab: Built-in file viewer/editor for project files
+- Dashboard tab: Project overview with quick actions. Features an **Activity Bar** showing activity for the last 30 days (Green: Active, Gray: Inactive).
+- Timeline tab: Visualizes project activity history chronologically from `focus_history` and `decision_log`. Preview work content and identify activity gaps.
+- Editor tab: Quick access to key AI context files and Asana tasks via categorized file lists. Markdown editing powered by AvalonEdit.
+- Asana Sync tab: Synchronize Asana tasks to project Markdown files. Supports manual execution and scheduled auto-sync.
 - Setup tab: Select project name and Tier for setup
+- Convert tab: Convert existing projects between Tiers (full <-> mini).
 - AI Context tab: Set up Context Compression Layer for projects
 - Check tab: Health check for existing projects
 - Archive tab: Archive with DryRun preview

@@ -381,9 +381,12 @@ powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_proj
 - グローバルホットキー: ウィンドウの表示/非表示をトグル(デフォルト: Ctrl+Shift+P、PCごとにpaths.jsonで設定変更可能)
 - Escキー: ウィンドウをトレイに格納
 - 閉じるボタン: トレイに格納(Shift+クリックで完全終了)
-- Dashboard タブ: プロジェクト概要とクイックアクション
-- Editor タブ: プロジェクトファイルの閲覧・編集
+- Dashboard タブ: プロジェクト概要とクイックアクション。直近30日のアクティビティを表示する **Activity Bar** (Green: 活動あり, Gray: 活動なし) を搭載
+- Timeline タブ: `focus_history` や `decision_log` からプロジェクトの活動履歴を時系列で表示。作業内容のプレビューや未活動期間の確認が可能
+- Editor タブ: カテゴリ別に整理されたファイルリストから主要なAIコンテキストファイルや Asana タスクへ素早くアクセス。AvalonEdit による Markdown 編集
+- Asana Sync タブ: Asana タスクをプロジェクトの Markdown ファイルへ同期。手動実行および指定間隔での自動定期同期に対応
 - Setup タブ: プロジェクト名と Tier を選択してセットアップ
+- Convert タブ: 既存プロジェクトの Tier (full <-> mini) を相互に変換
 - AI Context タブ: プロジェクトへのContext Compression Layerセットアップ
 - Check タブ: 既存プロジェクトの健全性チェック
 - Archive タブ: DryRun プレビュー付きでアーカイブ実行
