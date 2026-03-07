@@ -191,37 +191,68 @@ def deduplicate_tasks(tasks):
 
 def fetch_tasks_for_project(tasks_api, project_gid):
     """Asana プロジェクトから全タスクを取得する"""
-    try:
-        # 直近7日間に完了したタスクも含めて取得する
-        from datetime import datetime, timedelta
-        from datetime import timezone
-        completed_since_date = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
-        
-        tasks = list(tasks_api.get_tasks({
-            'project': project_gid,
-            'opt_fields': (
-                'name,completed,due_on,assignee,assignee.name,assignee.gid,'
-                'notes,gid,projects,projects.name,'
-                'followers,followers.gid,followers.name,'
-                'custom_fields,custom_fields.name,'
-                'custom_fields.text_value,custom_fields.enum_value,custom_fields.number_value'
-            ),
-            'completed_since': completed_since_date
-        }))
-        return tasks
-    except Exception as e:
-        print(f"  WARNING: Failed to fetch tasks for project {project_gid}: {e}")
-        return []
+    import time
+    for attempt in range(3):
+        try:
+            # 直近7日間に完了したタスクも含めて取得する
+            from datetime import datetime, timedelta
+            from datetime import timezone
+            completed_since_date = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+            
+            tasks = list(tasks_api.get_tasks({
+                'project': project_gid,
+                'opt_fields': (
+                    'name,completed,due_on,assignee,assignee.name,assignee.gid,'
+                    'notes,gid,projects,projects.name,'
+                    'followers,followers.gid,followers.name,'
+                    'custom_fields,custom_fields.name,'
+                    'custom_fields.text_value,custom_fields.enum_value,custom_fields.number_value,'
+                    'num_subtasks'
+                ),
+                'completed_since': completed_since_date
+            }))
+            return tasks
+        except Exception as e:
+            if hasattr(e, 'status') and e.status == 429:
+                time.sleep(2 * (attempt + 1))
+            else:
+                print(f"  WARNING: Failed to fetch tasks for project {project_gid}: {e}")
+                return []
+    return []
 
 
 def fetch_project_name(projects_api, project_gid):
     """Asana プロジェクト名を取得する"""
-    try:
-        project = projects_api.get_project(project_gid, {'opt_fields': 'name'})
-        return project.get('name', project_gid)
-    except Exception as e:
-        print(f"  WARNING: Failed to fetch project name for {project_gid}: {e}")
-        return project_gid
+    import time
+    for attempt in range(3):
+        try:
+            project = projects_api.get_project(project_gid, {'opt_fields': 'name'})
+            return project.get('name', project_gid)
+        except Exception as e:
+            if hasattr(e, 'status') and e.status == 429:
+                time.sleep(2 * (attempt + 1))
+            else:
+                print(f"  WARNING: Failed to fetch project name for {project_gid}: {e}")
+                return project_gid
+    return project_gid
+
+
+def fetch_subtasks(tasks_api, task_gid):
+    """タスクのサブタスクを取得する"""
+    import time
+    for attempt in range(3):
+        try:
+            subs = list(tasks_api.get_subtasks_for_task(task_gid, {
+                'opt_fields': 'name,completed,due_on,assignee,assignee.name,assignee.gid'
+            }))
+            return subs
+        except Exception as e:
+            if hasattr(e, 'status') and e.status == 429:
+                time.sleep(2 * (attempt + 1))
+            else:
+                print(f"  WARNING: Failed to fetch subtasks for task {task_gid}: {e}")
+                return []
+    return []
 
 
 def write_task_line(f, task, role, existing_memos):
@@ -238,12 +269,21 @@ def write_task_line(f, task, role, existing_memos):
     notes = (task.get('notes') or '').strip()
     if notes:
         lines = notes.splitlines()
-        if len(lines) > 20:
-            out_lines = lines[:20] + ["..."]
+        max_lines = 3 if task.get('completed') else 20
+        if len(lines) > max_lines:
+            out_lines = lines[:max_lines] + ["..."]
         else:
             out_lines = lines
         for l in out_lines:
             f.write(f"    > {l}\n" if l else "    >\n")
+
+    subtasks = task.get('subtasks_data', [])
+    if subtasks:
+        for sub in subtasks:
+            sub_gid = sub['gid']
+            sub_check = 'x' if sub.get('completed') else ' '
+            sub_due = f" (Due: {sub.get('due_on')})" if sub.get('due_on') else ""
+            f.write(f"    - [{sub_check}] {sub['name']}{sub_due} [[Asana](https://app.asana.com/0/0/{sub_gid})]\n")
 
     if not task.get('completed'):
         f.write(f"    - <!-- Memo area for {gid} -->\n")
@@ -253,9 +293,12 @@ def write_task_line(f, task, role, existing_memos):
             f.write("\n")
 
 
-def write_project_section(f, project_name, tasks, user_gid, existing_memos):
+def write_project_section(f, project_name, project_gid, tasks, user_gid, existing_memos):
     """Asana プロジェクト単位のセクションを出力する"""
-    f.write(f"## {project_name}\n\n")
+    if project_gid:
+        f.write(f"## [{project_name}](https://app.asana.com/0/{project_gid}/list)\n\n")
+    else:
+        f.write(f"## {project_name}\n\n")
 
     tasks = deduplicate_tasks(tasks)
     in_progress = [t for t in tasks if not t.get('completed')]
@@ -305,12 +348,12 @@ def write_project_file(output_path, project_name, sections, personal_tasks, user
         f.write(f"> 'Memo area' 以下の記述は保持されます。\n\n")
 
         # Asana プロジェクトごとのセクション
-        for asana_project_name, tasks in sections:
-            write_project_section(f, asana_project_name, tasks, user_gid, existing_memos)
+        for asana_project_name, project_gid, tasks in sections:
+            write_project_section(f, asana_project_name, project_gid, tasks, user_gid, existing_memos)
 
         # 個人タスクからの振り分け
         if personal_tasks:
-            write_project_section(f, "個人タスクより", personal_tasks, user_gid, existing_memos)
+            write_project_section(f, "個人タスクより", None, personal_tasks, user_gid, existing_memos)
 
     print(f"  Output: {output_path}")
 
@@ -379,7 +422,7 @@ def write_global_summary(output_path, all_project_data, personal_tasks, user_gid
         for project_name, sections, proj_personal in all_project_data:
             total_in_progress = sum(
                 len([t for t in tasks if not t.get('completed')])
-                for _, tasks in sections
+                for _, _, tasks in sections
             )
             total_in_progress += len([t for t in proj_personal if not t.get('completed')])
             anchor = project_name.replace(' ', '-').replace('(', '').replace(')', '').replace('[', '').replace(']', '')
@@ -393,7 +436,7 @@ def write_global_summary(output_path, all_project_data, personal_tasks, user_gid
             f.write(f"## {project_name}\n\n")
 
             all_tasks = []
-            for asana_proj_name, tasks in sections:
+            for asana_proj_name, asana_project_gid, tasks in sections:
                 all_tasks.extend(tasks)
             all_tasks.extend(proj_personal)
             all_tasks = deduplicate_tasks(all_tasks)
@@ -477,7 +520,10 @@ def sync_from_asana():
             tasks = fetch_tasks_for_project(tasks_api, gid)
             tasks = [t for t in tasks if classify_task_role(t, user_gid) in ('担当', 'コラボ')]
             print(f"    -> {len(tasks)} tasks (担当/コラボのみ)")
-            sections.append((asana_proj_name, tasks))
+            for t in tasks:
+                if t.get('num_subtasks', 0) > 0:
+                    t['subtasks_data'] = fetch_subtasks(tasks_api, t['gid'])
+            sections.append((asana_proj_name, gid, tasks))
         all_project_data.append({
             'project': proj,
             'sections': sections,
@@ -496,6 +542,9 @@ def sync_from_asana():
         print(f"  -> {len(tasks)} tasks (担当/コラボのみ)")
 
         for task in tasks:
+            if task.get('num_subtasks', 0) > 0:
+                task['subtasks_data'] = fetch_subtasks(tasks_api, task['gid'])
+
             anken = get_custom_field_value(task, '案件')
             matched = False
             if anken:
