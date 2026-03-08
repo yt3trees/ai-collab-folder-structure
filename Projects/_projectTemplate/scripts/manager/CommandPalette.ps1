@@ -11,6 +11,75 @@ $script:PaletteState = @{
     IsVisible = $false
 }
 
+# ---- Themed feature-name dialog ----
+
+function Show-ResumeDialog {
+    param([string]$ProjName, [System.Windows.Window]$Owner)
+
+    $c = Get-ThemeColors -ThemeName $script:AppState.Theme
+
+    $dlg = New-Object System.Windows.Window
+    $dlg.WindowStyle = [System.Windows.WindowStyle]::None
+    $dlg.AllowsTransparency = $true
+    $dlg.ResizeMode = [System.Windows.ResizeMode]::NoResize
+    $dlg.Width = 360
+    $dlg.Height = 130
+    $dlg.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterOwner
+    $dlg.ShowInTaskbar = $false
+    if ($null -ne $Owner) { $dlg.Owner = $Owner }
+
+    $outer = New-Object System.Windows.Controls.Border
+    $outer.Background = New-ColorBrush $c.Surface0
+    $outer.BorderBrush = New-ColorBrush $c.Surface2
+    $outer.BorderThickness = New-Object System.Windows.Thickness(1)
+    $outer.CornerRadius = New-Object System.Windows.CornerRadius(8)
+    $outer.Padding = New-Object System.Windows.Thickness(20, 16, 20, 16)
+
+    $stack = New-Object System.Windows.Controls.StackPanel
+
+    $lbl = New-Object System.Windows.Controls.TextBlock
+    $lbl.Text = "[>]  resume $ProjName"
+    $lbl.Foreground = New-ColorBrush $c.Subtext1
+    $lbl.FontFamily = New-Object System.Windows.Media.FontFamily("Consolas, Segoe UI")
+    $lbl.FontSize = 11
+    $lbl.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
+    $stack.Children.Add($lbl) | Out-Null
+
+    $txt = New-Object System.Windows.Controls.TextBox
+    $txt.FontSize = 14
+    $txt.FontFamily = New-Object System.Windows.Media.FontFamily("Consolas, Segoe UI")
+    $txt.Background = New-ColorBrush $c.Surface1
+    $txt.Foreground = New-ColorBrush $c.Text
+    $txt.BorderBrush = New-ColorBrush $c.Overlay0
+    $txt.BorderThickness = New-Object System.Windows.Thickness(1)
+    $txt.Padding = New-Object System.Windows.Thickness(8, 6, 8, 6)
+    $txt.CaretBrush = New-ColorBrush $c.Text
+    $stack.Children.Add($txt) | Out-Null
+
+    $outer.Child = $stack
+    $dlg.Content = $outer
+
+    # Enter = confirm, Escape = cancel, drag title bar = move
+    $dlg.Tag = $txt
+    $dlg.Add_PreviewKeyDown({
+            param($s, $ev)
+            if ($ev.Key -eq [System.Windows.Input.Key]::Return) {
+                $ev.Handled = $true
+                $s.DialogResult = $true
+            }
+            elseif ($ev.Key -eq [System.Windows.Input.Key]::Escape) {
+                $ev.Handled = $true
+                $s.DialogResult = $false
+            }
+        })
+    $dlg.Add_MouseLeftButtonDown({ $this.DragMove() })
+    $dlg.Add_Loaded({ $this.Tag.Focus() | Out-Null })
+
+    $ok = $dlg.ShowDialog()
+    if ($ok -eq $true) { return $txt.Text.Trim() }
+    return $null
+}
+
 # ---- Command list builder ----
 
 function Build-CommandList {
@@ -45,6 +114,17 @@ function Build-CommandList {
                 }.GetNewClosure()
             }) | Out-Null
     }
+
+    # > briefing (Global command)
+    $commands.Add(@{
+            Label    = "briefing"
+            Category = "project"
+            Display  = "[>]  briefing (Morning Summary)"
+            Action   = {
+                param($w)
+                Invoke-MorningBriefing -Window $w
+            }.GetNewClosure()
+        }) | Out-Null
 
     # --- Project commands ---
     $projects = $script:AppState.Projects
@@ -168,6 +248,20 @@ function Build-CommandList {
                             $tlCombo.SelectedIndex = $i
                             break
                         }
+                    }
+                }.GetNewClosure()
+            }) | Out-Null
+
+        # > resume ProjectName
+        $commands.Add(@{
+                Label    = "resume $localName"
+                Category = "project"
+                Display  = "[>]  resume $displayName"
+                Action   = {
+                    param($w)
+                    $feature = Show-ResumeDialog -ProjName $localName -Owner $w
+                    if (-not [string]::IsNullOrWhiteSpace($feature)) {
+                        Invoke-ResumeWork -ProjPath $localPath -FeatureName $feature
                     }
                 }.GetNewClosure()
             }) | Out-Null

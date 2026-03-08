@@ -75,6 +75,7 @@ else {
 . "$managerDir\TabSettings.ps1"
 . "$managerDir\TabTimeline.ps1"
 . "$managerDir\CommandPalette.ps1"
+. "$managerDir\FeatureMorningBriefing.ps1"
 
 # --- Initialize config and discover projects ---
 Initialize-AppConfig -ScriptDir $scriptDir

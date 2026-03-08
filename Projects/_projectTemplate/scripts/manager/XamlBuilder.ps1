@@ -166,6 +166,9 @@ function Build-MainWindowXaml {
                                     Style="{StaticResource SmallButton}"
                                     Margin="0,0,8,0" IsEnabled="False"/>
                             <Button x:Name="btnEditorTerm" Content="Term"
+                                    Style="{StaticResource SmallButton}"
+                                    Margin="0,0,8,0"/>
+                            <Button x:Name="btnEditorResume" Content="Resume"
                                     Style="{StaticResource SmallButton}"/>
                         </StackPanel>
                     </Grid>

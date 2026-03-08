@@ -51,6 +51,21 @@ function Open-AgentAtPath {
     }
 }
 
+function Invoke-ResumeWork {
+    param([string]$ProjPath, [string]$FeatureName)
+    $safeFeature = $FeatureName.Trim() -replace '[\\/:*?"<>|]', '_'
+    $now = Get-Date
+    $yearStr  = $now.ToString("yyyy")
+    $monthStr = $now.ToString("yyyyMM")
+    $dayStr   = $now.ToString("yyyyMMdd")
+    $workDir  = Join-Path $ProjPath "shared\_work\$yearStr\$monthStr\${dayStr}_${safeFeature}"
+    if (-not (Test-Path $workDir)) {
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+    }
+    Start-Process explorer.exe -ArgumentList $workDir
+    Open-TerminalAtPath -Path $workDir
+}
+
 # ---- Build one project card ----
 
 function New-ProjectCard {
@@ -372,7 +387,45 @@ function New-ProjectCard {
                     Update-Dashboard -Window $d.Window -ShowHidden ([bool]($d.Window.FindName("chkShowHidden").IsChecked)) -Force -ScriptDir $d.ScriptDir
                 })
             $menuStack.Children.Add($menuItem) | Out-Null
+            $sep = New-Object System.Windows.Controls.Border
+            $sep.Height = 1; $sep.Background = New-ColorBrush $tc.Surface1; $sep.Margin = New-Object System.Windows.Thickness(4, 2, 4, 2)
+            $menuStack.Children.Add($sep) | Out-Null
+            $resumeLabel = New-Object System.Windows.Controls.TextBlock
+            $resumeLabel.Text = "Resume Work"; $resumeLabel.Foreground = New-ColorBrush $tc.Subtext1; $resumeLabel.FontSize = 10
+            $resumeLabel.Padding = New-Object System.Windows.Thickness(12, 4, 12, 2)
+            $menuStack.Children.Add($resumeLabel) | Out-Null
+            $resumeRow = New-Object System.Windows.Controls.StackPanel
+            $resumeRow.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+            $resumeRow.Margin = New-Object System.Windows.Thickness(8, 0, 8, 8)
+            $resumeBox = New-Object System.Windows.Controls.TextBox
+            $resumeBox.Width = 130; $resumeBox.FontSize = 12
+            $resumeBox.Background = New-ColorBrush $tc.Surface1; $resumeBox.Foreground = New-ColorBrush $tc.Text
+            $resumeBox.BorderBrush = New-ColorBrush $tc.Overlay0; $resumeBox.BorderThickness = New-Object System.Windows.Thickness(1)
+            $resumeBox.Padding = New-Object System.Windows.Thickness(6, 3, 6, 3); $resumeBox.CaretBrush = New-ColorBrush $tc.Text
+            $resumeBtn = New-Object System.Windows.Controls.Button
+            $resumeBtn.Content = ">"; $resumeBtn.Margin = New-Object System.Windows.Thickness(4, 0, 0, 0)
+            $resumeBtn.FontSize = 12; $resumeBtn.Padding = New-Object System.Windows.Thickness(10, 3, 10, 3)
+            $resumeBtn.Background = New-ColorBrush $tc.Blue; $resumeBtn.Foreground = New-ColorBrush $tc.Base
+            $resumeBtn.BorderThickness = New-Object System.Windows.Thickness(0); $resumeBtn.Cursor = [System.Windows.Input.Cursors]::Hand
+            $resumeBox.Tag = @{ ProjPath = $data.Info.Path; Popup = $popup }
+            $resumeBox.Add_KeyDown({
+                    param($s, $ev)
+                    if ($ev.Key -eq [System.Windows.Input.Key]::Return) {
+                        $ev.Handled = $true
+                        $d = $s.Tag; $feature = $s.Text.Trim(); $d.Popup.IsOpen = $false
+                        if (-not [string]::IsNullOrWhiteSpace($feature)) { Invoke-ResumeWork -ProjPath $d.ProjPath -FeatureName $feature }
+                    }
+                })
+            $resumeBtn.Tag = @{ ProjPath = $data.Info.Path; Popup = $popup; Box = $resumeBox }
+            $resumeBtn.Add_Click({
+                    param($s, $ev)
+                    $d = $s.Tag; $feature = $d.Box.Text.Trim(); $d.Popup.IsOpen = $false
+                    if (-not [string]::IsNullOrWhiteSpace($feature)) { Invoke-ResumeWork -ProjPath $d.ProjPath -FeatureName $feature }
+                })
+            $resumeRow.Children.Add($resumeBox) | Out-Null; $resumeRow.Children.Add($resumeBtn) | Out-Null
+            $menuStack.Children.Add($resumeRow) | Out-Null
             $border.Child = $menuStack; $popup.Child = $border; $popup.IsOpen = $true
+            $resumeBox.Focus() | Out-Null
         })
 
     $card.Child = $stack

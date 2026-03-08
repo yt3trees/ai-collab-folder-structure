@@ -210,6 +210,27 @@ function Populate-FileTree {
         $WorkspaceTree.Items.Add($wsFolder) | Out-Null
     }
 
+    # --- Workspace: briefings/ files ---
+    $briefingsDir1 = Join-Path $WorkspaceRoot "_ai-workspace\briefings"
+    $briefingsDir2 = Join-Path $WorkspaceRoot "_briefings"
+    $bDir = if (Test-Path $briefingsDir1) { $briefingsDir1 } elseif (Test-Path $briefingsDir2) { $briefingsDir2 } else { $null }
+
+    if ($null -ne $bDir) {
+        $bFiles = Get-ChildItem $bDir -Filter "*.md" -ErrorAction SilentlyContinue |
+        Sort-Object Name -Descending
+            
+        if ($bFiles.Count -gt 0) {
+            $bFolder = New-TreeItem -Label "briefings"
+            $bFolder.IsExpanded = $true
+            
+            foreach ($f in $bFiles) {
+                $child = New-TreeItem -Label $f.Name -FilePath $f.FullName
+                Add-ContextMenuToTreeItem -Item $child -Window $Window
+                $bFolder.Items.Add($child) | Out-Null
+            }
+            $WorkspaceTree.Items.Add($bFolder) | Out-Null
+        }
+    }
 }
 
 # ---- Helper: resolve selected project from combo text ----
@@ -335,29 +356,29 @@ function Initialize-TabEditor {
     $workspaceTree = $Window.FindName("editorWorkspaceTree")
     $script:_treeSelecting = $false
     $fileTree.Add_SelectedItemChanged({
-        param($s, $e)
-        if ($script:_treeSelecting) { return }
-        $script:_treeSelecting = $true
-        $wt = $Window.FindName("editorWorkspaceTree")
-        if ($null -ne $wt.SelectedItem) { $wt.SelectedItem.IsSelected = $false }
-        $selected = $s.SelectedItem
-        if ($null -ne $selected -and $null -ne $selected.Tag) {
-            Open-FileInEditor -FilePath $selected.Tag -Window $Window
-        }
-        $script:_treeSelecting = $false
-    })
+            param($s, $e)
+            if ($script:_treeSelecting) { return }
+            $script:_treeSelecting = $true
+            $wt = $Window.FindName("editorWorkspaceTree")
+            if ($null -ne $wt.SelectedItem) { $wt.SelectedItem.IsSelected = $false }
+            $selected = $s.SelectedItem
+            if ($null -ne $selected -and $null -ne $selected.Tag) {
+                Open-FileInEditor -FilePath $selected.Tag -Window $Window
+            }
+            $script:_treeSelecting = $false
+        })
     $workspaceTree.Add_SelectedItemChanged({
-        param($s, $e)
-        if ($script:_treeSelecting) { return }
-        $script:_treeSelecting = $true
-        $ft = $Window.FindName("editorFileTree")
-        if ($null -ne $ft.SelectedItem) { $ft.SelectedItem.IsSelected = $false }
-        $selected = $s.SelectedItem
-        if ($null -ne $selected -and $null -ne $selected.Tag) {
-            Open-FileInEditor -FilePath $selected.Tag -Window $Window
-        }
-        $script:_treeSelecting = $false
-    })
+            param($s, $e)
+            if ($script:_treeSelecting) { return }
+            $script:_treeSelecting = $true
+            $ft = $Window.FindName("editorFileTree")
+            if ($null -ne $ft.SelectedItem) { $ft.SelectedItem.IsSelected = $false }
+            $selected = $s.SelectedItem
+            if ($null -ne $selected -and $null -ne $selected.Tag) {
+                Open-FileInEditor -FilePath $selected.Tag -Window $Window
+            }
+            $script:_treeSelecting = $false
+        })
 
     # When project changes, reload file tree
     $editorProjectCombo.Add_SelectionChanged({
@@ -582,6 +603,16 @@ function Initialize-TabEditor {
             $popup.Child = $border
             $script:currentTermPopup = $popup
             $popup.IsOpen = $true
+        })
+
+    # Resume button
+    $Window.FindName("btnEditorResume").Add_Click({
+            $proj = $script:AppState.SelectedProject
+            if ($null -eq $proj) { return }
+            $feature = Show-ResumeDialog -ProjName $proj.Name -Owner $Window
+            if (-not [string]::IsNullOrWhiteSpace($feature)) {
+                Invoke-ResumeWork -ProjPath $proj.Path -FeatureName $feature
+            }
         })
 
     # New Decision Log button
