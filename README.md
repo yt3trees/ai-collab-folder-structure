@@ -99,6 +99,31 @@ A context management layer that allows AI to carry over context across sessions.
 
 The AI autonomously detects decisions, session boundaries, and valuable insights during conversation — and proposes recording them. Users simply work as usual.
 
+### Agent Skills
+
+Three skills are embedded in CLAUDE.md and drive the AI's autonomous behavior.
+
+#### context-decision-log
+
+Monitors conversation for decision patterns ("let's go with X", "we'll use Y", "drop Z") and proposes a structured log entry in one line — without interrupting the flow. Up to 3 proposals per session.
+
+> 💡 Log to Decision Log? → Adopting PostgreSQL over MySQL (better operational track record)
+
+#### context-session-end
+
+Detects natural session boundaries ("that's it for today", "thanks") and proposes appending to `current_focus.md`. Only AI-contributed work is added, prefixed with `[AI]`. Human-authored lines are never touched.
+
+> 📝 Append to current_focus.md?
+> + [AI] Implemented token refresh in auth.ts
+> + [AI] Logged auth flow change in Decision Log
+
+#### obsidian-knowledge
+
+Auto-searches Obsidian notes for topics that come up in conversation, enriching context without being asked. After a session, proposes saving insights to `notes/` or `daily/`. Cross-project findings are routed to `ai-context/tech-patterns/` or `lessons-learned/`.
+
+> 📓 Save to Obsidian? → notes/redis-cache-strategy.md
+> Redis TTL design and key naming conventions
+
 ## Project Tiers
 
 | Tier | Use Case | Location |

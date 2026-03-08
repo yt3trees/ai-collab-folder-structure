@@ -99,6 +99,34 @@ AIがセッションをまたいで文脈を引き継ぐためのコンテキス
 
 AIはCLAUDE.mdの行動規範に従い、意思決定・セッション区切り・有益な知見を自律的に検知して記録提案します。ユーザーは普段の作業をするだけでOKです。
 
+### Agent Skills
+
+CCLを支える3つのスキルが CLAUDE.md に組み込まれ、AIが自律的に動作します。
+
+#### context-decision-log
+
+会話中の意思決定を自動検出し、構造化ログへの記録を提案します。
+「○○にする」「○○で行こう」「○○はやめる」といった発言をトリガーに1行で提案。1セッション最大3回まで、作業の流れを止めません。
+
+> 💡 Decision Logに記録しますか？ → DBはPostgreSQLを採用 (MySQLより運用実績が多い)
+
+#### context-session-end
+
+「今日はここまで」「ありがとう」などの区切りを検知し、`current_focus.md` への追記を提案します。
+AIが関与した作業分のみを `[AI]` プレフィックスで追記し、人間が書いた行は一切変更しません。
+
+> 📝 current_focus.md に追記しますか？
+> + [AI] auth.ts のトークンリフレッシュ処理を実装
+> + [AI] 認証フロー変更を Decision Log に記録
+
+#### obsidian-knowledge
+
+会話のトピックに関連するObsidianノートを自動検索して文脈補完します。
+セッションで得た知見は `notes/` や `daily/` への保存を提案。プロジェクト横断で使える知見は `ai-context/tech-patterns/` や `lessons-learned/` へ振り分けます。
+
+> 📓 Obsidianに記録しますか？ → notes/redis-cache-strategy.md
+> Redis TTL設計とキー命名規則の調査結果
+
 ## プロジェクト Tier
 
 | Tier | 用途 | 配置先 |
