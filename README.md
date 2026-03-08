@@ -1,18 +1,75 @@
 # ai-collab-folder-structure
 
-<!-- ![Workspace Architecture](_asset/ai-collab-folder-structure.drawio.svg) -->
+A project folder management framework designed for collaboration with AI (Claude Code).
+Automates context management across multiple projects in a Windows + BOX Drive + Obsidian environment.
 
 > 🌐 [日本語版はこちら / Japanese version available here](README-ja.md)
 
-A project folder management framework designed for collaboration with AI (Claude Code).
+```mermaid
+flowchart TD
+    classDef local fill:#2d2d2d,stroke:#555,color:#fff
+    classDef box fill:#0b4d75,stroke:#1a7bb9,color:#fff
+    classDef obs fill:#4a1e6d,stroke:#7d3cb5,color:#fff
+    classDef ai fill:#1a4a1a,stroke:#3a8a3a,color:#fff
 
-## Overview
+    subgraph L1["Layer 1: Execution (Local)"]
+        direction TB
+        Dev["💻 development/\n(Git)"]:::local
+        Work["📁 _work/\n(Daily Work)"]:::local
+        AIW["🔬 _ai-workspace/\n(Experiments)"]:::local
+    end
 
-A three-layer workspace structure for organizing multiple projects and optimizing context sharing with AI.
+    subgraph L3["Layer 3: Artifact (BOX)"]
+        direction TB
+        Docs["📄 docs/\n(Deliverables)"]:::box
+        Ref["📚 reference/\n(References)"]:::box
+    end
 
-- Layer 1 (Execution): Local workspace (Git-managed, volatile work)
-- Layer 2 (Knowledge): Obsidian Vault (accumulation of thoughts and insights, BOX sync)
-- Layer 3 (Artifact): Deliverables and reference materials (file backup and cross-PC sync, BOX sync)
+    subgraph L2["Layer 2: Knowledge (BOX + Obsidian)"]
+        direction TB
+        CCL["🧠 ai-context/\n(CCL Context Files)"]:::obs
+        Notes["📝 notes/ meetings/\n(Obsidian Notes)"]:::obs
+    end
+
+    Claude["🤖 Claude Code"]:::ai
+
+    L1 -- "shared/ junction" --> L3
+    L1 -- "_ai-context/ junction" --> L2
+    Claude -- "read/write" --> L2
+    Claude -- "code updates" --> L1
+```
+
+## Why use this?
+
+- AI retains context across sessions for continuous workflow (Context Compression Layer)
+- Bidirectional Obsidian Vault integration — AI auto-references past notes and meeting records
+- Seamless multi-PC sync via BOX Drive
+- GUI Manager for creating, managing, and archiving projects in one place
+
+## Use Cases
+
+### Pick up where you left off — zero re-explanation
+
+No need to re-explain background context. When you launch `claude`, the AI reads `current_focus.md` and gets right back to where you were.
+
+> 🤖 Last session you were mid-way through implementing token refresh in `auth.ts`. Tests are still pending — shall we continue?
+
+### Decisions get recorded automatically
+
+The moment you make a technical or design decision, the AI detects it and proposes logging it. No more wondering "what did we decide on that again?"
+
+> 🤖 Looks like we settled on Redis as the caching layer. Want me to log this in `decision_log`?
+
+### AI references your past knowledge
+
+The AI searches and references meeting notes and technical memos stored in Obsidian. No more digging through old notes yourself.
+
+> 👨‍💻 How did we configure the DB timeout before?
+> 🤖 According to `notes/db_timeout_config.md` (January 2026), the connection pool settings were...
+
+### Same environment across multiple PCs
+
+Whether at the office or at home, just run `claude` after BOX sync completes — the same context loads automatically. Re-setup is a single click in the GUI Manager's Setup tab.
 
 ## Requirements & Limitations
 
@@ -21,433 +78,102 @@ A three-layer workspace structure for organizing multiple projects and optimizin
 
 ## Three-Layer Structure
 
-```mermaid
-flowchart TD
-    %% Define styles
-    classDef local fill:#2d2d2d,stroke:#555,stroke-width:2px,color:#fff
-    classDef box fill:#0b4d75,stroke:#1a7BB9,stroke-width:2px,color:#fff
-    classDef obs fill:#4a1e6d,stroke:#7D3CB5,stroke-width:2px,color:#fff
-    classDef junction fill:#d06000,stroke:#ff8800,stroke-width:2px,stroke-dasharray: 5 5,color:#fff
+| Layer | Role | Location | Characteristics |
+|-------|------|----------|----------------|
+| Layer 1: Execution | Workspace | Documents/Projects/{Project}/ | Git-managed, volatile |
+| Layer 2: Knowledge | Thinking & Knowledge | Box/Obsidian-Vault/ | Context, history, insights |
+| Layer 3: Artifact | Deliverables & References | Box/Projects/{Project}/ | BOX sync, backup |
 
-    subgraph L1 ["Layer 1: Execution"]
-        direction TB
-        LocalProj["📁 Documents/Projects/{ProjectName}"]:::local
-        Dev["💻 development/ (Git Managed)"]:::local
-        
-        %% Junctions
-        JuncShared["🔗 shared/ (Junction)"]:::junction
-        JuncCtx["🔗 _ai-context/ (Junction)"]:::junction
-        
-        LocalProj --- Dev
-        LocalProj --- JuncShared
-        LocalProj --- JuncCtx
-    end
+Local `shared/` (→ Layer 3) and `_ai-context/` (→ Layer 2) are connected via junctions, making all three layers transparently accessible.
 
-    subgraph L3 ["Layer 3: Artifact"]
-        direction TB
-        BoxProj["📁 Box/Projects/{ProjectName}"]:::box
-        Work["💻 _work/ (Daily Work)"]:::box
-        Docs["📄 docs/ (Deliverables)"]:::box
-        
-        BoxProj --- Work
-        BoxProj --- Docs
-    end
+## AI Collaboration (Context Compression Layer)
 
-    subgraph L2 ["Layer 2: Knowledge"]
-        direction TB
-        ObsVault["📁 Box/Obsidian-Vault"]:::obs
-        AiCtx["🧠 ai-context/ (Context Layer)"]:::obs
-        Daily["📝 daily/ (Human Notes)"]:::obs
-        
-        ObsVault --- AiCtx
-        ObsVault --- Daily
-    end
+A context management layer that allows AI to carry over context across sessions.
 
-    %% Links
-    JuncShared == Sync Artifacts === BoxProj
-    JuncCtx == Sync Knowledge === ObsVault
-```
+| File | Role | Target Size |
+|------|------|-------------|
+| `current_focus.md` | Current work focus | ~500 tokens |
+| `project_summary.md` | Project overview | ~300 tokens |
+| `decision_log/` | Decision history | - |
+| `tensions.md` | Unresolved trade-offs and concerns | - |
 
-| Layer | Role | Location | Data Characteristics |
-|-------|------|----------|---------------------|
-| Layer 1: Execution | Workspace | Documents/Projects/{Project}/ (Local) | WIP, highly volatile |
-| Layer 2: Knowledge | Thinking & Knowledge | Box/Obsidian-Vault/ (BOX Sync) | Context, history, insights |
-| Layer 3: Artifact | Deliverables & References | Box/Projects/{Project}/ (BOX Sync) | Backup and cross-PC sync documents |
+The AI autonomously detects decisions, session boundaries, and valuable insights during conversation — and proposes recording them. Users simply work as usual.
 
-## AI Collaboration Workflow
+## Project Tiers
 
-This architecture integrates the Context Compression Layer (CCL) and autonomous AI behavioral guidelines as core features, enabling seamless collaboration where the AI naturally manages context without requiring explicit skill invocation from the user.
+| Tier | Use Case | Location |
+|------|----------|----------|
+| full / project | Main projects | `Projects/{Project}/` |
+| mini / project | Support tasks (lightweight) | `Projects/_mini/{Project}/` |
+| full / domain | Ongoing technical domains | `Projects/_domains/{Project}/` |
+| mini / domain | Lightweight domain tasks | `Projects/_domains/_mini/{Project}/` |
 
-### Context Compression Layer (CCL)
-
-AI context management across sessions - ensuring the AI correctly understands past context and maintains continuous workflow:
-
-- Components: project_summary.md (overview, target: ~300 tokens), current_focus.md (current focus, target: ~500 tokens), tensions.md (unresolved trade-offs and concerns), decision_log (history of decisions)
-- Session Start Protocol: The AI reads context files in priority order at session start (current_focus → project_summary → tensions → decision_log), presents a 1-2 line status summary of pending work, and asks about progress only if the last update was 3+ days ago
-- Approval model: Auto (appending to current_focus.md), Notify (tensions.md, low-impact decision_log), Confirm (project_summary.md, high-impact decision_log)
-- Autonomous behavior: The AI detects decisions and work boundaries from conversation flow and proactively proposes context file updates. When unresolved trade-offs are detected, the AI proposes recording them in tensions.md. When a file exceeds its token target, the AI suggests archiving old content to focus_history/
-
-### Autonomous AI Behavioral Guidelines
-
-The AI follows behavioral guidelines defined in CLAUDE.md and autonomously executes the following. Users do not need to be aware of or explicitly invoke skill names.
-
-- Tension detection and recording: Detects unresolved trade-offs and concerns during conversation and proposes recording them in `tensions.md`. When resolved, proposes deletion and promotion to decision_log
-- Decision detection and recording: Detects implicit decisions (technology selection, design judgments, etc.) during conversation and proposes recording them as structured decision logs
-- Session boundary detection: Naturally detects work boundaries and proposes appending only AI-contributed work to `current_focus.md`
-- Obsidian knowledge integration: Reads `_ai-context/obsidian_notes/` to enrich context from past notes, and proposes writing session outcomes and valuable insights back to the Obsidian Vault. Cross-project reusable insights are routed to the global `{obsidianVaultRoot}/ai-context/` hub (tech-patterns/, lessons-learned/). AI-generated notes are tagged with `#ai-memory`.
-
-### Workflow Example (Claude Code)
-
-Daily tasks are performed within the BOX-synced `_work` folder, organized by date-based working directories.
-The AI autonomously manages context according to its behavioral guidelines, so users don't need to be aware of skills during everyday work.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant Work as _work/2026/...
-    participant Claude
-    participant CCL as CCL (Context Files)
-    participant Obsidian as Obsidian Notes
-
-    User->>Work: Create & Enter Daily Folder
-    User->>Claude: Launch claude (Context Loaded)
-
-    rect rgba(128, 128, 128, 0.1)
-        Note right of Claude: Interactive Session
-
-        User->>Claude: Discuss & Code
-        Claude->>Obsidian: Search related notes for context
-        Claude->>Work: Modify source code
-
-        Note right of Claude: Auto-detect decisions
-        Claude->>CCL: Propose & save decision_log.md
-
-        Note right of Claude: Detect valuable insights
-        Claude->>Obsidian: Propose saving to notes/
-    end
-
-    Note right of Claude: Auto-detect session boundary
-    Claude->>CCL: Propose & update current_focus.md
-    Claude->>Obsidian: Propose writing daily/ai-session.md
-```
-
-#### 1. Create and Navigate to Work Folder
-
-```bash
-# Create and navigate to a date-based dedicated working folder
-cd Box\Projects\NewProject\_work
-mkdir 2026\202602_feature_x
-cd 2026\202602_feature_x
-
-# Launch Claude Code (project context is automatically loaded)
-claude
-```
-
-#### 2. Working with Claude Code (AI Records Autonomously)
-
-Users simply proceed with their normal work, and the AI evaluates the situation to propose recording at appropriate moments.
-
-> 👨‍💻 User:
-> Improve the login process in `src/api/auth.ts`. Let's add a token refresh mechanism when the token expires.
-> 
-> 🤖 Claude:
-> (After modifying the code...)
-> The updates are complete.
-> 💡 Record in Decision Log? → Added token refresh to authentication flow
-> 
-> 👨‍💻 User:
-> Yes, please.
-> 
-> 🤖 Claude:
-> Recorded in `decision_log.md`.
-> 
-> 👨‍💻 User:
-> That's all for today.
-> 
-> 🤖 Claude:
-> 📝 Append to current_focus.md?
-> 
-> Add to [Recent events]:
->   + [AI] Implemented token refresh in auth.ts
->   + [AI] Recorded auth flow change in Decision Log
-> 
-> (Yes / Modify / Not needed)
-
-#### 3. Obsidian Knowledge Integration (AI and Vault in Sync)
-
-The AI reads and writes to the Obsidian Vault through `_ai-context/obsidian_notes/`, accumulating technical insights and session outcomes.
-
-> 👨‍💻 User:
-> How did we configure the DB connection timeout when we fixed that issue previously in this project?
-> 
-> 🤖 Claude:
-> Searched `obsidian_notes/notes/`.
-> According to `db_timeout_config.md` recorded in Jan 2026, the connection pool settings were...
-> 
-> 👨‍💻 User:
-> I see, thanks. I'd like to implement the token refresh based on what we decided in last week's authentication review meeting.
-> 
-> 🤖 Claude:
-> Let me check `obsidian_notes/meetings/`.
-> Found `2026-02-17_authentication-review.md`. Key decisions were...
-> (Proposes implementation approach based on the notes)
-> 
-> 👨‍💻 User:
-> Perfect, let's go with that. That's all for today.
-> 
-> 🤖 Claude:
-> 📝 Append to current_focus.md?
-> 
-> Add to [Recent events]:
->   + [AI] Implemented token refresh in auth.ts
-> 
-> 📓 The Redis caching strategy from this session seems worth referencing in the future. Save to Obsidian?
-> → notes/redis-cache-strategy.md
->   Redis cache strategy: TTL design and key naming conventions
-> 
-> (Yes / Modify / Not needed)
-
-#### 4. Benefits of this Workflow
-
-By working within the `_work` folder in this manner, you gain the following benefits:
-- Work-in-progress files (e.g., temporary outputs) do not clutter the formal documents in `docs`
-- Only important decisions (`decision_log.md`) and progress (`current_focus.md`) are automatically extracted and recorded through the AI's autonomous judgment
-- When you resume work next time, the AI loads the updated `current_focus.md`, allowing for a seamless restart
-- The AI references past meeting notes and insights from the Obsidian Vault for context, reducing the need to re-explain background
-- AI session outcomes accumulate in the Obsidian Vault, growing the project knowledge base over time
-
-## Detailed Workspace Architecture
-
-### Project Tiers and Categories
-
-| Tier | Category | Location | Purpose | Structure |
-|------|----------|----------|---------|-----------|
-| full | project | `Projects/{Project}/` | Main projects | Full features (_ai-workspace, structured folders) |
-| mini | project | `Projects/_mini/{Project}/` | Support tasks | Minimal (mini folders) |
-| full | domain | `Projects/_domains/{Project}/` | Ongoing technical domains | Full features (_ai-workspace, structured folders) |
-| mini | domain | `Projects/_domains/_mini/{Project}/` | Lightweight domain tasks | Minimal (mini folders) |
-
-Category is an axis independent of tier (folder layout). The `domain` category separates ongoing technical areas (e.g., GenAI tooling, shared platform) into `_domains/` for dedicated management.
-
-### Multi-CLI Support
-
-This architecture supports environments where multiple AI CLI agents (Claude Code, Codex CLI, Gemini CLI, etc.) coexist, with a unified approach to instructions and context. The master instruction file is maintained as a single `shared/AGENTS.md` (Layer 3), and copies are placed with the filenames required by each CLI tool (`CLAUDE.md`, etc.). See [workspace-architecture.md](./workspace-architecture.md) for details.
-
-### Sync Strategy Between 2 PCs
-
-- BOX sync: Obsidian Vault, deliverables via shared/
-- Git sync: Source code (development/source/)
-- Local independent: _ai-workspace/
-
-### Overall Workspace Structure
-
-```
-Documents/Projects/
-├── _config/
-│   └── paths.json              # Workspace common path definitions
-├── _projectTemplate/           # Project template and management scripts
-│   ├── scripts/
-│   │   ├── project_manager.ps1     # GUI project manager
-│   │   ├── setup_project.ps1       # Project initial setup
-│   │   ├── check_project.ps1       # Health check
-│   │   ├── archive_project.ps1     # Archive completed projects
-│   │   ├── config.template.json    # Config file template
-│   │   ├── get_tokens.py           # Token counter (tiktoken) for context files
-│   │   └── manager/                   # GUI manager modules
-├── exec_project_manager.cmd       # GUI manager batch (Projects root)
-│   ├── context-compression-layer/  # AI Context Compression Layer setup
-│   │   ├── setup_context_layer.ps1 # Context layer setup script
-│   │   ├── templates/              # Context file templates
-│   │   ├── examples/               # Usage examples
-│   │   ├── skills/                 # Agent skills for context management
-│   │   ├── README.md               # English documentation
-│   │   └── README-ja.md            # Japanese documentation
-│   ├── AGENTS.md               # AI instructions template for new projects
-│   ├── CLAUDE.md               # AGENTS.md copy (for Claude CLI)
-│   └── README.md               # Template detailed documentation
-├── _globalScripts/             # Cross-project scripts
-│   ├── sync_from_asana.py      # Asana → Per-project Markdown sync
-│   ├── config.json.example     # Asana sync global config example
-│   └── asana_config.json.example  # Per-project Asana config example
-├── _archive/                   # Archived projects
-│   ├── _mini/               # Archived mini tier projects
-│   └── _domains/            # Archived domain projects
-├── _mini/                   # Mini tier projects
-├── _domains/                # Domain category projects
-│   └── _mini/               # Domain mini tier projects
-├── .context/                   # Workspace-level AI context
-│   └── active_projects.md      # Active projects list
-├── _ai-workspace/              # AI analysis and experimentation for entire workspace
-├── CLAUDE.md                   # AI instructions for entire workspace
-├── README.md                   # This file
-├── workspace-architecture.md   # Detailed design documentation
-└── {ProjectName}/              # Individual projects (full tier)
-```
-
-### Project Folder Structure
-
-#### Full Tier
-
-```
-Documents/Projects/{ProjectName}/
-├── _ai-context/                # AI Context & Obsidian Junction [Local]
-│   └── obsidian_notes/         # Junction → Box/Obsidian-Vault/Projects/{ProjectName}
-├── _ai-workspace/              # AI analysis and experimentation [Local]
-├── development/                # Development related [Local - Git managed]
-│   ├── source/                 # Source code
-│   ├── config/                 # Configuration files
-│   └── scripts/                # Development scripts
-├── shared/                     # Junction → Box/Projects/{ProjectName}
-├── external_shared/            # (Optional) Directory containing junctions to arbitrary BOX folders
-├── AGENTS.md                   # Copy from shared/AGENTS.md
-└── CLAUDE.md                   # Copy from shared/AGENTS.md
-
-Box/Projects/{ProjectName}/
-├── asana_config.json           # (Optional) Asana integration config
-├── CLAUDE.md                   # AI instructions (physical file)
-├── docs/                       # Created/edited documents
-│   ├── planning/               # Planning, requirements, proposals
-│   ├── design/                 # Design documents
-│   ├── testing/                # Test plans, cases, results
-│   └── release/                # Release and migration procedures
-├── reference/                  # Reference materials (read-only, for storage)
-│   ├── vendor/                 # Vendor-provided materials
-│   ├── standards/              # Company rules and standards
-│   └── external/               # Other external materials
-├── records/                    # Records and history (evidence)
-│   ├── minutes/                # Meeting minutes
-│   ├── reports/                # Progress reports
-│   └── reviews/                # Review records
-└── _work/                      # Date-based working folders
-```
-
-#### Mini Tier
-
-```
-Documents/Projects/_mini/{ProjectName}/
-├── _ai-context/                # AI Context & Obsidian Junction [Local]
-│   └── obsidian_notes/         # Junction → Box/Obsidian-Vault/Projects/_mini/{ProjectName}
-├── development/                # Development related [Local]
-│   ├── source/                 # Source code (Git managed)
-│   └── config/                 # Configuration files
-├── shared/                     # Junction → Box/Projects/_mini/{ProjectName}
-├── AGENTS.md                   # Copy from shared/AGENTS.md
-└── CLAUDE.md                   # Copy from shared/AGENTS.md
-
-Box/Projects/_mini/{ProjectName}/
-├── CLAUDE.md                   # AI instructions (physical file)
-├── docs/                       # Documents (flat - no subfolders)
-└── _work/                      # Working folder
-```
-
-### Link Configuration
-
-| Type | Local Side | Link Destination (BOX Side) | Admin Rights |
-|------|-----------|----------------------------|-------------|
-| Junction | shared/ | Box/Projects/{ProjectName}/ | Not required |
-| Junction | _ai-context/obsidian_notes/ | Box/Obsidian-Vault/Projects/{ProjectName}/ | Not required |
-| Junction | external_shared/ | User's specified BOX Folder | Not required |
+`domain` is for ongoing technical areas (e.g., GenAI tooling, shared platform) managed separately under `_domains/`.
+mini tier omits `_ai-workspace/` for a lighter footprint.
 
 ## Quick Start
 
-### 1. Prerequisites
+### 1. Create paths.json
 
-Create `Documents/Projects/_config/paths.json`:
+`Documents/Projects/_config/paths.json`:
 
 ```json
 {
   "localProjectsRoot": "%USERPROFILE%\\Documents\\Projects",
   "boxProjectsRoot": "%USERPROFILE%\\Box\\Projects",
   "obsidianVaultRoot": "%USERPROFILE%\\Box\\Obsidian-Vault",
-  "hotkey": {
-    "modifiers": "Ctrl+Shift",
-    "key": "P"
-  }
+  "hotkey": { "modifiers": "Ctrl+Shift", "key": "P" }
 }
 ```
 
-The `hotkey` field is optional (defaults to Ctrl+Shift+P). Since this file is managed per-PC (not synced via BOX), each PC can have different hotkey settings.
+`hotkey` is optional (defaults to Ctrl+Shift+P). This file is not BOX-synced — create it on each PC individually.
 
-Each value is a full path. Environment variables such as `%USERPROFILE%` are expanded automatically.
+### 2. Launch the GUI Manager
 
-### 2. Using GUI Manager
+Double-click `exec_project_manager.cmd`, or use the global hotkey to show the window.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_manager.ps1"
-```
+### 3. Create a project
 
-Or double-click `exec_project_manager.cmd` in the Projects root to launch.
+Select project name and Tier in the Setup tab → run setup.
 
-Features:
-- System tray resident: Runs in the notification area (no taskbar icon), always accessible via tray icon click or global hotkey
-- Global hotkey: Toggle window visibility (default: Ctrl+Shift+P, configurable per-PC via paths.json)
-- Esc key: Hide window to tray
-- Close button: Hide to tray (Shift+Click to fully exit)
-- Dashboard tab: Project overview with quick actions. Features an **Activity Bar** showing activity for the last 30 days (Green: Active, Gray: Inactive).
-- Timeline tab: Visualizes project activity history chronologically from `focus_history` and `decision_log`. Preview work content and identify activity gaps.
-- Editor tab: Quick access to key AI context files and Asana tasks via categorized file lists. Markdown editing powered by AvalonEdit.
-- Asana Sync tab: Synchronize Asana tasks to project Markdown files. Supports manual execution and scheduled auto-sync.
-- Setup tab: Select project name and Tier for setup
-- Convert tab: Convert existing projects between Tiers (full <-> mini).
-- AI Context tab: Set up Context Compression Layer for projects
-- Check tab: Health check for existing projects
-- Archive tab: Archive with DryRun preview
-- Archiving moves all three layers to `_archive/`. Mini tier projects are moved under `_archive/_mini/`.
-- Settings tab: Configure global hotkey and Windows startup registration
-- Real-time display of script output
-- Custom dark-themed title bar (Catppuccin Mocha)
+### 4. Setup on PC-B
 
-### 3. Setup on PC-B
+After BOX sync completes, just re-run setup from the Setup tab to recreate junctions.
 
-After BOX sync is complete, simply run the setup from the GUI Manager's Setup tab again to create junctions.
+## GUI Manager Features
 
-- The `_config/paths.json` file needs to be created on each PC individually (Not synced via BOX).
-- CLAUDE.md/AGENTS.md copies are created automatically.
+| Tab | Function |
+|-----|----------|
+| Dashboard | Project overview + 30-day Activity Bar |
+| Timeline | Chronological activity history from focus_history / decision_log |
+| Editor | Quick access to AI context files and Asana tasks, Markdown editing |
+| Asana Sync | Sync Asana tasks to Markdown (manual / scheduled auto-sync) |
+| Setup | Create project (select Tier) |
+| Convert | Convert between tiers (full <-> mini) |
+| AI Context | Set up Context Compression Layer |
+| Check | Health check for existing projects |
+| Archive | Archive with DryRun preview (moves all 3 layers to `_archive/`) |
+| Settings | Configure hotkey, Windows startup registration |
 
-## Script List
+System tray resident / Global hotkey / Catppuccin Mocha dark theme
 
-### _projectTemplate/scripts/
+## Key Scripts
 
 | Script | Purpose |
 |--------|---------|
-| `project_manager.ps1` | GUI project manager (integrates all scripts) |
+| `project_manager.ps1` | GUI Manager |
 | `setup_project.ps1` | Project initial setup |
+| `setup_context_layer.ps1` | CCL setup |
 | `check_project.ps1` | Health check |
 | `archive_project.ps1` | Archive completed projects |
-| `convert_tier.ps1` | Convert between mini/full tiers |
-| `config.template.json` | Config file template |
-| `get_tokens.py` | Token counter (tiktoken) for context file health display in Dashboard |
-| `exec_project_manager.cmd` | GUI manager batch file (in Projects root) |
-
-### context-compression-layer/
-
-| File | Purpose |
-|------|---------|
-| `setup_context_layer.ps1` | Set up Context Compression Layer for a project (auto-appends CCL instructions to CLAUDE.md) |
-| `save_focus_snapshot.ps1` | Save daily snapshot of current_focus.md |
-| `templates/` | Template files for AI context (project_summary, current_focus, file_map, decision_log, etc.) |
-| `templates/CLAUDE_MD_SNIPPET.md` | CCL instructions to append to CLAUDE.md |
-| `examples/` | Example files showing usage patterns |
-| `skills/` | AI autonomous behavioral guidelines |
-| `skills/context-decision-log/` | Auto-detect decisions and record structured logs |
-| `skills/context-session-end/` | Detect session boundaries and update current_focus.md |
-| `skills/obsidian-knowledge/` | Read Obsidian Vault for context, propose writing session outcomes back, and route cross-project insights to global ai-context/ hub |
-
-### _globalScripts/
-
-| Script | Purpose |
-|--------|---------|
-| `sync_from_asana.py` | Asana tasks → Per-project Markdown sync |
-| `config.json.example` | Asana sync global config example (auth, personal project GIDs) |
-| `asana_config.json.example` | Per-project Asana config example (placed in `Box/Projects/{Project}/asana_config.json`) |
+| `convert_tier.ps1` | Tier conversion (mini <-> full) |
+| `sync_from_asana.py` | Asana → Markdown sync |
 
 ## Documentation
 
 - [workspace-architecture.md](./workspace-architecture.md) - Detailed design documentation
-- [_projectTemplate/README.md](./Projects/_projectTemplate/README.md) - Template detailed documentation
-- [CLAUDE.md](./Projects/CLAUDE.md) - AI instructions for entire workspace
-- [_globalScripts/CLAUDE.md](./_globalScripts/CLAUDE.md) - Asana sync script architecture for AI
+- [_projectTemplate/README.md](./Projects/_projectTemplate/README.md) - Template details
+- [context-compression-layer/README.md](./Projects/_projectTemplate/context-compression-layer/README.md) - CCL details
 
 ## License
 

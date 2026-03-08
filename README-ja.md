@@ -1,451 +1,179 @@
 # ai-collab-folder-structure
 
-<!-- ![Workspace Architecture](_asset/ai-collab-folder-structure.drawio.svg) -->
+AI (Claude Code) との協働を前提とした、プロジェクトフォルダ管理フレームワークです。
+Windows + BOX Drive + Obsidian 環境で、複数プロジェクトのコンテキスト管理を自動化します。
 
-AI(Claude Code)との協働を前提とした、プロジェクトフォルダ管理フレームワークです。
-
-## 概要
-
-複数プロジェクトを整理し、AIとのコンテキスト共有を最適化するための3層構造ワークスペースです。
-
-- Layer 1 (Execution): ローカル作業領域(Git管理、揮発性の高い作業)
-- Layer 2 (Knowledge): Obsidian Vault(思考・知見の蓄積、BOX同期)
-- Layer 3 (Artifact): 成果物・参照資料(ファイルバックアップ・PC間同期、BOX同期)
-
-## 必須要件・制約事項
-
-- Windows専用(ジャンクション・PowerShellスクリプト)
-- BOX Driveが必要(Layer 2/3の同期)
-
-## 3層レイヤー構造
+> 🌐 [English version available here](README.md)
 
 ```mermaid
 flowchart TD
-    %% Define styles
-    classDef local fill:#2d2d2d,stroke:#555,stroke-width:2px,color:#fff
-    classDef box fill:#0b4d75,stroke:#1a7BB9,stroke-width:2px,color:#fff
-    classDef obs fill:#4a1e6d,stroke:#7D3CB5,stroke-width:2px,color:#fff
-    classDef junction fill:#d06000,stroke:#ff8800,stroke-width:2px,stroke-dasharray: 5 5,color:#fff
+    classDef local fill:#2d2d2d,stroke:#555,color:#fff
+    classDef box fill:#0b4d75,stroke:#1a7bb9,color:#fff
+    classDef obs fill:#4a1e6d,stroke:#7d3cb5,color:#fff
+    classDef ai fill:#1a4a1a,stroke:#3a8a3a,color:#fff
 
-    subgraph L1 ["Layer 1: Execution"]
+    subgraph L1["Layer 1: Execution (Local)"]
         direction TB
-        LocalProj["📁 Documents/Projects/{ProjectName}"]:::local
-        Dev["💻 development/ (Git管理)"]:::local
-        
-        %% Junctions
-        JuncShared["🔗 shared/ (ジャンクション)"]:::junction
-        JuncCtx["🔗 _ai-context/ (ジャンクション)"]:::junction
-        
-        LocalProj --- Dev
-        LocalProj --- JuncShared
-        LocalProj --- JuncCtx
+        Dev["💻 development/\n(Git)"]:::local
+        Work["📁 _work/\n(日々の作業)"]:::local
+        AIW["🔬 _ai-workspace/\n(実験・分析)"]:::local
     end
 
-    subgraph L3 ["Layer 3: Artifact"]
+    subgraph L3["Layer 3: Artifact (BOX)"]
         direction TB
-        BoxProj["📁 Box/Projects/{ProjectName}"]:::box
-        Work["💻 _work/ (日々の作業場)"]:::box
-        Docs["📄 docs/ (正式な成果物)"]:::box
-        
-        BoxProj --- Work
-        BoxProj --- Docs
+        Docs["📄 docs/\n(成果物)"]:::box
+        Ref["📚 reference/\n(参考資料)"]:::box
     end
 
-    subgraph L2 ["Layer 2: Knowledge"]
+    subgraph L2["Layer 2: Knowledge (BOX + Obsidian)"]
         direction TB
-        ObsVault["📁 Box/Obsidian-Vault"]:::obs
-        AiCtx["🧠 ai-context/ (AIコンテキストファイル)"]:::obs
-        Daily["📝 daily/ (個人の思考・メモ)"]:::obs
-        
-        ObsVault --- AiCtx
-        ObsVault --- Daily
+        CCL["🧠 ai-context/\n(CCL Context Files)"]:::obs
+        Notes["📝 notes/ meetings/\n(Obsidian Notes)"]:::obs
     end
 
-    %% Links
-    JuncShared == ファイル自動同期 === BoxProj
-    JuncCtx == 知識ベース同期 === ObsVault
+    Claude["🤖 Claude Code"]:::ai
+
+    L1 -- "shared/ junction" --> L3
+    L1 -- "_ai-context/ junction" --> L2
+    Claude -- "読み書き" --> L2
+    Claude -- "コード更新" --> L1
 ```
 
-| Layer | 役割 | 場所 | データの性質 |
-|-------|------|------|-------------|
-| Layer 1: Execution | 作業場 | Documents/Projects/{案件}/ (Local) | WIP、揮発性が高い |
-| Layer 2: Knowledge | 思考・知識 | Box/Obsidian-Vault/ (BOX Sync) | 文脈、経緯、知見 |
-| Layer 3: Artifact | 成果物・参照 | Box/Projects/{案件}/ (BOX Sync) | バックアップ・PC間同期ドキュメント |
+## なぜ使うのか
 
-## AIとの協働ワークフロー
+- AIがセッションをまたいで文脈を保持し、作業を継続できる (Context Compression Layer)
+- Obsidian Vaultとの双方向連携で、過去の知見・議事録をAIが自動参照
+- BOX Drive経由で複数PCにシームレスに同期
+- GUIマネージャーでプロジェクトの作成・管理・アーカイブを一括操作
 
-本アーキテクチャでは、Context Compression Layer (CCL) とAIの自律行動規範をコア機能として統合し、ユーザーが明示的にスキルを呼び出さなくてもAIが自然に文脈管理を行うシームレスな協働作業を実現します。
+## ユースケース
 
-### Context Compression Layer (CCL)
+### 続きから始める — 背景説明ゼロ
 
-セッション跨ぎのAIコンテキスト管理 - AIが過去の文脈を正しく理解し、作業の継続性を保つための仕組み:
+前回の作業内容を説明し直す必要はありません。`claude` を起動すると、AIが `current_focus.md` を読んで状況を把握し、すぐに続きから始められます。
 
-- 構成要素: project_summary.md (全体像、目安300トークン), current_focus.md (今のフォーカス、目安500トークン), tensions.md (未解決トレードオフ・懸念事項), decision_log (意思決定履歴)
-- Session Start Protocol: セッション開始時にAIがコンテキストファイルを優先順位順に読み込み (current_focus → project_summary → tensions → decision_log)、未完了作業を1〜2行でサマリー提示。前回更新が3日以上前の場合のみ進捗を1回確認
-- 承認モデル: Auto (current_focus.md への追記)、Notify (tensions.md、低影響 decision_log)、Confirm (project_summary.md、高影響 decision_log)
-- AI自律行動: AIが会話の流れから意思決定や作業の区切りを検知し、自分からコンテキストファイルの更新を提案。未解決トレードオフを検出した際は tensions.md への記録を提案。ファイルが目安サイズを超えた場合は focus_history/ へのアーカイブを提案
+> 🤖 前回は `auth.ts` のトークンリフレッシュ実装中でした。テストがまだ残っています。続けますか?
 
-### AI自律行動規範
+### 意思決定が自動的に記録される
 
-AIはCLAUDE.mdに記述された行動規範に従い、以下を自律的に実行します。ユーザーがスキル名を意識して呼び出す必要はありません。
+技術選定や設計判断をした瞬間、AIが検知して記録を提案します。後から「あのとき何を決めたっけ?」という確認も `decision_log` を参照するだけです。
 
-- 未解決課題の検出と記録: 会話中にトレードオフや未決定事項を検出し、`tensions.md` への記録を提案。解決時は削除と decision_log への昇格を提案
-- 意思決定の検出と記録: 会話中の暗黙的な決定事項（技術選定、設計判断等）を検出し、構造化された意思決定ログとして記録を提案
-- セッション終了の検知: 作業の区切りを自然に検知し、AIが関与した作業内容のみを `current_focus.md` へ追記提案
-- Obsidian ナレッジ連携: `_ai-context/obsidian_notes/` を読んで文脈を補完し、作業中の発見やセッションの成果をVaultに還元。プロジェクト横断で再利用できる知見はVaultルートの `{obsidianVaultRoot}/ai-context/` ハブ (tech-patterns/, lessons-learned/) に振り分け提案。AI生成ノートには `#ai-memory` タグを付与
+> 🤖 Redis をキャッシュレイヤーとして使う方針に決まりましたね。`decision_log` に記録しておきますか?
 
-### ワークフロー例 (Claude Code)
+### 過去の知見をAIが参照する
 
-日々の作業はBOX同期対象の `_work` フォルダ内で、日付ベースの作業フォルダを作成して行います。
-AIは行動規範に従って自律的にコンテキスト管理を行うため、ユーザーは普段スキルの存在を意識する必要はありません。
+Obsidianに蓄積した会議メモや技術メモをAIが自動で検索・参照します。「以前やった対処法」を自分で探す手間がなくなります。
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant Work as _work/2026/...
-    participant Claude
-    participant CCL as CCL (Context Files)
-    participant Obsidian as Obsidian Notes
+> 👨‍💻 DBタイムアウトの設定ってどうだっけ?
+> 🤖 `notes/db_timeout_config.md` (2026年1月) によると、コネクションプールの設定値は...
 
-    User->>Work: 日付ベースの作業専用フォルダを作って移動
-    User->>Claude: claude を起動 (自動コンテキスト読み込み)
+### 複数PCで同じ環境
 
-    rect rgba(128, 128, 128, 0.1)
-        Note right of Claude: 対話的な作業セッション
+自宅PCでもオフィスPCでも、BOX同期後に `claude` を起動するだけで同じコンテキストが読み込まれます。セットアップは GUIマネージャーの Setup タブを再実行するだけです。
 
-        User->>Claude: コーディング・修正の依頼
-        Claude->>Obsidian: トピック関連ノートを検索して文脈補完
-        Claude->>Work: ソースコードの更新
+## 前提・制約
 
-        Note right of Claude: 意思決定を自動検知
-        Claude->>CCL: decision_log.md の記録を提案・保存
+- Windows専用 (ジャンクション・PowerShell)
+- BOX Drive 必須 (Layer 2/3 の同期)
 
-        Note right of Claude: 価値ある知見を検出
-        Claude->>Obsidian: notes/ への保存を提案
-    end
+## 3層構造
 
-    Note right of Claude: 区切りを自動検知
-    Claude->>CCL: current_focus.md の追記を提案・更新
-    Claude->>Obsidian: daily/ai-session.md への記録を提案
-```
+| Layer | 役割 | 場所 | 特徴 |
+|-------|------|------|------|
+| Layer 1: Execution | 作業場 | Documents/Projects/{案件}/ | Git管理、揮発性 |
+| Layer 2: Knowledge | 思考・知識 | Box/Obsidian-Vault/ | コンテキスト・知見蓄積 |
+| Layer 3: Artifact | 成果物・参照 | Box/Projects/{案件}/ | BOX同期、バックアップ |
 
-#### 1. 作業フォルダの作成と移動
+ローカルの `shared/` (→ Layer 3) と `_ai-context/` (→ Layer 2) をジャンクションで接続し、3層を透過的に扱えます。
 
-```bash
-# 日付ベースの作業専用フォルダを作成・移動
-cd Box\Projects\NewProject\_work
-mkdir 2026\202602_feature_x
-cd 2026\202602_feature_x
+## AI協働の仕組み (Context Compression Layer)
 
-# Claude Codeを起動（自動的にプロジェクトのコンテキストが読み込まれます）
-claude
-```
+AIがセッションをまたいで文脈を引き継ぐためのコンテキスト管理層です。
 
-#### 2. Claude Codeとの作業（AIが自律的に記録）
+| ファイル | 役割 | 目安サイズ |
+|---------|------|-----------|
+| `current_focus.md` | 今の作業フォーカス | 500トークン |
+| `project_summary.md` | プロジェクト全体像 | 300トークン |
+| `decision_log/` | 意思決定の履歴 | - |
+| `tensions.md` | 未解決トレードオフ・懸念事項 | - |
 
-ユーザーは通常の作業を進めるだけで、AIが状況を判断して適切なタイミングで記録を提案します。
+AIはCLAUDE.mdの行動規範に従い、意思決定・セッション区切り・有益な知見を自律的に検知して記録提案します。ユーザーは普段の作業をするだけでOKです。
 
-> 👨‍💻 User:
-> `src/api/auth.ts` のログイン処理を改善して。トークンの有効期限切れエラー時にはリフレッシュ処理を挟むようにしたい。
-> 
-> 🤖 Claude:
-> （コードの修正後...）
-> 修正が完了しました。
-> 💡 Decision Logに記録しますか？ → 認証フローにトークンリフレッシュ処理を追加
-> 
-> 👨‍💻 User:
-> お願い。
-> 
-> 🤖 Claude:
-> `decision_log.md` に記録しました。
-> 
-> 👨‍💻 User:
-> 今日の作業はここまで。
-> 
-> 🤖 Claude:
-> 📝 current_focus.md に追記しますか？
-> 
-> 【最近あったこと】に追加:
->   + [AI] auth.ts のトークンリフレッシュ処理を実装
->   + [AI] 認証フロー変更をDecision Logに記録
-> 
-> （はい / 修正あり / 不要）
+## プロジェクト Tier
 
-#### 3. Obsidian ナレッジ連携（AIがVaultと双方向に連携・知見の蓄積）
+| Tier | 用途 | 配置先 |
+|------|------|--------|
+| full / project | メイン案件 | `Projects/{案件}/` |
+| mini / project | お手伝い・軽量案件 | `Projects/_mini/{案件}/` |
+| full / domain | 継続的な技術領域 | `Projects/_domains/{案件}/` |
+| mini / domain | 軽量な技術領域 | `Projects/_domains/_mini/{案件}/` |
 
-AIは `_ai-context/obsidian_notes/` を通じてObsidian Vaultを参照し、作業の成果や技術的な知見を蓄積します。
-
-> 👨‍💻 User:
-> 以前、このプロジェクトでDB接続のタイムアウト問題に対処した時の構成ってどうなってたっけ？
-> 
-> 🤖 Claude:
-> `obsidian_notes/notes/` を検索しました。
-> 2026年1月に記録された `db_timeout_config.md` によると、コネクションプールの設定値を...
-> 
-> 👨‍💻 User:
-> なるほど、ありがとう。それを踏まえて、先週の認証フロー見直し会議の決定事項はどうだっけ？
-> 
-> 🤖 Claude:
-> `obsidian_notes/meetings/` を確認します。
-> `2026-02-17_authentication-review.md` に議事録がありました。主な決定事項は...
-> （内容を踏まえて実装の方針を提案）
-> 
-> 👨‍💻 User:
-> 完璧、その方針で進めて。今日はここまで。
-> 
-> 🤖 Claude:
-> 📝 current_focus.md に追記しますか？
-> 
-> 【最近あったこと】に追加:
->   + [AI] auth.ts のトークンリフレッシュ処理を実装
-> 
-> 📓 今回のRedisキャッシュ戦略は今後も参照価値がありそうです。Obsidianにも記録しておきますか？
-> → notes/redis-cache-strategy.md
->   Redis キャッシュ戦略: TTL設計とキー命名規則
-> 
-> （はい / 修正あり / 不要）
-
-#### 4. このワークフローの利点
-
-このように `_work` フォルダで作業を進めることで以下のメリットがあります。
-- 作業の過程（一時ファイルなど）は `docs` などの正式なドキュメント群を汚しません
-- 重要な意思決定（`decision_log.md`）や進捗（`current_focus.md`）のみが、AIの自律的な判断によって引き上げられ記録されます
-- 次回作業時に、AIが最新の `current_focus.md` を読み込むため、すぐに作業を再開できます
-- AIがObsidian Vaultの過去の会議メモや知見を参照して文脈補完するため、背景説明の手間が減ります
-- AI作業の成果がObsidian Vaultに蓄積され、プロジェクトのナレッジベースが育ちます
-
-## ワークスペース構成の詳細
-
-### プロジェクト Tier と Category
-
-| Tier | Category | 配置先 | 用途 | 構成 |
-|------|----------|--------|------|------|
-| full | project | `Projects/{案件}/` | メイン案件 | 全機能(_ai-workspace、構造化フォルダ) |
-| mini | project | `Projects/_mini/{案件}/` | お手伝い系 | 軽量構成(最小限のフォルダ) |
-| full | domain | `Projects/_domains/{案件}/` | 継続的な技術領域 | 全機能(_ai-workspace、構造化フォルダ) |
-| mini | domain | `Projects/_domains/_mini/{案件}/` | 軽量な技術領域タスク | 軽量構成(最小限のフォルダ) |
-
-Category は tier (フォルダ構成) とは独立した軸です。`domain` は期間限定でないプロジェクト(生成AIツール開発、共通基盤など)を `_domains/` 配下に分離管理するためのカテゴリです。
-
-### Multi-CLI対応
-
-複数のAI CLIエージェント (Claude Code, Codex CLI, Gemini CLI 等) が混在する環境下でも、プロジェクト指示とコンテキストを一本化する仕組みを採用しています。マスターとなる指示書は `shared/AGENTS.md` (Layer 3) に一元管理し、各CLIが要求する固有のファイル名 (`CLAUDE.md` 等) にはそのコピーを配置します。詳細は [workspace-architecture.md](./workspace-architecture.md) を参照してください。
-
-### 2PC間の同期戦略
-
-- BOX同期: Obsidian Vault、shared/ 経由の成果物
-- Git同期: ソースコード(development/source/)
-- ローカル独立: _ai-workspace/
-
-### ワークスペース全体の構成
-
-```
-Documents/Projects/
-├── _config/
-│   └── paths.json              # ワークスペース共通パス定義
-├── _projectTemplate/           # プロジェクトテンプレート・管理スクリプト
-│   ├── scripts/
-│   │   ├── project_manager.ps1     # GUIプロジェクトマネージャー
-│   │   ├── setup_project.ps1       # プロジェクト初期セットアップ
-│   │   ├── check_project.ps1       # 健全性チェック
-│   │   ├── archive_project.ps1     # 完了プロジェクトのアーカイブ
-│   │   ├── config.template.json    # 設定ファイルテンプレート
-│   │   ├── get_tokens.py           # コンテキストファイルのトークン数カウント (tiktoken)
-│   │   └── manager/                   # GUIマネージャーモジュール
-├── exec_project_manager.cmd       # GUIマネージャー起動用バッチ (Projects ルート)
-│   ├── context-compression-layer/  # AIコンテキスト圧縮層セットアップ
-│   │   ├── setup_context_layer.ps1 # コンテキスト層セットアップスクリプト
-│   │   ├── templates/              # コンテキストファイルテンプレート
-│   │   ├── examples/               # 使用例
-│   │   ├── skills/                 # コンテキスト管理用Agentスキル
-│   │   ├── README.md               # 英語ドキュメント
-│   │   └── README-ja.md            # 日本語ドキュメント
-│   ├── AGENTS.md               # 新規プロジェクト用AI指示書テンプレート
-│   ├── CLAUDE.md               # AGENTS.mdのコピー (Claude CLI用)
-│   └── README.md               # テンプレート詳細ドキュメント
-├── _globalScripts/             # プロジェクト横断スクリプト
-│   ├── sync_from_asana.py      # Asana → 案件別Markdown同期
-│   ├── config.json.example     # Asana同期のグローバル設定例
-│   └── asana_config.json.example  # 案件別Asana設定の例
-├── _archive/                   # アーカイブ済みプロジェクト
-│   ├── _mini/               # アーカイブ済み mini tier プロジェクト
-│   └── _domains/            # アーカイブ済み domain プロジェクト
-├── _mini/                   # mini tier プロジェクト群
-├── _domains/                # domain カテゴリプロジェクト群
-│   └── _mini/               # domain mini tier プロジェクト
-├── .context/                   # ワークスペースAIコンテキスト
-│   └── active_projects.md      # アクティブプロジェクト一覧
-├── _ai-workspace/              # ワークスペース全体のAI分析・実験用
-├── CLAUDE.md                   # ワークスペース全体のAI指示書
-├── README.md                   # 本ファイル
-├── workspace-architecture.md   # 詳細設計ドキュメント
-└── {ProjectName}/              # 各プロジェクト (full tier)
-```
-
-### プロジェクトフォルダ構成
-
-#### full tier
-
-```
-Documents/Projects/{ProjectName}/
-├── _ai-context/                # AI Context & Obsidian Junction [Local]
-│   └── obsidian_notes/         # Junction → Box/Obsidian-Vault/Projects/{ProjectName}
-├── _ai-workspace/              # AI分析・実験用 [Local]
-├── development/                # 開発関連 [Local - Git管理]
-│   ├── source/                 # ソースコード
-│   ├── config/                 # 設定ファイル
-│   └── scripts/                # 開発スクリプト
-├── shared/                     # Junction → Box/Projects/{ProjectName}
-├── external_shared/            # (Optional) 任意のBOX共有フォルダへのジャンクションを格納するディレクトリ
-├── AGENTS.md                   # Copy from shared/AGENTS.md
-└── CLAUDE.md                   # Copy from shared/AGENTS.md
-
-Box/Projects/{ProjectName}/
-├── asana_config.json           # (Optional) Asana連携設定
-├── CLAUDE.md                   # AI指示書 (実体)
-├── docs/                       # 作成・編集ドキュメント
-│   ├── planning/               # 企画・要件定義・提案書
-│   ├── design/                 # 設計書
-│   ├── testing/                # テスト計画・ケース・結果
-│   └── release/                # リリース・移行手順
-├── reference/                  # 参考資料 (読むだけ・保存用)
-│   ├── vendor/                 # ベンダー提供資料
-│   ├── standards/              # 社内規約・標準
-│   └── external/               # その他外部資料
-├── records/                    # 記録・履歴 (証跡)
-│   ├── minutes/                # 議事録
-│   ├── reports/                # 進捗報告
-│   └── reviews/                # レビュー記録
-└── _work/                      # 日付ベースの作業フォルダ
-```
-
-#### mini tier
-
-```
-Documents/Projects/_mini/{ProjectName}/
-├── _ai-context/                # AI Context & Obsidian Junction [Local]
-│   └── obsidian_notes/         # Junction → Box/Obsidian-Vault/Projects/_mini/{ProjectName}
-├── development/                # 開発関連 [Local]
-│   ├── source/                 # ソースコード (Git管理)
-│   └── config/                 # 設定ファイル
-├── shared/                     # Junction → Box/Projects/_mini/{ProjectName}
-├── AGENTS.md                   # Copy from shared/AGENTS.md
-└── CLAUDE.md                   # Copy from shared/AGENTS.md
-
-Box/Projects/_mini/{ProjectName}/
-├── CLAUDE.md                   # AI指示書 (実体)
-├── docs/                       # ドキュメント (flat - サブフォルダなし)
-└── _work/                      # 作業フォルダ
-```
-
-### リンク構成
-
-| 種類 | ローカル側 | リンク先 (BOX側) | 管理者権限 |
-|------|-----------|-----------------|-----------|
-| Junction | shared/ | Box/Projects/{ProjectName}/ | 不要 |
-| Junction | _ai-context/obsidian_notes/ | Box/Obsidian-Vault/Projects/{ProjectName}/ | 不要 |
-| Junction | external_shared/ | 任意のBOX外部共有フォルダ | 不要 |
+`domain` は期間限定でない技術領域 (生成AIツール、共通基盤等) を `_domains/` 配下で管理するカテゴリです。
+mini tier は `_ai-workspace/` を省略した軽量構成です。
 
 ## クイックスタート
 
-### 1. 前提条件
+### 1. paths.json を作成
 
-`Documents/Projects/_config/paths.json` を作成:
+`Documents/Projects/_config/paths.json`:
 
 ```json
 {
   "localProjectsRoot": "%USERPROFILE%\\Documents\\Projects",
   "boxProjectsRoot": "%USERPROFILE%\\Box\\Projects",
   "obsidianVaultRoot": "%USERPROFILE%\\Box\\Obsidian-Vault",
-  "hotkey": {
-    "modifiers": "Ctrl+Shift",
-    "key": "P"
-  }
+  "hotkey": { "modifiers": "Ctrl+Shift", "key": "P" }
 }
 ```
 
-`hotkey` は省略可能です(デフォルト: Ctrl+Shift+P)。このファイルはPCごとにローカル管理(BOX非同期)のため、PCごとに異なるホットキーを設定できます。
+`hotkey` は省略可能 (デフォルト: Ctrl+Shift+P)。このファイルはBOX非同期のためPCごとに作成します。
 
-各値はフルパスで記述します。`%USERPROFILE%` などの環境変数は自動的に展開されます。
+### 2. GUIマネージャーを起動
 
-### 2. GUIマネージャーで操作
+`exec_project_manager.cmd` をダブルクリック、またはグローバルホットキーで表示。
 
-```powershell
-powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_manager.ps1"
-```
+### 3. プロジェクトを作成
 
-または Projects ルートの `exec_project_manager.cmd` をダブルクリックでも起動できます。
+Setup タブでプロジェクト名と Tier を選択 → セットアップ実行。
 
-機能:
-- システムトレイ常駐: 通知領域に常駐(タスクバーには表示されない)、トレイアイコンクリックまたはグローバルホットキーでいつでもアクセス可能
-- グローバルホットキー: ウィンドウの表示/非表示をトグル(デフォルト: Ctrl+Shift+P、PCごとにpaths.jsonで設定変更可能)
-- Escキー: ウィンドウをトレイに格納
-- 閉じるボタン: トレイに格納(Shift+クリックで完全終了)
-- Dashboard タブ: プロジェクト概要とクイックアクション。直近30日のアクティビティを表示する **Activity Bar** (Green: 活動あり, Gray: 活動なし) を搭載
-- Timeline タブ: `focus_history` や `decision_log` からプロジェクトの活動履歴を時系列で表示。作業内容のプレビューや未活動期間の確認が可能
-- Editor タブ: カテゴリ別に整理されたファイルリストから主要なAIコンテキストファイルや Asana タスクへ素早くアクセス。AvalonEdit による Markdown 編集
-- Asana Sync タブ: Asana タスクをプロジェクトの Markdown ファイルへ同期。手動実行および指定間隔での自動定期同期に対応
-- Setup タブ: プロジェクト名と Tier を選択してセットアップ
-- Convert タブ: 既存プロジェクトの Tier (full <-> mini) を相互に変換
-- AI Context タブ: プロジェクトへのContext Compression Layerセットアップ
-- Check タブ: 既存プロジェクトの健全性チェック
-- Archive タブ: DryRun プレビュー付きでアーカイブ実行
-- アーカイブは3層すべてを `_archive/` に移動します。mini tier は `_archive/_mini/` 配下に移動されます。
-- Settings タブ: グローバルホットキーの設定変更、Windowsスタートアップ登録/解除
-- 出力エリアにスクリプトの実行結果をリアルタイム表示
-- カスタムダークテーマタイトルバー (Catppuccin Mocha)
+### 4. 別PCでのセットアップ
 
-### 3. PC-B でのセットアップ
+BOX同期後、Setup タブから再実行するだけでジャンクションが再作成されます。
 
-BOX同期完了後、GUIマネージャーの Setup タブから再度セットアップを実行するだけでジャンクションが作成されます。
+## GUIマネージャー機能
 
-- `_config/paths.json` は各PCで個別に作成が必要(BOX非同期)
-- CLAUDE.md/AGENTS.md は自動的にコピーされます。
+| タブ | 機能 |
+|------|------|
+| Dashboard | プロジェクト一覧 + 直近30日のActivity Bar |
+| Timeline | focus_history / decision_log から活動履歴を時系列表示 |
+| Editor | AIコンテキストファイル・Asanaタスクへのクイックアクセス、Markdown編集 |
+| Asana Sync | Asanaタスク → Markdown同期 (手動 / 定期自動) |
+| Setup | プロジェクト作成 (Tier選択) |
+| Convert | Tier変換 (full <-> mini) |
+| AI Context | Context Compression Layer セットアップ |
+| Check | 健全性チェック |
+| Archive | DryRun付きアーカイブ (3層すべてを `_archive/` へ移動) |
+| Settings | ホットキー設定・Windowsスタートアップ登録 |
 
-## スクリプト一覧
+システムトレイ常駐 / グローバルホットキー / Catppuccin Mocha ダークテーマ
 
-### _projectTemplate/scripts/
+## 主要スクリプト
 
 | スクリプト | 用途 |
 |-----------|------|
-| `project_manager.ps1` | GUI プロジェクトマネージャー(全スクリプトを統合) |
+| `project_manager.ps1` | GUIマネージャー本体 |
 | `setup_project.ps1` | プロジェクト初期セットアップ |
+| `setup_context_layer.ps1` | CCL セットアップ |
 | `check_project.ps1` | 健全性チェック |
-| `archive_project.ps1` | 完了プロジェクトのアーカイブ |
-| `convert_tier.ps1` | Tier 変換 (mini <-> full) |
-| `config.template.json` | 設定ファイルテンプレート |
-| `get_tokens.py` | コンテキストファイルのトークン数カウント (tiktoken)、Dashboard の健全性表示に使用 |
-| `exec_project_manager.cmd` | GUIマネージャー起動用バッチファイル (Projects ルート) |
+| `archive_project.ps1` | アーカイブ |
+| `convert_tier.ps1` | Tier変換 (mini <-> full) |
+| `sync_from_asana.py` | Asana → Markdown同期 |
 
-### context-compression-layer/
-
-| ファイル | 用途 |
-|---------|------|
-| `setup_context_layer.ps1` | プロジェクトへのContext Compression Layerセットアップ (CLAUDE.mdへのCCL指示自動追記) |
-| `save_focus_snapshot.ps1` | current_focus.mdの日次スナップショット保存 |
-| `templates/` | AIコンテキストファイルテンプレート (project_summary, current_focus, file_map, decision_log等) |
-| `templates/CLAUDE_MD_SNIPPET.md` | CLAUDE.mdに追記するCCL指示 |
-| `examples/` | 使用パターンの例 |
-| `skills/` | AI自律行動規範の定義 |
-| `skills/context-decision-log/` | 意思決定の自動検出と構造化記録 |
-| `skills/context-session-end/` | セッション区切りの検知とcurrent_focus.md追記 |
-| `skills/obsidian-knowledge/` | Obsidian Vaultの読み取りと書き込み提案、プロジェクト横断知見のグローバル ai-context/ ハブへの振り分け |
-
-### _globalScripts/
-
-| スクリプト | 用途 |
-|-----------|------|
-| `sync_from_asana.py` | Asanaタスク → 案件別Markdown同期 |
-| `config.json.example` | Asana同期のグローバル設定例 (認証情報・個人プロジェクトGID) |
-| `asana_config.json.example` | 案件別Asana設定の例 (`Box/Projects/{案件}/asana_config.json` に配置) |
-
-## ドキュメント
+## 関連ドキュメント
 
 - [workspace-architecture.md](./workspace-architecture.md) - 詳細設計ドキュメント
-- [_projectTemplate/README.md](./Projects/_projectTemplate/README.md) - テンプレート詳細ドキュメント
-- [CLAUDE.md](./Projects/CLAUDE.md) - ワークスペース全体のAI指示書
-- [_globalScripts/CLAUDE.md](./_globalScripts/CLAUDE.md) - Asana同期スクリプトのAI向け構成ドキュメント
+- [_projectTemplate/README.md](./Projects/_projectTemplate/README.md) - テンプレート詳細
+- [context-compression-layer/README-ja.md](./Projects/_projectTemplate/context-compression-layer/README-ja.md) - CCL詳細
 
 ## License
 
