@@ -1,5 +1,10 @@
 # TabDashboard.ps1 - Dashboard tab: project cards with freshness indicators
 
+# ---- Dashboard state tracking (skip unnecessary card rebuilds) ----
+$script:DashLastFilter     = $null
+$script:DashLastShowHidden = $null
+$script:DashLastBuildTime  = [datetime]::MinValue
+
 # ---- Color helpers ----
 
 function Get-FreshnessColor {
@@ -551,8 +556,47 @@ function Update-Dashboard {
     param([System.Windows.Window]$Window, [string]$FilterText = "", [bool]$ShowHidden = $false, [switch]$Force, [string]$ScriptDir = "")
     $cardsPanel = $Window.FindName("dashboardCards")
     if ($null -eq $cardsPanel) { return }
+
+    # Skip expensive card rebuild if cache is fresh and nothing has changed
+    if (-not $Force) {
+        $cacheIsFresh = ($null -ne $script:ProjectInfoCache) -and
+            (((Get-Date) - $script:ProjectInfoCacheTime).TotalSeconds -lt $script:ProjectInfoCacheTTL)
+        $builtFromCurrentCache = ($script:DashLastBuildTime -ne [datetime]::MinValue) -and
+            ($script:DashLastBuildTime -ge $script:ProjectInfoCacheTime)
+        $nothingChanged = ($FilterText -eq $script:DashLastFilter) -and
+            ($ShowHidden -eq $script:DashLastShowHidden) -and
+            $builtFromCurrentCache
+        if ($cacheIsFresh -and $nothingChanged -and $cardsPanel.Children.Count -gt 0) {
+            return
+        }
+    }
+
+    # Determine if we need to load data (cache miss or forced)
+    $cacheIsStale = ($null -eq $script:ProjectInfoCache) -or
+        (((Get-Date) - $script:ProjectInfoCacheTime).TotalSeconds -ge $script:ProjectInfoCacheTTL)
+    $needsLoad = $Force -or $cacheIsStale
+
     $cardsPanel.Children.Clear()
+
+    if ($needsLoad) {
+        # Show loading indicator before the blocking I/O
+        $tc = Get-ThemeColors -ThemeName $script:AppState.Theme
+        $loadingBlock = New-Object System.Windows.Controls.TextBlock
+        $loadingBlock.Text = "Loading projects..."
+        $loadingBlock.Foreground = New-ColorBrush $tc.Subtext1
+        $loadingBlock.FontSize = 13
+        $loadingBlock.Margin = New-Object System.Windows.Thickness(12)
+        $cardsPanel.Children.Add($loadingBlock) | Out-Null
+        # Flush render so loading text appears before the blocking call
+        $Window.Dispatcher.Invoke([Action]{}, [System.Windows.Threading.DispatcherPriority]::Render)
+    }
+
     $projects = Get-ProjectInfoList -Force:$Force
+    $script:DashLastFilter     = $FilterText
+    $script:DashLastShowHidden = $ShowHidden
+    $script:DashLastBuildTime  = $script:ProjectInfoCacheTime
+
+    $cardsPanel.Children.Clear()
     $filter = $FilterText.Trim().ToLower()
     foreach ($proj in $projects) {
         $isHidden = Test-ProjectHidden -Info $proj
