@@ -16,7 +16,17 @@ if ($consoleWindow -ne [IntPtr]::Zero) {
 
 # --- Single instance check (prevent double launch) ---
 $script:AppMutex = New-Object System.Threading.Mutex($false, "Global\ProjectManager_SingleInstance")
-if (-not $script:AppMutex.WaitOne(0, $false)) {
+$mutexAcquired = $false
+try {
+    $mutexAcquired = $script:AppMutex.WaitOne(0, $false)
+} catch [System.Threading.AbandonedMutexException] {
+    # If a previous instance crashed, we acquired the lock but an exception is thrown
+    $mutexAcquired = $true
+} catch {
+    $mutexAcquired = $false
+}
+
+if (-not $mutexAcquired) {
     # Another instance is already running - exit silently
     $script:AppMutex.Dispose()
     exit 0
@@ -173,8 +183,17 @@ $titleBar.Add_MouseLeftButtonDown({
                 # Force layout update
                 $window.Dispatcher.Invoke([Action] {}, [System.Windows.Threading.DispatcherPriority]::Render)
 
-                $window.Left = $mousePos.X - ($window.ActualWidth * $proportionalX)
-                $window.Top = 0
+                # Use global Cursor position to support multi-monitor correctly
+                $cursor = [System.Windows.Forms.Cursor]::Position
+                $source = [System.Windows.PresentationSource]::FromVisual($window)
+                $dpiX = 1.0; $dpiY = 1.0
+                if ($null -ne $source) {
+                    $dpiX = $source.CompositionTarget.TransformToDevice.M11
+                    $dpiY = $source.CompositionTarget.TransformToDevice.M22
+                }
+
+                $window.Left = ($cursor.X / $dpiX) - ($window.ActualWidth * $proportionalX)
+                $window.Top = ($cursor.Y / $dpiY) - $mousePos.Y
             }
             $window.DragMove()
         }
@@ -196,22 +215,7 @@ $btnClose.Add_Click({
         [System.Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::RightShift)
 
         if ($shiftHeld) {
-            # Force exit: check for unsaved changes first
-            if ($script:AppState.EditorState.IsDirty) {
-                $fileName = [System.IO.Path]::GetFileName($script:AppState.EditorState.CurrentFile)
-                $result = [System.Windows.MessageBox]::Show(
-                    "Save changes to '$fileName' before closing?",
-                    "Unsaved Changes",
-                    [System.Windows.MessageBoxButton]::YesNoCancel,
-                    [System.Windows.MessageBoxImage]::Warning
-                )
-                if ($result -eq [System.Windows.MessageBoxResult]::Yes) {
-                    Save-EditorFile -Window $window
-                }
-                elseif ($result -eq [System.Windows.MessageBoxResult]::Cancel) {
-                    return
-                }
-            }
+            # Force exit: the $window.Closing event handles checking for unsaved changes
             Invoke-TrayExit
         }
         else {
