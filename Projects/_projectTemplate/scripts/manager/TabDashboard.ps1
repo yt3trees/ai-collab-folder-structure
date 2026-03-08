@@ -55,15 +55,82 @@ function Invoke-ResumeWork {
     param([string]$ProjPath, [string]$FeatureName)
     $safeFeature = $FeatureName.Trim() -replace '[\\/:*?"<>|]', '_'
     $now = Get-Date
-    $yearStr  = $now.ToString("yyyy")
+    $yearStr = $now.ToString("yyyy")
     $monthStr = $now.ToString("yyyyMM")
-    $dayStr   = $now.ToString("yyyyMMdd")
-    $workDir  = Join-Path $ProjPath "shared\_work\$yearStr\$monthStr\${dayStr}_${safeFeature}"
+    $dayStr = $now.ToString("yyyyMMdd")
+    $workDir = Join-Path $ProjPath "shared\_work\$yearStr\$monthStr\${dayStr}_${safeFeature}"
     if (-not (Test-Path $workDir)) {
         New-Item -ItemType Directory -Path $workDir -Force | Out-Null
     }
     Start-Process explorer.exe -ArgumentList $workDir
     Open-TerminalAtPath -Path $workDir
+}
+
+function Show-DirMenu {
+    param(
+        [string]$ProjPath,
+        [object]$PlacementTarget  # Can be $null if PlacementMode is Mouse
+    )
+    
+    $tc = Get-ThemeColors -ThemeName $script:AppState.Theme
+    $popup = New-Object System.Windows.Controls.Primitives.Popup
+    if ($null -ne $PlacementTarget) {
+        $popup.PlacementTarget = $PlacementTarget
+        $popup.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Bottom
+    }
+    else {
+        $popup.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Mouse
+    }
+    $popup.StaysOpen = $false
+    $popup.AllowsTransparency = $true
+    $border = New-Object System.Windows.Controls.Border
+    $border.Background = New-ColorBrush $tc.Surface0
+    $border.BorderBrush = New-ColorBrush $tc.Surface1
+    $border.BorderThickness = New-Object System.Windows.Thickness(1)
+    $border.Padding = New-Object System.Windows.Thickness(2)
+    
+    $menuStack = New-Object System.Windows.Controls.StackPanel
+    
+    $actions = @(
+        @{ Label = "Open in VS Code"; Type = "code" },
+        @{ Label = "Open _work Root"; Type = "root" }
+    )
+    
+    foreach ($act in $actions) {
+        $menuItem = New-Object System.Windows.Controls.TextBlock
+        $menuItem.Text = $act.Label; $menuItem.Foreground = New-ColorBrush $tc.Text; $menuItem.Padding = New-Object System.Windows.Thickness(12, 5, 12, 5); $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
+        $menuItem.Tag = @{ Path = $ProjPath; Type = $act.Type; Popup = $popup; Colors = $tc }
+        $menuItem.Add_MouseEnter({ $this.Background = New-ColorBrush $this.Tag.Colors.Surface1 })
+        $menuItem.Add_MouseLeave({ $this.Background = New-ColorBrush $this.Tag.Colors.Surface0 })
+        $menuItem.Add_MouseLeftButtonDown({
+                param($s, $ev)
+                $ev.Handled = $true
+                $d = $s.Tag
+                $d.Popup.IsOpen = $false
+            
+                if (-not (Test-Path $d.Path)) { return }
+            
+                if ($d.Type -eq "code") {
+                    Start-Process code -ArgumentList "`"$($d.Path)`""
+                }
+                elseif ($d.Type -eq "root") {
+                    $workRoot = Join-Path $d.Path "shared\_work"
+                    if (Test-Path $workRoot) {
+                        Start-Process explorer.exe -ArgumentList $workRoot
+                    }
+                    else {
+                        [System.Windows.MessageBox]::Show("shared\_work folder does not exist.", "Folder Not Found", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+                    }
+                }
+            })
+        $menuStack.Children.Add($menuItem) | Out-Null
+    }
+    
+    $border.Child = $menuStack
+    $popup.Child = $border
+    $popup.IsOpen = $true
+    
+    return $popup
 }
 
 # ---- Build one project card ----
@@ -263,7 +330,8 @@ function New-ProjectCard {
         $cardStyle = $Window.TryFindResource("CardButton")
         if ($null -ne $cardStyle) {
             $btn.Style = $cardStyle
-        } else {
+        }
+        else {
             $btn.FontSize = 11
             $btn.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
             $btn.Background = New-ColorBrush $c.Surface1
@@ -349,7 +417,10 @@ function New-ProjectCard {
     $btnDir.Add_MouseRightButtonUp({
             param($sender, $e)
             $e.Handled = $true
-            if (Test-Path $sender.Tag) { Start-Process code -ArgumentList "`"$($sender.Tag)`"" }
+            if ($null -ne $script:currentDirPopup) {
+                $script:currentDirPopup.IsOpen = $false
+            }
+            $script:currentDirPopup = Show-DirMenu -ProjPath $sender.Tag -PlacementTarget $null
         })
 
     $btnPanel.Children.Add($btnCheck) | Out-Null
@@ -459,42 +530,42 @@ function Initialize-TabDashboard {
     
     if ($null -ne $btnDashRefresh) {
         $btnDashRefresh.Add_Click({
-            $win = $Window
-            $filter = $win.FindName("txtDashFilter").Text
-            $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
-            Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -Force -ScriptDir $ScriptDir
-        }.GetNewClosure())
+                $win = $Window
+                $filter = $win.FindName("txtDashFilter").Text
+                $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
+                Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -Force -ScriptDir $ScriptDir
+            }.GetNewClosure())
     }
     
     if ($null -ne $txtDashFilter) {
         $txtDashFilter.Add_TextChanged({
-            $win = $Window
-            $filter = $win.FindName("txtDashFilter").Text
-            $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
-            Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -ScriptDir $ScriptDir
-        }.GetNewClosure())
+                $win = $Window
+                $filter = $win.FindName("txtDashFilter").Text
+                $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
+                Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -ScriptDir $ScriptDir
+            }.GetNewClosure())
     }
     
     if ($null -ne $chkShowHidden) {
         $chkShowHidden.Add_Click({
-            $win = $Window
-            $filter = $win.FindName("txtDashFilter").Text
-            $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
-            Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -ScriptDir $ScriptDir
-        }.GetNewClosure())
+                $win = $Window
+                $filter = $win.FindName("txtDashFilter").Text
+                $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
+                Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -ScriptDir $ScriptDir
+            }.GetNewClosure())
     }
     
     $tabMain = $Window.FindName("tabMain")
     if ($null -ne $tabMain) {
         $tabMain.Add_SelectionChanged({
-            param($s, $e)
-            if ($e.OriginalSource -ne $s) { return }
-            if ($s.SelectedIndex -eq 0) {
-                $win = $Window
-                $filter = $win.FindName("txtDashFilter").Text
-                $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
-                Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -ScriptDir $ScriptDir
-            }
-        }.GetNewClosure())
+                param($s, $e)
+                if ($e.OriginalSource -ne $s) { return }
+                if ($s.SelectedIndex -eq 0) {
+                    $win = $Window
+                    $filter = $win.FindName("txtDashFilter").Text
+                    $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
+                    Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -ScriptDir $ScriptDir
+                }
+            }.GetNewClosure())
     }
 }

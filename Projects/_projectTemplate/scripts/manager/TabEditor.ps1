@@ -274,10 +274,55 @@ function New-AvalonEditEditor {
     $editor.TextArea.SelectionBrush = New-ColorBrush $c.Surface1
     $editor.TextArea.SelectionForeground = $null  # Use syntax colors in selection
 
-    # Remove built-in LinkElementGenerator
-    $generators = $editor.TextArea.TextView.ElementGenerators
-    $toRemove = @($generators | Where-Object { $_.GetType().Name -eq "LinkElementGenerator" })
-    foreach ($g in $toRemove) { $generators.Remove($g) | Out-Null }
+    # Remove built-in LinkElementGenerator (skip this to keep URL clickable)
+    # $generators = $editor.TextArea.TextView.ElementGenerators
+    # $toRemove = @($generators | Where-Object { $_.GetType().Name -eq "LinkElementGenerator" })
+    # foreach ($g in $toRemove) { $generators.Remove($g) | Out-Null }
+    
+    # Custom Ctrl+Click Handler for Markdown links
+    $editor.Add_PreviewMouseLeftButtonDown({
+            param($s, $e)
+            if ([System.Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftCtrl) -or [System.Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::RightCtrl)) {
+                $pos = $s.GetPositionFromPoint($e.GetPosition($s))
+                if ($null -ne $pos) {
+                    try {
+                        $offset = $s.Document.GetOffset($pos.Line, $pos.Column)
+                        $line = $s.Document.GetLineByNumber($pos.Line)
+                        $lineText = $s.Document.GetText($line.Offset, $line.Length)
+                        $lineOffset = $offset - $line.Offset
+                    
+                        # Regex to match [text](url) or just url
+                        # Matches http://..., https://..., file:///...
+                        # Group 1 is the generic URL if not in brackets
+                        # Group 2 is the URL inside the markdown brackets
+                        $regex = '\[.*?\]\((((file|http|https):///?)[^\)]+)\)|(((file|http|https):///?)[^\s]+)'
+                    
+                        $linkMatches = [regex]::Matches($lineText, $regex)
+                        foreach ($m in $linkMatches) {
+                            # Check if clicked offset falls inside this match
+                            if ($lineOffset -ge $m.Index -and $lineOffset -le ($m.Index + $m.Length)) {
+                                $targetUrl = $null
+                                if ($m.Groups[1].Success) {
+                                    $targetUrl = $m.Groups[1].Value
+                                }
+                                elseif ($m.Groups[3].Success) {
+                                    $targetUrl = $m.Groups[3].Value
+                                }
+                            
+                                if ($null -ne $targetUrl) {
+                                    $e.Handled = $true
+                                    Start-Process $targetUrl
+                                    return
+                                }
+                            }
+                        }
+                    }
+                    catch {
+                        # Ignore offset out of bounds errors
+                    }
+                }
+            }
+        })
 
     # Current line highlight
     $editor.TextArea.TextView.CurrentLineBackground = New-ColorBrush ("#11" + $c.Lavender.TrimStart('#'))
@@ -323,7 +368,130 @@ function New-AvalonEditEditor {
         }
     }
 
+    # Add Context Menu (Custom Popup)
+    $editor.Add_PreviewMouseRightButtonUp({
+            param($s, $e)
+            $e.Handled = $true
+        
+            $proj = $script:AppState.SelectedProject
+            if ($null -eq $proj) { return }
+
+            $workRoot = Join-Path $proj.Path "shared\_work"
+            if (-not (Test-Path $workRoot)) {
+                [System.Windows.MessageBox]::Show(
+                    "shared\_work folder does not exist for this project.",
+                    "Not Found",
+                    [System.Windows.MessageBoxButton]::OK,
+                    [System.Windows.MessageBoxImage]::Information
+                ) | Out-Null
+                return
+            }
+
+            # Find recent folders
+            $recent = Get-RecentWorkDirs -WorkDir $workRoot -Count 10
+            if ($recent.Count -eq 0) {
+                [System.Windows.MessageBox]::Show(
+                    "No feature folders found in shared\_work.",
+                    "Not Found",
+                    [System.Windows.MessageBoxButton]::OK,
+                    [System.Windows.MessageBoxImage]::Information
+                ) | Out-Null
+                return
+            }
+
+            # Close existing popup if any
+            if ($null -ne $script:currentEditorPopup) {
+                $script:currentEditorPopup.IsOpen = $false
+            }
+
+            # Create custom popup
+            $tc = Get-ThemeColors -ThemeName $script:AppState.Theme
+            $popup = New-Object System.Windows.Controls.Primitives.Popup
+            $popup.Placement = [System.Windows.Controls.Primitives.PlacementMode]::Mouse
+            $popup.StaysOpen = $false
+            $popup.AllowsTransparency = $true
+
+            $border = New-Object System.Windows.Controls.Border
+            $border.Background = New-ColorBrush $tc.Surface0
+            $border.BorderBrush = New-ColorBrush $tc.Surface1
+            $border.BorderThickness = New-Object System.Windows.Thickness(1)
+            $border.Padding = New-Object System.Windows.Thickness(2)
+
+            $menuStack = New-Object System.Windows.Controls.StackPanel
+        
+            $header = New-Object System.Windows.Controls.TextBlock
+            $header.Text = "Insert _work Link"
+            $header.Foreground = New-ColorBrush $tc.Subtext1
+            $header.FontSize = 11
+            $header.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
+            $menuStack.Children.Add($header) | Out-Null
+        
+            $sep = New-Object System.Windows.Controls.Border
+            $sep.Height = 1
+            $sep.Background = New-ColorBrush $tc.Surface1
+            $sep.Margin = New-Object System.Windows.Thickness(4, 2, 4, 2)
+            $menuStack.Children.Add($sep) | Out-Null
+
+            foreach ($folder in $recent) {
+                $folderName = Split-Path $folder.Path -Leaf
+                $menuItem = New-Object System.Windows.Controls.TextBlock
+                $menuItem.Text = $folderName
+                $menuItem.Foreground = New-ColorBrush $tc.Text
+                $menuItem.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
+                $menuItem.Cursor = [System.Windows.Input.Cursors]::Hand
+                $menuItem.Tag = @{ Popup = $popup; FolderPath = $folder.Path; FolderName = $folderName; Colors = $tc }
+            
+                $menuItem.Add_MouseEnter({ $this.Background = New-ColorBrush $this.Tag.Colors.Surface1 })
+                $menuItem.Add_MouseLeave({ $this.Background = New-ColorBrush "Transparent" })
+            
+                $menuItem.Add_MouseLeftButtonDown({
+                        param($ms, $me)
+                        $me.Handled = $true
+                        $d = $ms.Tag
+                        $d.Popup.IsOpen = $false
+                        $script:currentEditorPopup = $null
+                
+                        # Insert Markdown link at caret
+                        $editor = $script:AppState.EditorControl
+                        $uriSafePath = $d.FolderPath -replace '\\', '/'
+                        $linkText = "[$($d.FolderName)](file:///$uriSafePath)"
+                
+                        $editor.Document.Insert($editor.CaretOffset, $linkText)
+                        $editor.Focus()
+                    })
+                $menuStack.Children.Add($menuItem) | Out-Null
+            }
+
+            $border.Child = $menuStack
+            $popup.Child = $border
+            $script:currentEditorPopup = $popup
+            $popup.IsOpen = $true
+        })
+
     return $editor
+}
+
+function Get-RecentWorkDirs {
+    param(
+        [string]$WorkDir,
+        [int]$Count = 10
+    )
+    $list = [System.Collections.Generic.List[hashtable]]::new()
+    
+    $years = Get-ChildItem -Path $WorkDir -Directory | Where-Object { $_.Name -match '^\d{4}$' }
+    foreach ($year in $years) {
+        $months = Get-ChildItem -Path $year.FullName -Directory | Where-Object { $_.Name -match '^\d{6}$' }
+        foreach ($month in $months) {
+            $features = Get-ChildItem -Path $month.FullName -Directory
+            foreach ($f in $features) {
+                $list.Add(@{ Path = $f.FullName; Modified = $f.LastWriteTime }) | Out-Null
+            }
+        }
+    }
+    
+    # Sort by Modified descending and take top $Count
+    $sorted = $list | Sort-Object Modified -Descending | Select-Object -First $Count
+    return $sorted
 }
 
 # ---- Initialize Editor Tab ----
@@ -539,6 +707,27 @@ function Initialize-TabEditor {
                     -Window        $Window
             }
         })
+
+    # Dir button
+    $btnEditorDir = $Window.FindName("btnEditorDir")
+    if ($null -ne $btnEditorDir) {
+        $btnEditorDir.Add_Click({
+                $proj = $script:AppState.SelectedProject
+                if ($null -ne $proj -and (Test-Path $proj.Path)) {
+                    Start-Process explorer.exe -ArgumentList $proj.Path
+                }
+            })
+        $btnEditorDir.Add_MouseRightButtonUp({
+                param($sender, $e)
+                $e.Handled = $true
+                $proj = $script:AppState.SelectedProject
+                if ($null -eq $proj) { return }
+                if ($null -ne $script:currentDirPopup) {
+                    $script:currentDirPopup.IsOpen = $false
+                }
+                $script:currentDirPopup = Show-DirMenu -ProjPath $proj.Path -PlacementTarget $sender
+            })
+    }
 
     # Term button
     $btnEditorTerm = $Window.FindName("btnEditorTerm")

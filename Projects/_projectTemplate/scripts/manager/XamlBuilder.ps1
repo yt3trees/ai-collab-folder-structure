@@ -165,6 +165,9 @@ function Build-MainWindowXaml {
                             <Button x:Name="btnEditorReload" Content="Reload"
                                     Style="{StaticResource SmallButton}"
                                     Margin="0,0,8,0" IsEnabled="False"/>
+                            <Button x:Name="btnEditorDir" Content="Dir"
+                                    Style="{StaticResource SmallButton}"
+                                    Margin="0,0,8,0"/>
                             <Button x:Name="btnEditorTerm" Content="Term"
                                     Style="{StaticResource SmallButton}"
                                     Margin="0,0,8,0"/>
