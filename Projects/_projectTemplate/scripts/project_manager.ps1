@@ -19,10 +19,12 @@ $script:AppMutex = New-Object System.Threading.Mutex($false, "Global\ProjectMana
 $mutexAcquired = $false
 try {
     $mutexAcquired = $script:AppMutex.WaitOne(0, $false)
-} catch [System.Threading.AbandonedMutexException] {
+}
+catch [System.Threading.AbandonedMutexException] {
     # If a previous instance crashed, we acquired the lock but an exception is thrown
     $mutexAcquired = $true
-} catch {
+}
+catch {
     $mutexAcquired = $false
 }
 
@@ -244,11 +246,25 @@ $window.Add_Closing({
             )
             if ($result -eq [System.Windows.MessageBoxResult]::Yes) {
                 Save-EditorFile -Window $s
+                # If saving failed, stay open
+                if ($script:AppState.EditorState.IsDirty) {
+                    $e.Cancel = $true
+                    $script:TrayState.ForceExit = $false
+                    return
+                }
             }
             elseif ($result -eq [System.Windows.MessageBoxResult]::Cancel) {
                 $e.Cancel = $true
                 $script:TrayState.ForceExit = $false
             }
+        }
+    })
+
+$window.Add_Closed({
+        Unregister-GlobalHotkey
+        Remove-TrayIcon
+        if ($null -ne [System.Windows.Application]::Current) {
+            [System.Windows.Application]::Current.Shutdown()
         }
     })
 

@@ -367,17 +367,11 @@ function Update-TrayHotkeyDisplay {
 
 function Invoke-TrayExit {
     $script:TrayState.ForceExit = $true
-    Unregister-GlobalHotkey
-    Remove-TrayIcon
 
     $w = $script:TrayState.Window
     if ($null -ne $w) {
         $w.Dispatcher.Invoke([Action] {
                 $w.Close()
-                # Shut down the WPF Application so Application.Run() exits
-                if ($null -ne [System.Windows.Application]::Current) {
-                    [System.Windows.Application]::Current.Shutdown()
-                }
             })
     }
 }

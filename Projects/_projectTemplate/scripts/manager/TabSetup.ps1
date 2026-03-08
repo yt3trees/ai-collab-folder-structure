@@ -58,12 +58,12 @@ function Initialize-TabSetup {
             catch {
                 $Window.FindName("txtSetupOutput").Text = "[Auto-load error] $($_.Exception.Message)"
             }
-        })
+        }).GetNewClosure()
 
     $btnSetupClear.Add_Click({
             $out = $Window.FindName("txtSetupOutput")
             $out.Text = ""
-        })
+        }).GetNewClosure()
 
     $btnSetupBrowse.Add_Click({
             Add-Type -AssemblyName PresentationFramework
@@ -86,7 +86,7 @@ function Initialize-TabSetup {
                     }
                 }
             }
-        })
+        }).GetNewClosure()
 
     $btnSetup.Add_Click({
             $combo = $Window.FindName("setupProjectName")
@@ -130,5 +130,5 @@ function Initialize-TabSetup {
             $outputBox = $Window.FindName("txtSetupOutput")
             Invoke-ScriptWithOutput -ScriptPath $scriptPath -ArgumentString $argStr `
                 -OutputBox $outputBox -WindowRef $Window
-        })
+        }).GetNewClosure()
 }
