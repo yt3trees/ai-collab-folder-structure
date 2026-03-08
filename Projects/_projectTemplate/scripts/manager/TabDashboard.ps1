@@ -568,7 +568,8 @@ function Update-Dashboard {
     }
 
     $cardsPanel.Children.Clear()
-    $projects = Get-ProjectInfoList -Force:$Force
+    # SkipTokens on automatic refreshes (tab switch, cache miss); run Python only on explicit Refresh
+    $projects = Get-ProjectInfoList -Force:$Force -SkipTokens:(-not $Force)
     $script:DashLastFilter     = $FilterText
     $script:DashLastShowHidden = $ShowHidden
     $script:DashLastBuildTime  = $script:ProjectInfoCacheTime

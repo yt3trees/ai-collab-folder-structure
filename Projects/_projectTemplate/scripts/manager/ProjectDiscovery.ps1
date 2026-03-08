@@ -3,7 +3,7 @@
 # Cache for Get-ProjectInfoList (avoid heavy I/O on every tab switch)
 $script:ProjectInfoCache = $null
 $script:ProjectInfoCacheTime = [datetime]::MinValue
-$script:ProjectInfoCacheTTL = 30   # seconds
+$script:ProjectInfoCacheTTL = 300  # seconds (5 minutes)
 
 # Returns array of simple project name strings (for dropdowns)
 function Get-ProjectNameList {
@@ -108,7 +108,7 @@ function Get-BoxOnlyProjects {
 # Returns array of ProjectInfo hashtables (for dashboard cards)
 # -Force: skip cache and re-scan filesystem
 function Get-ProjectInfoList {
-    param([switch]$Force)
+    param([switch]$Force, [switch]$SkipTokens)
 
     # Return cached results if available and fresh
     if (-not $Force -and $null -ne $script:ProjectInfoCache) {
@@ -308,8 +308,8 @@ function Get-ProjectInfoList {
         }
     }
 
-    # Bulk calculate tokens using python (if available)
-    if ($script:HasPythonTokenizer) {
+    # Bulk calculate tokens using python (only on explicit refresh, not on automatic cache-miss)
+    if (-not $SkipTokens -and $script:HasPythonTokenizer) {
         $filesToCount = @()
         foreach ($p in $projects) {
             if ($null -ne $p.FocusFile) { $filesToCount += $p.FocusFile }
