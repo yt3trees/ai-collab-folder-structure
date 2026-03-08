@@ -59,7 +59,7 @@ function Get-BoxOnlyProjects {
 
     # Full-tier projects: Box/Projects/{Name}/
     $dirs = Get-ChildItem -Path $boxRoot -Directory -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -notmatch '^[_\.]' }
+    Where-Object { $_.Name -notmatch '^[_\.]' }
     foreach ($d in $dirs) {
         if (-not (Test-Path (Join-Path $root $d.Name))) {
             $result += "$($d.Name) [BOX]"
@@ -70,7 +70,7 @@ function Get-BoxOnlyProjects {
     $boxMiniDir = Join-Path $boxRoot "_mini"
     if (Test-Path $boxMiniDir) {
         $sDirs = Get-ChildItem -Path $boxMiniDir -Directory -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -notmatch '^[_\.]' }
+        Where-Object { $_.Name -notmatch '^[_\.]' }
         foreach ($d in $sDirs) {
             if (-not (Test-Path (Join-Path $root "_mini\$($d.Name)"))) {
                 $result += "$($d.Name) [Mini] [BOX]"
@@ -82,7 +82,7 @@ function Get-BoxOnlyProjects {
     $boxDomainsDir = Join-Path $boxRoot "_domains"
     if (Test-Path $boxDomainsDir) {
         $dDirs = Get-ChildItem -Path $boxDomainsDir -Directory -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -notmatch '^[_\.]' }
+        Where-Object { $_.Name -notmatch '^[_\.]' }
         foreach ($d in $dDirs) {
             if (-not (Test-Path (Join-Path $root "_domains\$($d.Name)"))) {
                 $result += "$($d.Name) [Domain] [BOX]"
@@ -93,7 +93,7 @@ function Get-BoxOnlyProjects {
         $boxDomainMiniDir = Join-Path $boxDomainsDir "_mini"
         if (Test-Path $boxDomainMiniDir) {
             $dmDirs = Get-ChildItem -Path $boxDomainMiniDir -Directory -ErrorAction SilentlyContinue |
-                Where-Object { $_.Name -notmatch '^[_\.]' }
+            Where-Object { $_.Name -notmatch '^[_\.]' }
             foreach ($d in $dmDirs) {
                 if (-not (Test-Path (Join-Path $root "_domains\_mini\$($d.Name)"))) {
                     $result += "$($d.Name) [Domain][Mini] [BOX]"
@@ -149,6 +149,36 @@ function Get-ProjectInfoList {
         }
         return "OK"
     }
+
+    # Determine if Python tokenizer is available
+    $script:HasPythonTokenizer = $false
+    $script:PythonTokenScript = Join-Path (Split-Path $PSScriptRoot) "get_tokens.py"
+    if (Get-Command python -ErrorAction SilentlyContinue) {
+        if (Test-Path $script:PythonTokenScript) {
+            $script:HasPythonTokenizer = $true
+        }
+    }
+
+    # Helper: get line counts only (python will do tokens in bulk later, or we skip)
+    function Get-FileMetrics {
+        param([string]$Path)
+        if (-not (Test-Path $Path)) { return $null }
+        try {
+            $item = Get-Item $Path
+            $length = $item.Length
+            
+            # Lines count
+            $lines = 0
+            if ($length -gt 0) {
+                $lines = (Get-Content $Path -ErrorAction SilentlyContinue | Measure-Object -Line).Lines
+            }
+            return @{ Lines = $lines }
+        }
+        catch {
+            return $null
+        }
+    }
+
 
     # Helper: count decision log files
     function Get-DecisionLogCount {
@@ -208,6 +238,9 @@ function Get-ProjectInfoList {
         $agentsFile = Join-Path $Path "AGENTS.md"
         $claudeFile = Join-Path $Path "CLAUDE.md"
 
+        $focusMetrics = Get-FileMetrics $focusFile
+        $summaryMetrics = Get-FileMetrics $summaryFile
+
         $info = @{
             Name                 = $Name
             Tier                 = $Tier
@@ -225,7 +258,13 @@ function Get-ProjectInfoList {
             FileMapFile          = if (Test-Path $fileMapFile) { $fileMapFile } else { $null }
             AgentsFile           = if (Test-Path $agentsFile) { $agentsFile }  else { $null }
             ClaudeFile           = if (Test-Path $claudeFile) { $claudeFile }  else { $null }
-            # Freshness
+            # File metrics (Lines)
+            FocusLines           = if ($null -ne $focusMetrics) { $focusMetrics.Lines } else { $null }
+            SummaryLines         = if ($null -ne $summaryMetrics) { $summaryMetrics.Lines } else { $null }
+            # File metrics (Tokens calculated in bulk later)
+            FocusTokens          = $null
+            SummaryTokens        = $null
+            # Freshness & Health
             FocusAge             = Get-FileAgeDays $focusFile
             SummaryAge           = Get-FileAgeDays $summaryFile
             # Decision log count
@@ -275,12 +314,55 @@ function Get-ProjectInfoList {
         }
     }
 
-    $script:AppState.Projects = $projects
-    $sorted = $projects | Sort-Object { $_.Name }
+    # Bulk calculate tokens using python (if available)
+    if ($script:HasPythonTokenizer) {
+        $filesToCount = @()
+        foreach ($p in $projects) {
+            if ($null -ne $p.FocusFile) { $filesToCount += $p.FocusFile }
+            if ($null -ne $p.SummaryFile) { $filesToCount += $p.SummaryFile }
+        }
+        
+        if ($filesToCount.Count -gt 0) {
+            # Build proper argument list array
+            $argsToPass = @("--files")
+            foreach ($f in $filesToCount) { $argsToPass += $f }
+            
+            $pyOut = & python $script:PythonTokenScript @argsToPass 2>$null
+            if ($LASTEXITCODE -eq 0 -and (-not [string]::IsNullOrWhiteSpace($pyOut))) {
+                try {
+                    $tokenDataRaw = $pyOut | ConvertFrom-Json
+                    # Convert PSCustomObject to hashtable (PS 5.1 compatible)
+                    $tokenData = @{}
+                    foreach ($prop in $tokenDataRaw.PSObject.Properties) {
+                        $tokenData[$prop.Name.ToLowerInvariant()] = $prop.Value
+                    }
+                    
+                    # Map tokens back to projects
+                    foreach ($p in $projects) {
+                        if ($null -ne $p.FocusFile) {
+                            $key = $p.FocusFile.ToLowerInvariant()
+                            if ($tokenData.ContainsKey($key)) {
+                                $p.FocusTokens = $tokenData[$key]
+                            }
+                        }
+                        if ($null -ne $p.SummaryFile) {
+                            $key = $p.SummaryFile.ToLowerInvariant()
+                            if ($tokenData.ContainsKey($key)) {
+                                $p.SummaryTokens = $tokenData[$key]
+                            }
+                        }
+                    }
+                }
+                catch {
+                    # JSON parse error, skip token injection
+                }
+            }
+        }
+    }
 
-    # Update cache
-    $script:ProjectInfoCache = $sorted
+    $script:AppState.Projects = $projects
+    $script:ProjectInfoCache = $projects | Sort-Object Name
     $script:ProjectInfoCacheTime = Get-Date
 
-    return $sorted
+    return $script:ProjectInfoCache
 }

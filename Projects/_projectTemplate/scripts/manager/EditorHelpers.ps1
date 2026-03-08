@@ -120,6 +120,7 @@ function Open-FileInEditor {
         # Update status bar
         Update-StatusBar -Window $Window `
             -File $fileName `
+            -Health "" `
             -Encoding $result.Encoding `
             -Dirty $false
 
@@ -162,8 +163,10 @@ function Save-EditorFile {
         $state.OriginalContent = $editor.Text
         $state.IsDirty = $false
 
+        $fileName = [System.IO.Path]::GetFileName($state.CurrentFile)
         Update-StatusBar -Window $Window `
-            -File ([System.IO.Path]::GetFileName($state.CurrentFile)) `
+            -File $fileName `
+            -Health "" `
             -Encoding $state.Encoding `
             -Dirty $false
     }

@@ -57,10 +57,10 @@ Obsidian Junction について:
 GUIランチャーを使うと、Setup / Check / Archive の操作をグラフィカルに実行できます。
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_launcher.ps1"
+powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_manager.ps1"
 ```
 
-または、`_projectTemplate/scripts/` フォルダ内の `project_launcher.ps1` を右クリック → 「PowerShell で実行」でも起動できます。
+または、Projects ルートの `exec_project_manager.cmd` をダブルクリックでも起動できます。
 
 機能:
 - Setup タブ: プロジェクト名と Tier を選択してセットアップ
@@ -323,11 +323,12 @@ Documents/Projects/
 
 | スクリプト | 用途 | 実行場所 |
 |-----------|------|---------|
-| `project_launcher.ps1` | GUI ランチャー (全スクリプトを統合) | `_projectTemplate/scripts/` |
+| `project_manager.ps1` | GUI プロジェクトマネージャー (全スクリプトを統合) | `_projectTemplate/scripts/` |
 | `setup_project.ps1` | プロジェクトの初期セットアップ | `_projectTemplate/scripts/` |
 | `check_project.ps1` | 健全性チェック | `_projectTemplate/scripts/` |
 | `archive_project.ps1` | 完了プロジェクトのアーカイブ | `_projectTemplate/scripts/` |
 | `convert_tier.ps1` | Tier 変換 (mini <-> full) | `_projectTemplate/scripts/` |
+| `get_tokens.py` | コンテキストファイルのトークン数カウント (tiktoken)、Dashboard の健全性表示に使用 | `_projectTemplate/scripts/` |
 | `config.template.json` | 設定ファイルのテンプレート | コピーして使用 |
 
 ## 3層レイヤー構造との対応
@@ -369,6 +370,15 @@ Obsidianで以下のファイルを作成してください:
 - Obsidian Vault は2台のPCで同時に開かないでください (データ上書き防止)
 - Gitリポジトリは `development/source/` に配置し、`.git/` はBOX同期しないでください
 - `_config/paths.json` はBOX同期されません。各PCで個別に作成が必要です
+
+## AI Context Health Monitor (コンテキスト健全性監視)
+
+GUIランチャーのダッシュボードやエディタ画面では、AIに読み込ませるコンテキストファイル（`current_focus.md`, `project_summary.md`）の健全性を自動で監視・表示します。
+
+### トークン肥大化アラート (Metabo 検知)
+ファイルサイズから推定トークン数を計算し、AIのプロンプト上限圧迫やコンテキストのぼやけを未然に防ぎます。
+- **800トークン以上**: Warning（文字色が黄色/Peachに変化）
+- **1,200トークン以上**: Metabo!（文字色が赤色に変化し、アテンションを追加表示）
 
 ## トラブルシューティング
 

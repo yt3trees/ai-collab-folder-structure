@@ -57,10 +57,10 @@ If not, refer to the "Prerequisites" section to create it.
 The GUI launcher allows you to perform Setup / Check / Archive operations graphically.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_launcher.ps1"
+powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\Documents\Projects\_projectTemplate\scripts\project_manager.ps1"
 ```
 
-Alternatively, right-click `project_launcher.ps1` in the `_projectTemplate/scripts/` folder and select "Run with PowerShell".
+Alternatively, double-click `exec_project_manager.cmd` in the Projects root to launch.
 
 Features:
 - Setup tab: Select project name and Tier to run setup
@@ -340,11 +340,12 @@ Documents/Projects/
 
 | Script | Purpose | Location |
 |--------|---------|----------|
-| `project_launcher.ps1` | GUI launcher (integrates all scripts) | `_projectTemplate/scripts/` |
+| `project_manager.ps1` | GUI project manager (integrates all scripts) | `_projectTemplate/scripts/` |
 | `setup_project.ps1` | Initial project setup | `_projectTemplate/scripts/` |
 | `check_project.ps1` | Health check | `_projectTemplate/scripts/` |
 | `archive_project.ps1` | Archive completed projects | `_projectTemplate/scripts/` |
 | `convert_tier.ps1` | Convert between mini/full tiers | `_projectTemplate/scripts/` |
+| `get_tokens.py` | Token counter (tiktoken) for context file health display in Dashboard | `_projectTemplate/scripts/` |
 | `config.template.json` | Configuration file template | Copy and use |
 
 ## 3-Layer Architecture Mapping
@@ -386,6 +387,15 @@ Create the following files in Obsidian:
 - Do not open Obsidian Vault on two PCs simultaneously (to prevent data overwrites)
 - Place Git repositories in `development/source/` and do not sync `.git/` via BOX
 - `_config/paths.json` is not synced via BOX. It must be created individually on each PC
+
+## AI Context Health Monitor
+
+The GUI Launcher's Dashboard and Editor screens automatically monitor and display the health of AI context files (`current_focus.md`, `project_summary.md`).
+
+### Token Bloat Alert (Metabo Detection)
+Estimates the token count based on file size to prevent AI prompt limit pressure and context dilution.
+- **800+ Tokens**: Warning (text color changes to Yellow/Peach)
+- **1,200+ Tokens**: Metabo! (text color changes to Red, with an added attention badge)
 
 ## Troubleshooting
 

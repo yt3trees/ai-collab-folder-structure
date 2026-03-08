@@ -123,7 +123,7 @@ function New-TreeItem {
 
 
 
-function Populate-FileTree {
+function Update-FileTree {
     param(
         [System.Windows.Controls.TreeView]$Tree,
         [System.Windows.Controls.TreeView]$WorkspaceTree,
@@ -603,7 +603,7 @@ function Initialize-TabEditor {
             $wt = $Window.FindName("editorWorkspaceTree")
 
             # Populate file tree
-            Populate-FileTree `
+            Update-FileTree `
                 -Tree            $ft `
                 -WorkspaceTree   $wt `
                 -ProjectInfo     $proj `
@@ -627,8 +627,7 @@ function Initialize-TabEditor {
             $isDirty = ($ed.Text -ne $script:AppState.EditorState.OriginalContent)
             $script:AppState.EditorState.IsDirty = $isDirty
 
-            Update-StatusBar -Window $Window `
-                -Dirty $isDirty
+            Update-StatusBar -Window $Window -Dirty $isDirty -Health ""
         })
 
     # Ctrl+S shortcut on editor

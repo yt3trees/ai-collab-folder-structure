@@ -200,26 +200,70 @@ function New-ProjectCard {
         $titleRow.Children.Add($hiddenBadge) | Out-Null
     }
 
+
+
     $stack.Children.Add($titleRow) | Out-Null
 
-    # --- Focus freshness ---
+    # --- Focus freshness & size ---
     $focusAge = $Info.FocusAge
     $focusText = if ($null -eq $focusAge) { "Focus: --" } elseif ($focusAge -eq 0) { "Focus: today" } else { "Focus: $($focusAge)d ago" }
+
+    if ($null -ne $Info.FocusTokens) {
+        $focusText += " ($($Info.FocusTokens)tk, $($Info.FocusLines)L)"
+    }
+
     $focusBlock = New-Object System.Windows.Controls.TextBlock
     $focusBlock.Text = $focusText
     $focusBlock.FontSize = 12
-    $focusBlock.Foreground = New-ColorBrush (Get-FreshnessColor -Days $focusAge -WarnAt 7 -AlertAt 14 -ThemeColors $c)
     $focusBlock.Margin = New-Object System.Windows.Thickness(0, 2, 0, 0)
+
+    $focusWarn = $false; $focusCrit = $false
+    if ($null -ne $Info.FocusTokens) {
+        if ($Info.FocusTokens -ge 1200) { $focusCrit = $true }
+        elseif ($Info.FocusTokens -ge 800) { $focusWarn = $true }
+    }
+
+    if ($focusCrit) {
+        $focusBlock.Foreground = New-ColorBrush $c.Red
+        $focusBlock.Text += " (Metabo!)"
+    }
+    elseif ($focusWarn) {
+        $focusBlock.Foreground = New-ColorBrush $c.Peach
+    }
+    else {
+        $focusBlock.Foreground = New-ColorBrush (Get-FreshnessColor -Days $focusAge -WarnAt 7 -AlertAt 14 -ThemeColors $c)
+    }
     $stack.Children.Add($focusBlock) | Out-Null
 
-    # --- Summary freshness ---
+    # --- Summary freshness & size ---
     $summAge = $Info.SummaryAge
     $summText = if ($null -eq $summAge) { "Summary: --" } elseif ($summAge -eq 0) { "Summary: today" } else { "Summary: $($summAge)d ago" }
+
+    if ($null -ne $Info.SummaryTokens) {
+        $summText += " ($($Info.SummaryTokens)tk, $($Info.SummaryLines)L)"
+    }
+
     $summBlock = New-Object System.Windows.Controls.TextBlock
     $summBlock.Text = $summText
     $summBlock.FontSize = 12
-    $summBlock.Foreground = New-ColorBrush (Get-FreshnessColor -Days $summAge -WarnAt 14 -AlertAt 30 -ThemeColors $c)
     $summBlock.Margin = New-Object System.Windows.Thickness(0, 2, 0, 0)
+
+    $summWarn = $false; $summCrit = $false
+    if ($null -ne $Info.SummaryTokens) {
+        if ($Info.SummaryTokens -ge 1200) { $summCrit = $true }
+        elseif ($Info.SummaryTokens -ge 800) { $summWarn = $true }
+    }
+
+    if ($summCrit) {
+        $summBlock.Foreground = New-ColorBrush $c.Red
+        $summBlock.Text += " (Metabo!)"
+    }
+    elseif ($summWarn) {
+        $summBlock.Foreground = New-ColorBrush $c.Peach
+    }
+    else {
+        $summBlock.Foreground = New-ColorBrush (Get-FreshnessColor -Days $summAge -WarnAt 14 -AlertAt 30 -ThemeColors $c)
+    }
     $stack.Children.Add($summBlock) | Out-Null
 
     # --- Decision log count ---

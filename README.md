@@ -253,6 +253,7 @@ Documents/Projects/
 │   │   ├── check_project.ps1       # Health check
 │   │   ├── archive_project.ps1     # Archive completed projects
 │   │   ├── config.template.json    # Config file template
+│   │   ├── get_tokens.py           # Token counter (tiktoken) for context files
 │   │   └── manager/                   # GUI manager modules
 ├── exec_project_manager.cmd       # GUI manager batch (Projects root)
 │   ├── context-compression-layer/  # AI Context Compression Layer setup
@@ -416,6 +417,7 @@ After BOX sync is complete, simply run the setup from the GUI Manager's Setup ta
 | `archive_project.ps1` | Archive completed projects |
 | `convert_tier.ps1` | Convert between mini/full tiers |
 | `config.template.json` | Config file template |
+| `get_tokens.py` | Token counter (tiktoken) for context file health display in Dashboard |
 | `exec_project_manager.cmd` | GUI manager batch file (in Projects root) |
 
 ### context-compression-layer/

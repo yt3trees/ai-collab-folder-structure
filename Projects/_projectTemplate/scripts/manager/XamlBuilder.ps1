@@ -628,16 +628,20 @@ function Build-MainWindowXaml {
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock x:Name="statusProject" Grid.Column="0" Text="Ready"
                                Foreground="{{Overlay0}}" FontSize="11" VerticalAlignment="Center"/>
                     <TextBlock x:Name="statusFile" Grid.Column="1" Text=""
                                Foreground="{{Overlay0}}" FontSize="11" VerticalAlignment="Center"
                                Margin="16,0"/>
-                    <TextBlock x:Name="statusEncoding" Grid.Column="2" Text=""
+                    <TextBlock x:Name="statusHealth" Grid.Column="2" Text=""
                                Foreground="{{Overlay0}}" FontSize="11" VerticalAlignment="Center"
                                Margin="0,0,16,0"/>
-                    <TextBlock x:Name="statusDirty" Grid.Column="3" Text=""
+                    <TextBlock x:Name="statusEncoding" Grid.Column="3" Text=""
+                               Foreground="{{Overlay0}}" FontSize="11" VerticalAlignment="Center"
+                               Margin="0,0,16,0"/>
+                    <TextBlock x:Name="statusDirty" Grid.Column="4" Text=""
                                Foreground="{{Yellow}}" FontSize="11" VerticalAlignment="Center"/>
                 </Grid>
             </Border>

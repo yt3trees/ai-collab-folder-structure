@@ -22,7 +22,7 @@ $script:AppState = @{
 function Initialize-AppConfig {
     param([string]$ScriptDir)
 
-    $script:AppState.ScriptDir    = $ScriptDir
+    $script:AppState.ScriptDir = $ScriptDir
     $script:AppState.WorkspaceRoot = Split-Path (Split-Path $ScriptDir)
 
     # Try to load paths from _config/paths.json
@@ -69,8 +69,8 @@ function Initialize-AppConfig {
         }
     }
 
-    Load-HiddenProjects
-    Load-AppSettings
+    Import-HiddenProjects
+    Import-AppSettings
 }
 
 # ---- App Settings (UI Preferences) ----
@@ -80,11 +80,11 @@ function Get-AppSettingsPath {
     return Join-Path $configDir "settings.json"
 }
 
-function Load-AppSettings {
+function Import-AppSettings {
     $path = Get-AppSettingsPath
     if (Test-Path $path) {
         try {
-            $json   = Get-Content $path -Raw -Encoding UTF8
+            $json = Get-Content $path -Raw -Encoding UTF8
             $loaded = $json | ConvertFrom-Json
             if ($null -ne $loaded.Theme) {
                 $script:AppState.Theme = $loaded.Theme
@@ -98,7 +98,7 @@ function Load-AppSettings {
 
 function Save-AppSettings {
     $path = Get-AppSettingsPath
-    $dir  = Split-Path $path
+    $dir = Split-Path $path
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
 
     $settings = @{
@@ -114,11 +114,11 @@ function Get-HiddenProjectsPath {
     return Join-Path $configDir "hidden_projects.json"
 }
 
-function Load-HiddenProjects {
+function Import-HiddenProjects {
     $path = Get-HiddenProjectsPath
     if (Test-Path $path) {
         try {
-            $json   = Get-Content $path -Raw -Encoding UTF8
+            $json = Get-Content $path -Raw -Encoding UTF8
             $loaded = $json | ConvertFrom-Json
             $script:AppState.HiddenProjects = if ($null -eq $loaded) { @() } else { @($loaded) }
         }
@@ -130,7 +130,7 @@ function Load-HiddenProjects {
 
 function Save-HiddenProjects {
     $path = Get-HiddenProjectsPath
-    $dir  = Split-Path $path
+    $dir = Split-Path $path
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
 
     if ($script:AppState.HiddenProjects.Count -eq 0) {
@@ -175,12 +175,14 @@ function Update-StatusBar {
         [System.Windows.Window]$Window,
         [string]$Project = $null,
         [string]$File = $null,
+        [string]$Health = $null,
         [string]$Encoding = $null,
         [bool]$Dirty = $false
     )
 
     $statusProject = $Window.FindName("statusProject")
     $statusFile = $Window.FindName("statusFile")
+    $statusHealth = $Window.FindName("statusHealth")
     $statusEncoding = $Window.FindName("statusEncoding")
     $statusDirty = $Window.FindName("statusDirty")
 
@@ -189,6 +191,18 @@ function Update-StatusBar {
     }
     if ($null -ne $File -and $null -ne $statusFile) {
         $statusFile.Text = $File
+    }
+    if ($null -ne $Health -and $null -ne $statusHealth) {
+        if ($Health -match 'Metabo') {
+            $statusHealth.Foreground = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#f38ba8")) # Red
+        }
+        elseif ($Health -match 'Warning') {
+            $statusHealth.Foreground = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#fab387")) # Peach/Yellow
+        }
+        else {
+            $statusHealth.Foreground = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#a6adc8")) # Subtext0
+        }
+        $statusHealth.Text = $Health
     }
     if ($null -ne $Encoding -and $null -ne $statusEncoding) {
         $statusEncoding.Text = $Encoding
