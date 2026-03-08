@@ -138,14 +138,10 @@ function Get-ProjectInfoList {
         if (-not (Test-Path $Path)) { return "Missing" }
         $item = Get-Item $Path -ErrorAction SilentlyContinue
         if ($null -eq $item) { return "Missing" }
-        # Check if it's a ReparsePoint (junction) and whether it resolves
+        # Check if it's a ReparsePoint (junction) and whether it resolves.
+        # Use Test-Path "$Path\." instead of Get-ChildItem to avoid enumerating all children.
         if ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
-            # Try to list children to detect broken junctions
-            $children = Get-ChildItem $Path -ErrorAction SilentlyContinue
-            if ($null -eq $children -and -not (Test-Path "$Path\.")) {
-                return "Broken"
-            }
-            return "OK"
+            if (-not (Test-Path "$Path\.")) { return "Broken" }
         }
         return "OK"
     }
@@ -165,12 +161,10 @@ function Get-ProjectInfoList {
         if (-not (Test-Path $Path)) { return $null }
         try {
             $item = Get-Item $Path
-            $length = $item.Length
-            
-            # Lines count
             $lines = 0
-            if ($length -gt 0) {
-                $lines = (Get-Content $Path -ErrorAction SilentlyContinue | Measure-Object -Line).Lines
+            if ($item.Length -gt 0) {
+                # [IO.File]::ReadAllLines is significantly faster than Get-Content | Measure-Object
+                $lines = [System.IO.File]::ReadAllLines($Path).Count
             }
             return @{ Lines = $lines }
         }

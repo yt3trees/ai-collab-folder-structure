@@ -1,11 +1,5 @@
 # TabDashboard.ps1 - Dashboard tab: project cards with freshness indicators
 
-# ---- Dashboard state tracking (skip unnecessary card rebuilds) ----
-$script:DashLastFilter     = $null
-$script:DashLastShowHidden = $null
-$script:DashLastBuildTime  = [datetime]::MinValue
-$script:DashLoadInProgress = $false
-
 # ---- Color helpers ----
 
 function Get-FreshnessColor {
@@ -553,296 +547,34 @@ function New-ProjectCard {
     return $card
 }
 
-# ---- Async data loader: runs file I/O in background runspace, builds cards on UI thread ----
-
-function Start-DashboardLoadAsync {
-    param(
-        [System.Windows.Window]$Window,
-        [string]$FilterText,
-        [bool]$ShowHidden,
-        [string]$ScriptDir
-    )
-
-    $script:DashLoadInProgress = $true
-
-    # Python check (independent of Get-ProjectInfoList having been called before)
-    $pythonTokenScript = Join-Path $script:AppState.ScriptDir "get_tokens.py"
-    $hasPython = ($null -ne (Get-Command python -ErrorAction SilentlyContinue)) -and (Test-Path $pythonTokenScript)
-
-    # Shared result bag (passed by .NET reference to background runspace - no serialization)
-    $resultBag = New-Object 'System.Collections.Concurrent.ConcurrentBag[object]'
-
-    $rs = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspace()
-    $rs.ApartmentState = [System.Threading.ApartmentState]::MTA
-    $rs.ThreadOptions  = [System.Management.Automation.Runspaces.PSThreadOptions]::Default
-    $rs.Open()
-
-    $ps = [System.Management.Automation.PowerShell]::Create()
-    $ps.Runspace = $rs
-
-    # Self-contained data gathering script (no dependency on main runspace functions)
-    $gatherScript = {
-        param($WorkspaceRoot, $PythonTokenScript, $HasPython, $ResultBag)
-
-        function Get-FileAgeDays { param([string]$Path)
-            if (Test-Path $Path) { return [int]((Get-Date) - (Get-Item $Path).LastWriteTime).TotalDays }
-            return $null
-        }
-        function Get-JunctionStatus { param([string]$Path)
-            if (-not (Test-Path $Path)) { return "Missing" }
-            $item = Get-Item $Path -ErrorAction SilentlyContinue
-            if ($null -eq $item) { return "Missing" }
-            if ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
-                $children = Get-ChildItem $Path -ErrorAction SilentlyContinue
-                if ($null -eq $children -and -not (Test-Path "$Path\.")) { return "Broken" }
-                return "OK"
-            }
-            return "OK"
-        }
-        function Get-FileMetrics { param([string]$Path)
-            if (-not (Test-Path $Path)) { return $null }
-            try {
-                $item = Get-Item $Path
-                if ($item.Length -eq 0) { return @{ Lines = 0 } }
-                $lines = (Get-Content $Path -ErrorAction SilentlyContinue | Measure-Object -Line).Lines
-                return @{ Lines = $lines }
-            } catch { return $null }
-        }
-        function Get-DecisionLogCount { param([string]$AiCtx)
-            $logDir = Join-Path $AiCtx "context\decision_log"
-            if (-not (Test-Path $logDir)) { return 0 }
-            return (Get-ChildItem $logDir -Filter "*.md" -ErrorAction SilentlyContinue |
-                Where-Object { $_.Name -ne "TEMPLATE.md" } | Measure-Object).Count
-        }
-        function Get-FocusHistoryDates { param([string]$AiCtx)
-            $histDir = Join-Path $AiCtx "context\focus_history"
-            if (-not (Test-Path $histDir)) { return @() }
-            $dates = @()
-            Get-ChildItem $histDir -Filter "*.md" -ErrorAction SilentlyContinue | ForEach-Object {
-                if ($_.BaseName -match '^\d{4}-\d{2}-\d{2}$') {
-                    $dates += [datetime]::ParseExact($_.BaseName, "yyyy-MM-dd", $null)
-                }
-            }
-            return ($dates | Sort-Object)
-        }
-        function Get-DecisionLogDates { param([string]$AiCtx)
-            $logDir = Join-Path $AiCtx "context\decision_log"
-            if (-not (Test-Path $logDir)) { return @() }
-            $dates = @()
-            Get-ChildItem $logDir -Filter "*.md" -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -ne "TEMPLATE.md" } | ForEach-Object {
-                if ($_.BaseName -match '^(\d{4}-\d{2}-\d{2})_') {
-                    $dates += [datetime]::ParseExact($Matches[1], "yyyy-MM-dd", $null)
-                }
-            }
-            return ($dates | Sort-Object)
-        }
-        function New-ProjInfo { param([string]$Name, [string]$Path, [string]$Tier, [string]$Category = "project")
-            $aiCtx        = Join-Path $Path "_ai-context"
-            $aiCtxContent = Join-Path $aiCtx "context"
-            $focusFile    = Join-Path $aiCtxContent "current_focus.md"
-            $summaryFile  = Join-Path $aiCtxContent "project_summary.md"
-            $fileMapFile  = Join-Path $aiCtxContent "file_map.md"
-            $agentsFile   = Join-Path $Path "AGENTS.md"
-            $claudeFile   = Join-Path $Path "CLAUDE.md"
-            $fm = Get-FileMetrics $focusFile
-            $sm = Get-FileMetrics $summaryFile
-            return @{
-                Name = $Name; Tier = $Tier; Category = $Category; Path = $Path
-                AiContextPath = $aiCtx; AiContextContentPath = $aiCtxContent
-                JunctionShared   = Get-JunctionStatus (Join-Path $Path "shared")
-                JunctionObsidian = Get-JunctionStatus (Join-Path $aiCtx "obsidian_notes")
-                JunctionContext  = Get-JunctionStatus $aiCtxContent
-                FocusFile    = if (Test-Path $focusFile)   { $focusFile }   else { $null }
-                SummaryFile  = if (Test-Path $summaryFile) { $summaryFile } else { $null }
-                FileMapFile  = if (Test-Path $fileMapFile) { $fileMapFile } else { $null }
-                AgentsFile   = if (Test-Path $agentsFile)  { $agentsFile }  else { $null }
-                ClaudeFile   = if (Test-Path $claudeFile)  { $claudeFile }  else { $null }
-                FocusLines   = if ($null -ne $fm) { $fm.Lines } else { $null }
-                SummaryLines = if ($null -ne $sm) { $sm.Lines } else { $null }
-                FocusTokens = $null; SummaryTokens = $null
-                FocusAge   = Get-FileAgeDays $focusFile
-                SummaryAge = Get-FileAgeDays $summaryFile
-                DecisionLogCount  = Get-DecisionLogCount $aiCtx
-                FocusHistoryDates = Get-FocusHistoryDates $aiCtx
-                DecisionLogDates  = Get-DecisionLogDates $aiCtx
-            }
-        }
-
-        $projects = [System.Collections.Generic.List[object]]::new()
-
-        # Full-tier
-        Get-ChildItem -Path $WorkspaceRoot -Directory -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -eq '_INHOUSE' -or $_.Name -notmatch '^[_\.]' } |
-        ForEach-Object { $projects.Add((New-ProjInfo -Name $_.Name -Path $_.FullName -Tier "full")) }
-
-        # Mini-tier
-        $miniDir = Join-Path $WorkspaceRoot "_mini"
-        if (Test-Path $miniDir) {
-            Get-ChildItem -Path $miniDir -Directory -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -notmatch '^[_\.]' } |
-            ForEach-Object { $projects.Add((New-ProjInfo -Name $_.Name -Path $_.FullName -Tier "mini")) }
-        }
-
-        # Domain
-        $domainsDir = Join-Path $WorkspaceRoot "_domains"
-        if (Test-Path $domainsDir) {
-            Get-ChildItem -Path $domainsDir -Directory -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -notmatch '^[_\.]' } |
-            ForEach-Object { $projects.Add((New-ProjInfo -Name $_.Name -Path $_.FullName -Tier "full" -Category "domain")) }
-
-            $domainMiniDir = Join-Path $domainsDir "_mini"
-            if (Test-Path $domainMiniDir) {
-                Get-ChildItem -Path $domainMiniDir -Directory -ErrorAction SilentlyContinue |
-                Where-Object { $_.Name -notmatch '^[_\.]' } |
-                ForEach-Object { $projects.Add((New-ProjInfo -Name $_.Name -Path $_.FullName -Tier "mini" -Category "domain")) }
-            }
-        }
-
-        # Bulk token calculation via Python
-        if ($HasPython -and (Test-Path $PythonTokenScript)) {
-            $filesToCount = @()
-            foreach ($p in $projects) {
-                if ($null -ne $p.FocusFile)   { $filesToCount += $p.FocusFile }
-                if ($null -ne $p.SummaryFile) { $filesToCount += $p.SummaryFile }
-            }
-            if ($filesToCount.Count -gt 0) {
-                $pyOut = & python $PythonTokenScript @("--files") @filesToCount 2>$null
-                if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($pyOut)) {
-                    try {
-                        $tokenData = @{}
-                        ($pyOut | ConvertFrom-Json).PSObject.Properties |
-                            ForEach-Object { $tokenData[$_.Name.ToLowerInvariant()] = $_.Value }
-                        foreach ($p in $projects) {
-                            if ($null -ne $p.FocusFile) {
-                                $k = $p.FocusFile.ToLowerInvariant()
-                                if ($tokenData.ContainsKey($k)) { $p.FocusTokens = $tokenData[$k] }
-                            }
-                            if ($null -ne $p.SummaryFile) {
-                                $k = $p.SummaryFile.ToLowerInvariant()
-                                if ($tokenData.ContainsKey($k)) { $p.SummaryTokens = $tokenData[$k] }
-                            }
-                        }
-                    } catch {}
-                }
-            }
-        }
-
-        foreach ($p in $projects) { $ResultBag.Add($p) }
-    }
-
-    $ps.AddScript($gatherScript).
-        AddParameter("WorkspaceRoot",     $script:AppState.WorkspaceRoot).
-        AddParameter("PythonTokenScript", $pythonTokenScript).
-        AddParameter("HasPython",         $hasPython).
-        AddParameter("ResultBag",         $resultBag) | Out-Null
-
-    # BeginInvoke returns IAsyncResult whose IsCompleted is thread-safe to poll
-    $asyncResult = $ps.BeginInvoke()
-
-    # DispatcherTimer polls on the UI thread (= main PS runspace thread).
-    # Avoids [System.AsyncCallback] delegate issues across PS runspace boundaries.
-    $timer = New-Object System.Windows.Threading.DispatcherTimer
-    $timer.Interval = [TimeSpan]::FromMilliseconds(200)
-
-    $cap = @{
-        Window      = $Window
-        Filter      = $FilterText
-        ShowHidden  = $ShowHidden
-        ScriptDir   = $ScriptDir
-        ResultBag   = $resultBag
-        Ps          = $ps
-        Rs          = $rs
-        AsyncResult = $asyncResult
-        Timer       = $timer
-    }
-
-    $timer.Add_Tick({
-        if (-not $cap.AsyncResult.IsCompleted) { return }
-        $cap.Timer.Stop()
-
-        try { $cap.Ps.EndInvoke($cap.AsyncResult) } catch {}
-
-        try {
-            $loadedProjects = @($cap.ResultBag) | Sort-Object { $_.Name }
-
-            $script:ProjectInfoCache     = $loadedProjects
-            $script:ProjectInfoCacheTime = Get-Date
-            $script:AppState.Projects    = $loadedProjects
-
-            $script:DashLastFilter       = $cap.Filter
-            $script:DashLastShowHidden   = $cap.ShowHidden
-            $script:DashLastBuildTime    = $script:ProjectInfoCacheTime
-
-            $cardsPanel = $cap.Window.FindName("dashboardCards")
-            if ($null -ne $cardsPanel) {
-                $cardsPanel.Children.Clear()
-                $filter = $cap.Filter.Trim().ToLower()
-                foreach ($proj in $loadedProjects) {
-                    $isHidden = Test-ProjectHidden -Info $proj
-                    if ($isHidden -and -not $cap.ShowHidden) { continue }
-                    if ($filter -ne "" -and $proj.Name.ToLower() -notlike "*$filter*") { continue }
-                    $cardsPanel.Children.Add(
-                        (New-ProjectCard -Info $proj -Window $cap.Window -IsHidden $isHidden -ScriptDir $cap.ScriptDir)
-                    ) | Out-Null
-                }
-            }
-        } finally {
-            $script:DashLoadInProgress = $false
-            try { $cap.Ps.Dispose() } catch {}
-            try { $cap.Rs.Close(); $cap.Rs.Dispose() } catch {}
-        }
-    }.GetNewClosure())
-
-    $timer.Start()
-}
+$script:DashLastFilter     = $null
+$script:DashLastShowHidden = $null
+$script:DashLastBuildTime  = [datetime]::MinValue
 
 function Update-Dashboard {
     param([System.Windows.Window]$Window, [string]$FilterText = "", [bool]$ShowHidden = $false, [switch]$Force, [string]$ScriptDir = "")
     $cardsPanel = $Window.FindName("dashboardCards")
     if ($null -eq $cardsPanel) { return }
 
-    # Skip rebuild if cache is fresh and nothing has changed
+    # Skip rebuild entirely if cache is still fresh and nothing changed
     if (-not $Force) {
         $cacheIsFresh = ($null -ne $script:ProjectInfoCache) -and
             (((Get-Date) - $script:ProjectInfoCacheTime).TotalSeconds -lt $script:ProjectInfoCacheTTL)
-        $builtFromCurrentCache = ($script:DashLastBuildTime -ne [datetime]::MinValue) -and
+        $alreadyBuilt = ($script:DashLastBuildTime -ne [datetime]::MinValue) -and
             ($script:DashLastBuildTime -ge $script:ProjectInfoCacheTime)
         $nothingChanged = ($FilterText -eq $script:DashLastFilter) -and
-            ($ShowHidden -eq $script:DashLastShowHidden) -and
-            $builtFromCurrentCache
-        if ($cacheIsFresh -and $nothingChanged -and $cardsPanel.Children.Count -gt 0) {
-            return
-        }
+            ($ShowHidden -eq $script:DashLastShowHidden) -and $alreadyBuilt
+        if ($cacheIsFresh -and $nothingChanged -and $cardsPanel.Children.Count -gt 0) { return }
     }
 
-    $cacheIsStale = ($null -eq $script:ProjectInfoCache) -or $Force -or
-        (((Get-Date) - $script:ProjectInfoCacheTime).TotalSeconds -ge $script:ProjectInfoCacheTTL)
-
-    if ($cacheIsStale) {
-        # Async path: show loading indicator and run I/O in background
-        if (-not $script:DashLoadInProgress) {
-            $cardsPanel.Children.Clear()
-            $tc = Get-ThemeColors -ThemeName $script:AppState.Theme
-            $loadingBlock = New-Object System.Windows.Controls.TextBlock
-            $loadingBlock.Text = "Loading projects..."
-            $loadingBlock.Foreground = New-ColorBrush $tc.Subtext1
-            $loadingBlock.FontSize = 13
-            $loadingBlock.Margin = New-Object System.Windows.Thickness(12)
-            $cardsPanel.Children.Add($loadingBlock) | Out-Null
-            Start-DashboardLoadAsync -Window $Window -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir
-        }
-        return
-    }
-
-    # Cache is fresh - build cards synchronously (fast, no I/O)
+    $cardsPanel.Children.Clear()
+    $projects = Get-ProjectInfoList -Force:$Force
     $script:DashLastFilter     = $FilterText
     $script:DashLastShowHidden = $ShowHidden
     $script:DashLastBuildTime  = $script:ProjectInfoCacheTime
 
-    $cardsPanel.Children.Clear()
     $filter = $FilterText.Trim().ToLower()
-    foreach ($proj in $script:ProjectInfoCache) {
+    foreach ($proj in $projects) {
         $isHidden = Test-ProjectHidden -Info $proj
         if ($isHidden -and -not $ShowHidden) { continue }
         if ($filter -ne "" -and $proj.Name.ToLower() -notlike "*$filter*") { continue }
