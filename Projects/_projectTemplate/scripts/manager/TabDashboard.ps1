@@ -737,57 +737,64 @@ function Start-DashboardLoadAsync {
         AddParameter("HasPython",         $hasPython).
         AddParameter("ResultBag",         $resultBag) | Out-Null
 
-    # Capture all needed references for use in callbacks
+    # BeginInvoke returns IAsyncResult whose IsCompleted is thread-safe to poll
+    $asyncResult = $ps.BeginInvoke()
+
+    # DispatcherTimer polls on the UI thread (= main PS runspace thread).
+    # Avoids [System.AsyncCallback] delegate issues across PS runspace boundaries.
+    $timer = New-Object System.Windows.Threading.DispatcherTimer
+    $timer.Interval = [TimeSpan]::FromMilliseconds(200)
+
     $cap = @{
-        Window     = $Window
-        Filter     = $FilterText
-        ShowHidden = $ShowHidden
-        ScriptDir  = $ScriptDir
-        ResultBag  = $resultBag
-        Ps         = $ps
-        Rs         = $rs
-        Dispatcher = $Window.Dispatcher
+        Window      = $Window
+        Filter      = $FilterText
+        ShowHidden  = $ShowHidden
+        ScriptDir   = $ScriptDir
+        ResultBag   = $resultBag
+        Ps          = $ps
+        Rs          = $rs
+        AsyncResult = $asyncResult
+        Timer       = $timer
     }
 
-    $asyncCallback = [System.AsyncCallback]({
-        param($asyncResult)
-        try { $cap.Ps.EndInvoke($asyncResult) } catch {}
+    $timer.Add_Tick({
+        if (-not $cap.AsyncResult.IsCompleted) { return }
+        $cap.Timer.Stop()
 
-        $cap.Dispatcher.BeginInvoke([System.Action]({
-            try {
-                $loadedProjects = @($cap.ResultBag) | Sort-Object { $_.Name }
+        try { $cap.Ps.EndInvoke($cap.AsyncResult) } catch {}
 
-                # Update cache and AppState on the main PS runspace thread
-                $script:ProjectInfoCache    = $loadedProjects
-                $script:ProjectInfoCacheTime = Get-Date
-                $script:AppState.Projects   = $loadedProjects
+        try {
+            $loadedProjects = @($cap.ResultBag) | Sort-Object { $_.Name }
 
-                $script:DashLastFilter      = $cap.Filter
-                $script:DashLastShowHidden  = $cap.ShowHidden
-                $script:DashLastBuildTime   = $script:ProjectInfoCacheTime
+            $script:ProjectInfoCache     = $loadedProjects
+            $script:ProjectInfoCacheTime = Get-Date
+            $script:AppState.Projects    = $loadedProjects
 
-                $cardsPanel = $cap.Window.FindName("dashboardCards")
-                if ($null -ne $cardsPanel) {
-                    $cardsPanel.Children.Clear()
-                    $filter = $cap.Filter.Trim().ToLower()
-                    foreach ($proj in $loadedProjects) {
-                        $isHidden = Test-ProjectHidden -Info $proj
-                        if ($isHidden -and -not $cap.ShowHidden) { continue }
-                        if ($filter -ne "" -and $proj.Name.ToLower() -notlike "*$filter*") { continue }
-                        $cardsPanel.Children.Add(
-                            (New-ProjectCard -Info $proj -Window $cap.Window -IsHidden $isHidden -ScriptDir $cap.ScriptDir)
-                        ) | Out-Null
-                    }
+            $script:DashLastFilter       = $cap.Filter
+            $script:DashLastShowHidden   = $cap.ShowHidden
+            $script:DashLastBuildTime    = $script:ProjectInfoCacheTime
+
+            $cardsPanel = $cap.Window.FindName("dashboardCards")
+            if ($null -ne $cardsPanel) {
+                $cardsPanel.Children.Clear()
+                $filter = $cap.Filter.Trim().ToLower()
+                foreach ($proj in $loadedProjects) {
+                    $isHidden = Test-ProjectHidden -Info $proj
+                    if ($isHidden -and -not $cap.ShowHidden) { continue }
+                    if ($filter -ne "" -and $proj.Name.ToLower() -notlike "*$filter*") { continue }
+                    $cardsPanel.Children.Add(
+                        (New-ProjectCard -Info $proj -Window $cap.Window -IsHidden $isHidden -ScriptDir $cap.ScriptDir)
+                    ) | Out-Null
                 }
-            } finally {
-                $script:DashLoadInProgress = $false
-                try { $cap.Ps.Dispose() } catch {}
-                try { $cap.Rs.Close(); $cap.Rs.Dispose() } catch {}
             }
-        }.GetNewClosure())) | Out-Null
+        } finally {
+            $script:DashLoadInProgress = $false
+            try { $cap.Ps.Dispose() } catch {}
+            try { $cap.Rs.Close(); $cap.Rs.Dispose() } catch {}
+        }
     }.GetNewClosure())
 
-    $ps.BeginInvoke($null, $asyncCallback) | Out-Null
+    $timer.Start()
 }
 
 function Update-Dashboard {
