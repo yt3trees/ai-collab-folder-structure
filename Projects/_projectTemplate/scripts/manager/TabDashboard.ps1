@@ -618,14 +618,11 @@ function Start-DashboardAsyncRefresh {
         try {
             $results = $d.PS.EndInvoke($d.Handle)
             if ($null -ne $results -and $results.Count -gt 0) {
-                $sorted = @($results | Sort-Object @{
-                    Expression = {
-                        if ($_.Name -eq '_INHOUSE')                              { 0 }
-                        elseif ($_.Category -eq 'domain' -and $_.Tier -eq 'full') { 1 }
-                        elseif ($_.Category -eq 'domain' -and $_.Tier -eq 'mini') { 2 }
-                        else                                                       { 3 }
-                    }
-                }, Name)
+                $g0 = @($results | Where-Object { $_.Name -eq '_INHOUSE' })
+                $g1 = @($results | Where-Object { $_.Category -eq 'domain' -and $_.Tier -eq 'full' } | Sort-Object Name)
+                $g2 = @($results | Where-Object { $_.Category -eq 'domain' -and $_.Tier -eq 'mini' } | Sort-Object Name)
+                $g3 = @($results | Where-Object { $_.Name -ne '_INHOUSE' -and $_.Category -ne 'domain' } | Sort-Object Name -Descending)
+                $sorted = $g0 + $g1 + $g2 + $g3
                 $script:ProjectInfoCache     = $sorted
                 $script:ProjectInfoCacheTime = Get-Date
                 $script:AppState.Projects    = $sorted
