@@ -465,7 +465,7 @@ function Build-MainWindowXaml {
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="280">
+                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="420">
                             <StackPanel Margin="16">
                                 <TextBlock Text="Manual Execution" Foreground="{{Mauve}}" FontSize="15"
                                            FontWeight="SemiBold" Margin="0,0,0,8"/>
@@ -494,6 +494,36 @@ function Build-MainWindowXaml {
                                                VerticalAlignment="Center"/>
                                     <TextBlock x:Name="lblAsanaLastSync" Text="---" Foreground="{{Green}}"
                                                FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <!-- asana_config.json editor -->
+                                <TextBlock Text="Project asana_config.json" Foreground="{{Mauve}}" FontSize="15"
+                                           FontWeight="SemiBold" Margin="0,20,0,8"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <ComboBox x:Name="cmbAsanaConfigProject" Width="260" HorizontalAlignment="Left"/>
+                                    <Button x:Name="btnAsanaConfigLoad" Content="Load"
+                                            Margin="8,0,0,0" Padding="10,4"
+                                            Background="{{Surface1}}" Foreground="{{Text}}"
+                                            BorderBrush="{{Surface2}}" BorderThickness="1"
+                                            Cursor="Hand" FontSize="12"/>
+                                </StackPanel>
+                                <TextBlock Text="Asana Project GIDs (one per line):" Foreground="{{Subtext0}}"
+                                           FontSize="12" Margin="0,0,0,3"/>
+                                <TextBox x:Name="txtAsanaConfigGids" Height="64" AcceptsReturn="True"
+                                         TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto"
+                                         FontFamily="Consolas" FontSize="12" Padding="6,4" Margin="0,0,0,8"/>
+                                <TextBlock Text="Anken Aliases (optional, one per line):" Foreground="{{Subtext0}}"
+                                           FontSize="12" Margin="0,0,0,3"/>
+                                <TextBox x:Name="txtAsanaConfigAliases" Height="48" AcceptsReturn="True"
+                                         TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto"
+                                         FontFamily="Consolas" FontSize="12" Padding="6,4" Margin="0,0,0,8"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <Button x:Name="btnAsanaConfigSave" Content="Save Config"
+                                            Padding="12,4" Background="{{Surface1}}" Foreground="{{Text}}"
+                                            BorderBrush="{{Surface2}}" BorderThickness="1"
+                                            Cursor="Hand" FontSize="12" HorizontalAlignment="Left"/>
+                                    <TextBlock x:Name="lblAsanaConfigStatus" Text="" Foreground="{{Green}}"
+                                               FontSize="12" VerticalAlignment="Center" Margin="12,0,0,0"/>
                                 </StackPanel>
                             </StackPanel>
                         </ScrollViewer>

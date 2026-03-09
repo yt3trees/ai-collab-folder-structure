@@ -188,6 +188,66 @@ function Save-AsanaSyncConfig {
     }
 }
 
+# --- asana_config.json helpers ---
+
+function Get-AsanaConfigPath {
+    param([string]$DisplayName, [string]$BoxRoot)
+
+    # Strip trailing [BOX] suffix
+    $name = $DisplayName -replace '\s+\[BOX\]$', ''
+
+    if ($name -match '^(.+?)\s+\[Domain\]\[Mini\]$') {
+        return Join-Path $BoxRoot "_domains\_mini\$($Matches[1])\asana_config.json"
+    }
+    elseif ($name -match '^(.+?)\s+\[Domain\]$') {
+        return Join-Path $BoxRoot "_domains\$($Matches[1])\asana_config.json"
+    }
+    elseif ($name -match '^(.+?)\s+\[Mini\]$') {
+        return Join-Path $BoxRoot "_mini\$($Matches[1])\asana_config.json"
+    }
+    else {
+        return Join-Path $BoxRoot "$name\asana_config.json"
+    }
+}
+
+function Load-AsanaProjectConfig {
+    param([string]$ConfigPath)
+
+    if (-not (Test-Path $ConfigPath)) {
+        return @{ asana_project_gids = @(); anken_aliases = @() }
+    }
+    try {
+        $raw = [System.IO.File]::ReadAllText($ConfigPath, [System.Text.Encoding]::UTF8)
+        $obj = $raw | ConvertFrom-Json
+        $gids    = if ($obj.PSObject.Properties["asana_project_gids"]) { [array]$obj.asana_project_gids } else { @() }
+        $aliases = if ($obj.PSObject.Properties["anken_aliases"])       { [array]$obj.anken_aliases }       else { @() }
+        return @{ asana_project_gids = $gids; anken_aliases = $aliases }
+    }
+    catch {
+        return @{ asana_project_gids = @(); anken_aliases = @() }
+    }
+}
+
+function Save-AsanaProjectConfig {
+    param([string]$ConfigPath, [string[]]$GidLines, [string[]]$AliasLines)
+
+    $gids    = @($GidLines    | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+    $aliases = @($AliasLines  | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+
+    $obj = [PSCustomObject]@{
+        asana_project_gids = $gids
+        anken_aliases      = $aliases
+    }
+
+    $dir = Split-Path $ConfigPath -Parent
+    if (-not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+
+    $json = $obj | ConvertTo-Json -Depth 5
+    [System.IO.File]::WriteAllText($ConfigPath, $json, [System.Text.Encoding]::UTF8)
+}
+
 # --- Shared sync logic ---
 
 function Invoke-AsanaSync {
@@ -379,4 +439,103 @@ function Initialize-TabAsanaSync {
         $chkSchedule.IsChecked = $true
         $script:AsanaSyncState.Restoring = $false
     }
+
+    # --- asana_config.json editor ---
+    $cmbProject    = $Window.FindName("cmbAsanaConfigProject")
+    $btnLoad       = $Window.FindName("btnAsanaConfigLoad")
+    $btnSaveConfig = $Window.FindName("btnAsanaConfigSave")
+    $lblStatus     = $Window.FindName("lblAsanaConfigStatus")
+
+    # Populate project ComboBox (plain strings, same as other tabs)
+    $projectList = Get-ProjectNameList
+    foreach ($p in $projectList) {
+        $cmbProject.Items.Add($p) | Out-Null
+    }
+    if ($cmbProject.Items.Count -gt 0) { $cmbProject.SelectedIndex = 0 }
+
+    # Load button: read asana_config.json and populate fields
+    $btnLoad.Add_Click({
+        $w    = $script:AsanaSyncState.Window
+        $cmb  = $w.FindName("cmbAsanaConfigProject")
+        $txtG = $w.FindName("txtAsanaConfigGids")
+        $txtA = $w.FindName("txtAsanaConfigAliases")
+        $lbl  = $w.FindName("lblAsanaConfigStatus")
+
+        $displayName = if ($null -ne $cmb.SelectedItem) { $cmb.SelectedItem.ToString() } else { "" }
+        if ([string]::IsNullOrWhiteSpace($displayName)) { return }
+
+        # Resolve box path (re-read paths.json to avoid closure-scope issues)
+        $wsRoot  = $script:AppState.WorkspaceRoot
+        $pcfg    = Join-Path $wsRoot "_config\paths.json"
+        if (-not (Test-Path $pcfg)) {
+            $lbl.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#f38ba8"))
+            $lbl.Text = "Error: paths.json not found"
+            return
+        }
+        $cfg     = Get-Content $pcfg -Raw | ConvertFrom-Json
+        $boxRoot = [System.Environment]::ExpandEnvironmentVariables($cfg.boxProjectsRoot)
+        if ([string]::IsNullOrWhiteSpace($boxRoot)) {
+            $lbl.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#f38ba8"))
+            $lbl.Text = "Error: boxProjectsRoot not configured"
+            return
+        }
+
+        $configPath = Get-AsanaConfigPath -DisplayName $displayName -BoxRoot $boxRoot
+
+        $config = Load-AsanaProjectConfig -ConfigPath $configPath
+        $txtG.Text = ($config.asana_project_gids -join "`r`n")
+        $txtA.Text = ($config.anken_aliases       -join "`r`n")
+
+        $lbl.Foreground = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#a6e3a1"))
+        $lbl.Text = if (Test-Path $configPath) { "Loaded" } else { "New file" }
+    })
+
+    # Save button: write asana_config.json
+    $btnSaveConfig.Add_Click({
+        $w    = $script:AsanaSyncState.Window
+        $cmb  = $w.FindName("cmbAsanaConfigProject")
+        $txtG = $w.FindName("txtAsanaConfigGids")
+        $txtA = $w.FindName("txtAsanaConfigAliases")
+        $lbl  = $w.FindName("lblAsanaConfigStatus")
+
+        $displayName = if ($null -ne $cmb.SelectedItem) { $cmb.SelectedItem.ToString() } else { "" }
+        if ([string]::IsNullOrWhiteSpace($displayName)) { return }
+
+        # Resolve box path
+        $wsRoot  = $script:AppState.WorkspaceRoot
+        $pcfg    = Join-Path $wsRoot "_config\paths.json"
+        if (-not (Test-Path $pcfg)) {
+            $lbl.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#f38ba8"))
+            $lbl.Text = "Error: paths.json not found"
+            return
+        }
+        $cfg     = Get-Content $pcfg -Raw | ConvertFrom-Json
+        $boxRoot = [System.Environment]::ExpandEnvironmentVariables($cfg.boxProjectsRoot)
+        if ([string]::IsNullOrWhiteSpace($boxRoot)) {
+            $lbl.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#f38ba8"))
+            $lbl.Text = "Error: boxProjectsRoot not configured"
+            return
+        }
+
+        $configPath = Get-AsanaConfigPath -DisplayName $displayName -BoxRoot $boxRoot
+
+        try {
+            $gidLines   = $txtG.Text -split "`r?`n"
+            $aliasLines = $txtA.Text -split "`r?`n"
+            Save-AsanaProjectConfig -ConfigPath $configPath -GidLines $gidLines -AliasLines $aliasLines
+            $lbl.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#a6e3a1"))
+            $lbl.Text = "Saved $(Get-Date -Format 'HH:mm:ss')"
+        }
+        catch {
+            $lbl.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#f38ba8"))
+            $lbl.Text = "Error: $($_.Exception.Message)"
+        }
+    })
 }
