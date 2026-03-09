@@ -550,6 +550,99 @@ function New-ProjectCard {
 $script:DashLastFilter     = $null
 $script:DashLastShowHidden = $null
 $script:DashLastBuildTime  = [datetime]::MinValue
+$script:DashRefreshRunning = $false
+
+# Render cards from a pre-fetched project list (no I/O)
+function Invoke-RenderDashboardCards {
+    param(
+        [System.Windows.Controls.Panel]$CardsPanel,
+        [object[]]$Projects,
+        [System.Windows.Window]$Window,
+        [string]$FilterText,
+        [bool]$ShowHidden,
+        [string]$ScriptDir
+    )
+    $CardsPanel.Children.Clear()
+    $filter = $FilterText.Trim().ToLower()
+    foreach ($proj in $Projects) {
+        $isHidden = Test-ProjectHidden -Info $proj
+        if ($isHidden -and -not $ShowHidden) { continue }
+        if ($filter -ne "" -and $proj.Name.ToLower() -notlike "*$filter*") { continue }
+        $CardsPanel.Children.Add((New-ProjectCard -Info $proj -Window $Window -IsHidden $isHidden -ScriptDir $ScriptDir)) | Out-Null
+    }
+}
+
+# Run project discovery in a background Runspace; update cache and re-render when done.
+# Returns immediately so the UI thread is never blocked.
+function Start-DashboardAsyncRefresh {
+    param(
+        [System.Windows.Window]$Window,
+        [string]$FilterText,
+        [bool]$ShowHidden,
+        [string]$ScriptDir
+    )
+    if ($script:DashRefreshRunning) { return }
+    $script:DashRefreshRunning = $true
+
+    $workspaceRoot  = $script:AppState.WorkspaceRoot
+    $pathsConfig    = $script:AppState.PathsConfig
+    $discoveryPath  = Join-Path (Join-Path $ScriptDir "manager") "ProjectDiscovery.ps1"
+
+    $rs = [runspacefactory]::CreateRunspace()
+    $rs.Open()
+    $rs.SessionStateProxy.SetVariable('_WorkspaceRoot', $workspaceRoot)
+    $rs.SessionStateProxy.SetVariable('_PathsConfig',   $pathsConfig)
+    $rs.SessionStateProxy.SetVariable('_DiscoveryPath', $discoveryPath)
+
+    $ps = [powershell]::Create()
+    $ps.Runspace = $rs
+    [void]$ps.AddScript({
+        $script:AppState = @{ WorkspaceRoot = $_WorkspaceRoot; PathsConfig = $_PathsConfig }
+        . $_DiscoveryPath
+        return (Get-ProjectInfoList -Force -SkipTokens)
+    })
+    $asyncHandle = $ps.BeginInvoke()
+
+    # Poll on the Dispatcher thread (UI-safe); re-render when the Runspace is done
+    $pollTimer = New-Object System.Windows.Threading.DispatcherTimer
+    $pollTimer.Interval = [timespan]::FromMilliseconds(150)
+    $pollTimer.Tag = @{
+        PS = $ps; RS = $rs; Handle = $asyncHandle
+        Window = $Window; FilterText = $FilterText; ShowHidden = $ShowHidden; ScriptDir = $ScriptDir
+    }
+    $pollTimer.Add_Tick({
+        param($sender, $e)
+        $d = $sender.Tag
+        if (-not $d.Handle.IsCompleted) { return }
+        $sender.Stop()
+        try {
+            $results = $d.PS.EndInvoke($d.Handle)
+            if ($null -ne $results -and $results.Count -gt 0) {
+                $sorted = @($results | Sort-Object Name)
+                $script:ProjectInfoCache     = $sorted
+                $script:ProjectInfoCacheTime = Get-Date
+                $script:AppState.Projects    = $sorted
+                $panel = $d.Window.FindName("dashboardCards")
+                if ($null -ne $panel) {
+                    Invoke-RenderDashboardCards -CardsPanel $panel -Projects $sorted `
+                        -Window $d.Window -FilterText $d.FilterText -ShowHidden $d.ShowHidden `
+                        -ScriptDir $d.ScriptDir
+                    $script:DashLastFilter     = $d.FilterText
+                    $script:DashLastShowHidden = $d.ShowHidden
+                    $script:DashLastBuildTime  = $script:ProjectInfoCacheTime
+                }
+            }
+        }
+        catch { }
+        finally {
+            $d.PS.Dispose()
+            $d.RS.Close()
+            $d.RS.Dispose()
+            $script:DashRefreshRunning = $false
+        }
+    }.GetNewClosure())
+    $pollTimer.Start()
+}
 
 function Update-Dashboard {
     param([System.Windows.Window]$Window, [string]$FilterText = "", [bool]$ShowHidden = $false, [switch]$Force, [string]$ScriptDir = "")
@@ -567,20 +660,23 @@ function Update-Dashboard {
         if ($cacheIsFresh -and $nothingChanged -and $cardsPanel.Children.Count -gt 0) { return }
     }
 
+    # Stale cache exists: render old data instantly, then refresh in background (no UI freeze)
+    if (-not $Force -and $null -ne $script:ProjectInfoCache) {
+        Invoke-RenderDashboardCards -CardsPanel $cardsPanel -Projects $script:ProjectInfoCache `
+            -Window $Window -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir
+        Start-DashboardAsyncRefresh -Window $Window -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir
+        return
+    }
+
+    # No cache yet or explicit Force (manual Refresh button): synchronous load
     $cardsPanel.Children.Clear()
-    # SkipTokens on automatic refreshes (tab switch, cache miss); run Python only on explicit Refresh
+    # SkipTokens on automatic refreshes; run Python only on explicit Refresh
     $projects = Get-ProjectInfoList -Force:$Force -SkipTokens:(-not $Force)
     $script:DashLastFilter     = $FilterText
     $script:DashLastShowHidden = $ShowHidden
     $script:DashLastBuildTime  = $script:ProjectInfoCacheTime
-
-    $filter = $FilterText.Trim().ToLower()
-    foreach ($proj in $projects) {
-        $isHidden = Test-ProjectHidden -Info $proj
-        if ($isHidden -and -not $ShowHidden) { continue }
-        if ($filter -ne "" -and $proj.Name.ToLower() -notlike "*$filter*") { continue }
-        $cardsPanel.Children.Add((New-ProjectCard -Info $proj -Window $Window -IsHidden $isHidden -ScriptDir $ScriptDir)) | Out-Null
-    }
+    Invoke-RenderDashboardCards -CardsPanel $cardsPanel -Projects $projects -Window $Window `
+        -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir
 }
 
 function Initialize-TabDashboard {
