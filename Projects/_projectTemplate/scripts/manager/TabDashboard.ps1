@@ -619,9 +619,9 @@ function Start-DashboardAsyncRefresh {
             $results = $d.PS.EndInvoke($d.Handle)
             if ($null -ne $results -and $results.Count -gt 0) {
                 $g0 = @($results | Where-Object { $_.Name -eq '_INHOUSE' })
-                $g1 = @($results | Where-Object { $_.Category -eq 'domain' -and $_.Tier -eq 'full' } | Sort-Object Name)
-                $g2 = @($results | Where-Object { $_.Category -eq 'domain' -and $_.Tier -eq 'mini' } | Sort-Object Name)
-                $g3 = @($results | Where-Object { $_.Name -ne '_INHOUSE' -and $_.Category -ne 'domain' } | Sort-Object Name -Descending)
+                $g1 = @($results | Where-Object { $_.Category -eq 'domain' -and $_.Tier -eq 'full' } | Sort-Object { $_.Name })
+                $g2 = @($results | Where-Object { $_.Category -eq 'domain' -and $_.Tier -eq 'mini' } | Sort-Object { $_.Name })
+                $g3 = @($results | Where-Object { $_.Name -ne '_INHOUSE' -and $_.Category -ne 'domain' } | Sort-Object { $_.Name })
                 $sorted = $g0 + $g1 + $g2 + $g3
                 $script:ProjectInfoCache     = $sorted
                 $script:ProjectInfoCacheTime = Get-Date
