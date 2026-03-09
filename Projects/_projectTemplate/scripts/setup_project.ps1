@@ -403,6 +403,27 @@ Write-Host "  Created: CLAUDE.md -> Local Project Root (@AGENTS.md reference)" -
 
 
 
+# 5. Create .git/forCodex for Codex CLI AGENTS.md discovery
+# Codex CLI stops traversal at .git/, so _work/ will find AGENTS.md in shared/
+Write-Host ""
+Write-Host "[Codex CLI Setup]" -ForegroundColor Yellow
+$gitDir = "$boxShared\.git"
+$forCodexFile = "$gitDir\forCodex"
+if (-not (Test-Path $gitDir)) {
+    New-Item -Path $gitDir -ItemType Directory -Force | Out-Null
+    Write-Host "  Created: .git/" -ForegroundColor Green
+}
+else {
+    Write-Host "  Exists: .git/" -ForegroundColor Gray
+}
+if (-not (Test-Path $forCodexFile)) {
+    Set-Content -Path $forCodexFile -Value "This marker lets Codex CLI treat this directory as a repo root so that AGENTS.md is discoverable from _work/." -Encoding UTF8
+    Write-Host "  Created: .git/forCodex" -ForegroundColor Green
+}
+else {
+    Write-Host "  Exists: .git/forCodex" -ForegroundColor Gray
+}
+
 Write-Host ""
 Write-Host "Setup complete!" -ForegroundColor Green
 Write-Host "Project: $ProjectName" -ForegroundColor Cyan

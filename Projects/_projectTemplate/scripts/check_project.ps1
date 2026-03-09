@@ -202,6 +202,15 @@ else {
     Write-Host "  [!] CLAUDE.md missing locally - run setup_project.ps1" -ForegroundColor Yellow
 }
 
+# .git/forCodex (Codex CLI repo root marker)
+$forCodexFile = "$boxShared\.git\forCodex"
+if (Test-Path $forCodexFile) {
+    Write-Host "  OK: shared/.git/forCodex (Codex CLI marker)" -ForegroundColor Green
+}
+else {
+    Write-Host "  [!] shared/.git/forCodex missing - run setup_project.ps1 to fix" -ForegroundColor Yellow
+}
+
 # Folder Structure
 Write-Host ""
 Write-Host "[Folder Structure]" -ForegroundColor Yellow
