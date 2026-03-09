@@ -269,7 +269,7 @@ def write_task_line(f, task, role, existing_memos):
     notes = (task.get('notes') or '').strip()
     if notes:
         lines = notes.splitlines()
-        max_lines = 3 if task.get('completed') else 20
+        max_lines = 3 if task.get('completed') else 10
         if len(lines) > max_lines:
             out_lines = lines[:max_lines] + ["..."]
         else:
