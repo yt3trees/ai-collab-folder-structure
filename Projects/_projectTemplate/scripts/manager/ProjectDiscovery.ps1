@@ -355,7 +355,14 @@ function Get-ProjectInfoList {
     }
 
     $script:AppState.Projects = $projects
-    $script:ProjectInfoCache = $projects | Sort-Object Name
+    $script:ProjectInfoCache = $projects | Sort-Object @{
+        Expression = {
+            if ($_.Name -eq '_INHOUSE')                              { 0 }
+            elseif ($_.Category -eq 'domain' -and $_.Tier -eq 'full') { 1 }
+            elseif ($_.Category -eq 'domain' -and $_.Tier -eq 'mini') { 2 }
+            else                                                       { 3 }
+        }
+    }, Name
     $script:ProjectInfoCacheTime = Get-Date
 
     return $script:ProjectInfoCache
