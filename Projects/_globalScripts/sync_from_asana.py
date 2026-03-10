@@ -78,7 +78,7 @@ def discover_projects(box_projects_root):
             asana_config = {}
             if os.path.exists(config_file):
                 try:
-                    with open(config_file, 'r', encoding='utf-8') as f:
+                    with open(config_file, 'r', encoding='utf-8-sig') as f:
                         asana_config = json.load(f)
                 except Exception as e:
                     print(f"  WARNING: Failed to read {config_file}: {e}")
