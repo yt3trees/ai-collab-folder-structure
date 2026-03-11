@@ -471,6 +471,51 @@ function New-AvalonEditEditor {
     return $editor
 }
 
+function Invoke-EditorFind {
+    param(
+        [ICSharpCode.AvalonEdit.TextEditor]$Editor,
+        [string]$Query,
+        [bool]$Forward = $true
+    )
+
+    if ($null -eq $Editor) { return $false }
+    if ([string]::IsNullOrEmpty($Query)) { return $false }
+
+    $text = $Editor.Text
+    if ([string]::IsNullOrEmpty($text)) { return $false }
+
+    $comparison = [System.StringComparison]::OrdinalIgnoreCase
+    $start = if ($Forward) { $Editor.SelectionStart + [Math]::Max(1, $Editor.SelectionLength) } else { [Math]::Max(0, $Editor.SelectionStart - 1) }
+    $index = -1
+
+    if ($Forward) {
+        if ($start -lt $text.Length) {
+            $index = $text.IndexOf($Query, $start, $comparison)
+        }
+        if ($index -lt 0) {
+            $index = $text.IndexOf($Query, 0, $comparison)
+        }
+    }
+    else {
+        if ($start -ge 0) {
+            $index = $text.LastIndexOf($Query, $start, $comparison)
+        }
+        if ($index -lt 0) {
+            $index = $text.LastIndexOf($Query, $text.Length - 1, $comparison)
+        }
+    }
+
+    if ($index -lt 0) {
+        return $false
+    }
+
+    $Editor.Select($index, $Query.Length)
+    $line = $Editor.Document.GetLineByOffset($index)
+    $Editor.ScrollToLine($line.LineNumber)
+    $Editor.Focus()
+    return $true
+}
+
 function Get-RecentWorkDirs {
     param(
         [string]$WorkDir,
@@ -518,6 +563,13 @@ function Initialize-TabEditor {
     # Store reference in AppState
     $script:AppState.EditorControl = $editor
     $script:AppState.EditorState.SuppressChangeEvent = $false
+
+    # Custom find bar controls (Notepad-like Ctrl+F)
+    $findBar = $Window.FindName("editorFindBar")
+    $txtFind = $Window.FindName("txtEditorFind")
+    $btnFindPrev = $Window.FindName("btnEditorFindPrev")
+    $btnFindNext = $Window.FindName("btnEditorFindNext")
+    $btnFindClose = $Window.FindName("btnEditorFindClose")
 
     # Register tree file-open handlers ONCE here (prevents accumulation on project switch)
     $fileTree = $Window.FindName("editorFileTree")
@@ -630,12 +682,146 @@ function Initialize-TabEditor {
             Update-StatusBar -Window $Window -Dirty $isDirty -Health ""
         })
 
-    # Ctrl+S shortcut on editor
-    $editor.Add_KeyDown({
-            if ($_.Key -eq [System.Windows.Input.Key]::S -and
-                [System.Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftCtrl)) {
-                Save-EditorFile -Window $Window
+    # Find bar button handlers: use [System.Windows.Window]::GetWindow($this) to avoid closure issues
+    if ($null -ne $btnFindNext) {
+        $btnFindNext.Add_Click({
+                $ed = $script:AppState.EditorControl
+                $w = [System.Windows.Window]::GetWindow($this)
+                $tf = if ($null -ne $w) { $w.FindName("txtEditorFind") } else { $null }
+                if ($null -ne $ed -and $null -ne $tf) {
+                    $ok = Invoke-EditorFind -Editor $ed -Query $tf.Text -Forward $true
+                    if (-not $ok) { [System.Media.SystemSounds]::Beep.Play() }
+                }
+            })
+    }
+    if ($null -ne $btnFindPrev) {
+        $btnFindPrev.Add_Click({
+                $ed = $script:AppState.EditorControl
+                $w = [System.Windows.Window]::GetWindow($this)
+                $tf = if ($null -ne $w) { $w.FindName("txtEditorFind") } else { $null }
+                if ($null -ne $ed -and $null -ne $tf) {
+                    $ok = Invoke-EditorFind -Editor $ed -Query $tf.Text -Forward $false
+                    if (-not $ok) { [System.Media.SystemSounds]::Beep.Play() }
+                }
+            })
+    }
+    if ($null -ne $btnFindClose) {
+        $btnFindClose.Add_Click({
+                $ed = $script:AppState.EditorControl
+                $w = [System.Windows.Window]::GetWindow($this)
+                $fb = if ($null -ne $w) { $w.FindName("editorFindBar") } else { $null }
+                if ($null -ne $fb) { $fb.Visibility = [System.Windows.Visibility]::Collapsed }
+                if ($null -ne $ed) { $ed.Focus() }
+            })
+    }
+    if ($null -ne $txtFind) {
+        $txtFind.Add_KeyDown({
+                $ed = $script:AppState.EditorControl
+                $w = [System.Windows.Window]::GetWindow($this)
+                $tf = $this
+                $fb = if ($null -ne $w) { $w.FindName("editorFindBar") } else { $null }
+                if ($_.Key -eq [System.Windows.Input.Key]::Enter) {
+                    $shift = ([System.Windows.Input.Keyboard]::Modifiers -band [System.Windows.Input.ModifierKeys]::Shift) -ne 0
+                    if ($null -ne $ed -and $null -ne $tf) {
+                        $ok = Invoke-EditorFind -Editor $ed -Query $tf.Text -Forward (-not $shift)
+                        if (-not $ok) { [System.Media.SystemSounds]::Beep.Play() }
+                    }
+                    # Keep focus in find bar so Enter can be pressed repeatedly
+                    $tf.Focus()
+                    $_.Handled = $true
+                }
+                elseif ($_.Key -eq [System.Windows.Input.Key]::Escape) {
+                    if ($null -ne $fb) { $fb.Visibility = [System.Windows.Visibility]::Collapsed }
+                    if ($null -ne $ed) { $ed.Focus() }
+                    $_.Handled = $true
+                }
+            })
+    }
+
+    # Fallback shortcuts at window level to ensure Ctrl+F works regardless of focus target
+    # Note: use $this (sender = Window) instead of closure $Window to avoid scope issues
+    $Window.Add_PreviewKeyDown({
+            $w = $this
+            $tabMain = $w.FindName("tabMain")
+            if ($null -eq $tabMain -or $tabMain.SelectedIndex -ne 1) { return }
+
+            $ed = $script:AppState.EditorControl
+            $fb = $w.FindName("editorFindBar")
+            $tf = $w.FindName("txtEditorFind")
+
+            if ($_.Key -eq [System.Windows.Input.Key]::F3) {
+                $shiftF3 = ([System.Windows.Input.Keyboard]::Modifiers -band [System.Windows.Input.ModifierKeys]::Shift) -ne 0
+                if ($null -ne $ed -and $null -ne $tf) {
+                    $ok = Invoke-EditorFind -Editor $ed -Query $tf.Text -Forward (-not $shiftF3)
+                    if (-not $ok) { [System.Media.SystemSounds]::Beep.Play() }
+                }
                 $_.Handled = $true
+                return
+            }
+
+            $mods = [System.Windows.Input.Keyboard]::Modifiers
+            $isCtrl = (($mods -band [System.Windows.Input.ModifierKeys]::Control) -ne 0)
+            if ($isCtrl -and $_.Key -eq [System.Windows.Input.Key]::F) {
+                if ($null -ne $fb -and $null -ne $tf) {
+                    $fb.Visibility = [System.Windows.Visibility]::Visible
+                    if ($null -ne $ed -and -not [string]::IsNullOrWhiteSpace($ed.SelectedText)) {
+                        $tf.Text = $ed.SelectedText
+                    }
+                    $tf.Focus()
+                    $tf.SelectAll()
+                }
+                $_.Handled = $true
+                return
+            }
+
+            if ($_.Key -eq [System.Windows.Input.Key]::Escape -and
+                $null -ne $fb -and
+                $fb.Visibility -eq [System.Windows.Visibility]::Visible) {
+                $fb.Visibility = [System.Windows.Visibility]::Collapsed
+                if ($null -ne $ed) { $ed.Focus() }
+                $_.Handled = $true
+            }
+        })
+
+    # Ctrl shortcuts on editor: use $script:AppState and GetWindow to avoid closure issues
+    $editor.Add_KeyDown({
+            $mods = [System.Windows.Input.Keyboard]::Modifiers
+            $isCtrl = (($mods -band [System.Windows.Input.ModifierKeys]::Control) -ne 0)
+            $isShift = (($mods -band [System.Windows.Input.ModifierKeys]::Shift) -ne 0)
+            $ed = $script:AppState.EditorControl
+            $w = [System.Windows.Window]::GetWindow($this)
+
+            if ($_.Key -eq [System.Windows.Input.Key]::F3) {
+                $tf = if ($null -ne $w) { $w.FindName("txtEditorFind") } else { $null }
+                if ($null -ne $ed -and $null -ne $tf) {
+                    $ok = Invoke-EditorFind -Editor $ed -Query $tf.Text -Forward (-not $isShift)
+                    if (-not $ok) { [System.Media.SystemSounds]::Beep.Play() }
+                }
+                $_.Handled = $true
+                return
+            }
+
+            if (-not $isCtrl) { return }
+
+            if ($_.Key -eq [System.Windows.Input.Key]::S) {
+                if ($null -ne $w) { Save-EditorFile -Window $w }
+                $_.Handled = $true
+                return
+            }
+
+            if ($_.Key -eq [System.Windows.Input.Key]::F) {
+                $fb = if ($null -ne $w) { $w.FindName("editorFindBar") } else { $null }
+                $tf = if ($null -ne $w) { $w.FindName("txtEditorFind") } else { $null }
+                if ($null -ne $fb -and $null -ne $tf) {
+                    $fb.Visibility = [System.Windows.Visibility]::Visible
+                    if ($null -ne $ed -and -not [string]::IsNullOrWhiteSpace($ed.SelectedText)) {
+                        $tf.Text = $ed.SelectedText
+                    }
+                    $tf.Focus()
+                    $tf.SelectAll()
+                }
+                $_.Handled = $true
+                return
             }
         })
 

@@ -153,7 +153,52 @@ function Build-MainWindowXaml {
                             <!-- Text editor (AvalonEdit host) -->
                             <Border Grid.Column="2" Background="{{Mantle}}" CornerRadius="4"
                                     BorderBrush="{{Surface0}}" BorderThickness="1">
-                                <ContentControl x:Name="editorHost" />
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <Border x:Name="editorFindBar"
+                                            Grid.Row="0"
+                                            Background="{{Base}}"
+                                            BorderBrush="{{Surface2}}"
+                                            BorderThickness="0,0,0,1"
+                                            Padding="8,6"
+                                            Visibility="Collapsed">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox x:Name="txtEditorFind"
+                                                     Grid.Column="0"
+                                                     Margin="0,0,8,0"
+                                                     MinHeight="26"/>
+                                            <Button x:Name="btnEditorFindPrev"
+                                                    Grid.Column="1"
+                                                    Content="&#x2190;"
+                                                    Style="{StaticResource SmallButton}"
+                                                    Margin="0,0,6,0"
+                                                    MinWidth="34"/>
+                                            <Button x:Name="btnEditorFindNext"
+                                                    Grid.Column="2"
+                                                    Content="&#x2192;"
+                                                    Style="{StaticResource SmallButton}"
+                                                    Margin="0,0,6,0"
+                                                    MinWidth="34"/>
+                                            <Button x:Name="btnEditorFindClose"
+                                                    Grid.Column="3"
+                                                    Content="&#x2715;"
+                                                    Style="{StaticResource SmallButton}"
+                                                    MinWidth="34"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <ContentControl x:Name="editorHost" Grid.Row="1"/>
+                                </Grid>
                             </Border>
                         </Grid>
 
@@ -300,6 +345,8 @@ function Build-MainWindowXaml {
                                 <CheckBox x:Name="ctxMini" Content="Mini tier project (-Mini)"
                                           Margin="0,10,0,0"/>
                                 <CheckBox x:Name="ctxDomain" Content="Domain project (-Category domain)"
+                                          Margin="0,6,0,0"/>
+                                <CheckBox x:Name="ctxForce" Content="Overwrite existing skills (-Force)"
                                           Margin="0,6,0,0"/>
                                 <Button x:Name="btnCtxLayer" Content="Run Context Layer Setup"
                                         Style="{StaticResource RunButton}"/>

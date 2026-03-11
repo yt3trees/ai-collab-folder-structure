@@ -438,6 +438,18 @@ function Initialize-TabAsanaSync {
         $script:AsanaSyncState.Restoring = $true
         $chkSchedule.IsChecked = $true
         $script:AsanaSyncState.Restoring = $false
+
+        # If schedule is enabled on startup, run initial sync immediately when window loads
+        $Window.Add_Loaded({
+            $w = $script:AsanaSyncState.Window
+            if ($null -ne $w) {
+                $txtOutput = $w.FindName("txtAsanaOutput")
+                if ($null -ne $txtOutput) {
+                    $txtOutput.AppendText("=== Auto Sync on Startup ===`r`n")
+                }
+            }
+            Invoke-AsanaSync
+        })
     }
 
     # --- asana_config.json editor ---

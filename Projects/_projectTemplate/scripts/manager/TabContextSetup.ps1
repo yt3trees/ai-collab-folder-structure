@@ -12,6 +12,7 @@ function Initialize-TabContextSetup {
     $btnCtxClear = $Window.FindName("btnCtxClear")
     $ctxMini = $Window.FindName("ctxMini")
     $ctxDomain = $Window.FindName("ctxDomain")
+    $ctxForce = $Window.FindName("ctxForce")
 
     # Populate dropdown
     foreach ($p in $ProjectList) {
@@ -38,6 +39,7 @@ function Initialize-TabContextSetup {
             $combo = $Window.FindName("ctxProjectCombo")
             $mini = $Window.FindName("ctxMini")
             $domain = $Window.FindName("ctxDomain")
+            $force = $Window.FindName("ctxForce")
             $params = Get-ProjectParams -ComboText $combo.Text `
                 -MiniChecked $mini.IsChecked -DomainChecked $domain.IsChecked
 
@@ -47,6 +49,7 @@ function Initialize-TabContextSetup {
                 if ($params.IsMini) { $argStr += " -Mini" }
                 if ($params.IsDomain) { $argStr += " -Category domain" }
             }
+            if ($force.IsChecked) { $argStr += " -Force" }
 
             # context-compression-layer setup script is two levels up from scripts/
             $scriptPath = Join-Path (Split-Path $ScriptDir) `

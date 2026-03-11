@@ -20,7 +20,8 @@ param(
     [switch]$Mini,
     [ValidateSet("project", "domain")]
     [string]$Category = "project",
-    [string]$TemplateDir
+    [string]$TemplateDir,
+    [switch]$Force
 )
 
 $configPath = Join-Path $env:USERPROFILE "Documents\Projects\_config\paths.json"
@@ -187,6 +188,10 @@ function Setup-Project {
                     if (-not (Test-Path $dstSkill)) {
                         Copy-Item -Path $skill.FullName -Destination $dstSkill -Recurse
                         Write-Host "    [CREATE] $cli/skills/$($skill.Name)" -ForegroundColor Green
+                    }
+                    elseif ($Force) {
+                        Copy-Item -Path $skill.FullName -Destination $dstSkill -Recurse -Force
+                        Write-Host "    [UPDATE] $cli/skills/$($skill.Name) (overwritten)" -ForegroundColor Cyan
                     }
                     else {
                         Write-Host "    [SKIP]   $cli/skills/$($skill.Name) (already exists)" -ForegroundColor Yellow

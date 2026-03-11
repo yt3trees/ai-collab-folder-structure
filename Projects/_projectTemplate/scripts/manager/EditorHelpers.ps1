@@ -126,6 +126,10 @@ function Open-FileInEditor {
 
         $editor.TextArea.Caret.Offset = 0
         $editor.ScrollToLine(1)
+
+        # Close find bar when switching files
+        $fb = $Window.FindName("editorFindBar")
+        if ($null -ne $fb) { $fb.Visibility = [System.Windows.Visibility]::Collapsed }
     }
     catch {
         [System.Windows.MessageBox]::Show(
