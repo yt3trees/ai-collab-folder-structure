@@ -385,22 +385,6 @@ function New-ProjectCard {
         return $btn
     }
 
-    # [Check] button
-    $btnCheck = &$createCardButton "Check" (New-Object System.Windows.Thickness(0, 0, 6, 0))
-    $btnCheck.Tag = @{ ProjName = $localProjName; IsMini = $localIsMini; IsDomain = $localIsDomain }
-    $btnCheck.Add_Click({
-            param($sender, $e)
-            $data = $sender.Tag
-            $tabMain = $Window.FindName("tabMain")
-            $tabMain.SelectedIndex = 5
-            $checkCombo = $Window.FindName("checkProjectCombo")
-            $suffix = if ($data.IsDomain -and $data.IsMini) { " [Domain][Mini]" } elseif ($data.IsDomain) { " [Domain]" } elseif ($data.IsMini) { " [Mini]" } else { "" }
-            $checkCombo.Text = "$($data.ProjName)$suffix"
-            $checkMiniBox = $Window.FindName("checkMini")
-            $checkMiniBox.IsChecked = $data.IsMini
-        })
-    $btnCheck.Add_MouseRightButtonUp({ param($sender, $e) $e.Handled = $true })
-
     # [Edit] button
     $btnEdit = &$createCardButton "Edit" (New-Object System.Windows.Thickness(0, 0, 0, 0))
     $btnEdit.Tag = $exactDisplayName
@@ -421,7 +405,7 @@ function New-ProjectCard {
     $btnEdit.Add_MouseRightButtonUp({ param($sender, $e) $e.Handled = $true })
 
     # [Term] button
-    $btnTerm = &$createCardButton "Term" (New-Object System.Windows.Thickness(6, 0, 0, 0))
+    $btnTerm = &$createCardButton "Term" (New-Object System.Windows.Thickness(0, 0, 6, 0))
     $btnTerm.Tag = $localProjPath
     $btnTerm.Add_Click({ param($sender, $e) Open-TerminalAtPath -Path $sender.Tag })
     $btnTerm.Add_MouseRightButtonUp({
@@ -455,7 +439,7 @@ function New-ProjectCard {
         })
 
     # [Dir] button
-    $btnDir = &$createCardButton "Dir" (New-Object System.Windows.Thickness(6, 0, 0, 0))
+    $btnDir = &$createCardButton "Dir" (New-Object System.Windows.Thickness(0, 0, 6, 0))
     $btnDir.Tag = $localProjPath
     $btnDir.Add_Click({ param($sender, $e) if (Test-Path $sender.Tag) { Start-Process explorer.exe -ArgumentList $sender.Tag } })
     $btnDir.Add_MouseRightButtonUp({
@@ -467,10 +451,9 @@ function New-ProjectCard {
             $script:currentDirPopup = Show-DirMenu -ProjPath $sender.Tag -PlacementTarget $null
         })
 
-    $btnPanel.Children.Add($btnCheck) | Out-Null
-    $btnPanel.Children.Add($btnEdit)  | Out-Null
     $btnPanel.Children.Add($btnDir)   | Out-Null
     $btnPanel.Children.Add($btnTerm)  | Out-Null
+    $btnPanel.Children.Add($btnEdit)  | Out-Null
     $stack.Children.Add($btnPanel)    | Out-Null
 
     # Right-click: Hide / Unhide
@@ -686,8 +669,8 @@ function Update-Dashboard {
 function Initialize-TabDashboard {
     param([System.Windows.Window]$Window, [string]$ScriptDir)
     
-    # Initial load
-    Update-Dashboard -Window $Window -Force -ScriptDir $ScriptDir
+    # Initial load (async to avoid blocking UI startup)
+    Start-DashboardAsyncRefresh -Window $Window -FilterText "" -ShowHidden $false -ScriptDir $ScriptDir
     
     $btnDashRefresh = $Window.FindName("btnDashRefresh")
     $txtDashFilter = $Window.FindName("txtDashFilter")

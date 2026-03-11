@@ -289,6 +289,8 @@ Initialize-TrayIcon -Window $window
 $window.Add_Loaded({
         # Register global hotkey (deferred to avoid message-processing race)
         Register-GlobalHotkey -Window $window | Out-Null
+        # Refresh BOX-only projects in background and update dropdowns + cache
+        Start-BoxProjectsAsyncRefresh -Window $window
     })
 
 # --- WPF Application lifecycle for tray-resident mode ---

@@ -5,6 +5,33 @@ $script:ProjectInfoCache = $null
 $script:ProjectInfoCacheTime = [datetime]::MinValue
 $script:ProjectInfoCacheTTL = 300  # seconds (5 minutes)
 
+# ---- BOX Projects Cache (persisted to _config/box_projects_cache.json) ----
+
+function Get-BoxProjectsCachePath {
+    $configDir = Join-Path $script:AppState.WorkspaceRoot "_config"
+    return Join-Path $configDir "box_projects_cache.json"
+}
+
+function Import-BoxProjectsCache {
+    $path = Get-BoxProjectsCachePath
+    if (-not (Test-Path $path)) { return @() }
+    try {
+        $json = Get-Content $path -Raw -Encoding UTF8
+        $data = $json | ConvertFrom-Json
+        if ($null -eq $data) { return @() }
+        return @($data)
+    }
+    catch { return @() }
+}
+
+function Save-BoxProjectsCache {
+    param([string[]]$BoxProjects)
+    $path = Get-BoxProjectsCachePath
+    $dir = Split-Path $path
+    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    ConvertTo-Json -InputObject @($BoxProjects) | Set-Content $path -Encoding UTF8
+}
+
 # Returns array of simple project name strings (for dropdowns)
 function Get-ProjectNameList {
     $root = $script:AppState.WorkspaceRoot
@@ -39,8 +66,8 @@ function Get-ProjectNameList {
         }
     }
 
-    # Append BOX-only projects (exist in BOX but not yet set up locally)
-    $projects += Get-BoxOnlyProjects
+    # Append BOX-only projects from cache (async refresh happens after window load)
+    $projects += Import-BoxProjectsCache
 
     return ($projects | Sort-Object)
 }
@@ -364,4 +391,75 @@ function Get-ProjectInfoList {
     $script:ProjectInfoCacheTime = Get-Date
 
     return $script:ProjectInfoCache
+}
+
+# Refresh BOX-only projects in background, update cache and all dropdowns when done.
+function Start-BoxProjectsAsyncRefresh {
+    param([System.Windows.Window]$Window)
+
+    $workspaceRoot = $script:AppState.WorkspaceRoot
+    $pathsConfig   = $script:AppState.PathsConfig
+    $discoveryPath = Join-Path (Join-Path $script:AppState.ScriptDir "manager") "ProjectDiscovery.ps1"
+
+    $rs = [runspacefactory]::CreateRunspace()
+    $rs.Open()
+    $rs.SessionStateProxy.SetVariable('_WorkspaceRoot', $workspaceRoot)
+    $rs.SessionStateProxy.SetVariable('_PathsConfig',   $pathsConfig)
+    $rs.SessionStateProxy.SetVariable('_DiscoveryPath', $discoveryPath)
+
+    $ps = [powershell]::Create()
+    $ps.Runspace = $rs
+    [void]$ps.AddScript({
+        $script:AppState = @{ WorkspaceRoot = $_WorkspaceRoot; PathsConfig = $_PathsConfig }
+        . $_DiscoveryPath
+        return (Get-BoxOnlyProjects)
+    })
+    $asyncHandle = $ps.BeginInvoke()
+
+    $pollTimer = New-Object System.Windows.Threading.DispatcherTimer
+    $pollTimer.Interval = [timespan]::FromMilliseconds(200)
+    $pollTimer.Tag = @{ PS = $ps; RS = $rs; Handle = $asyncHandle; Window = $Window }
+    $pollTimer.Add_Tick({
+        param($sender, $e)
+        $d = $sender.Tag
+        if (-not $d.Handle.IsCompleted) { return }
+        $sender.Stop()
+        try {
+            $results = $d.PS.EndInvoke($d.Handle)
+            $boxProjects = @($results | Where-Object { $_ -ne $null })
+            Save-BoxProjectsCache -BoxProjects $boxProjects
+            if ($boxProjects.Count -gt 0) {
+
+                # Update all dropdowns that contain the project list
+                $comboNames = @(
+                    "setupProjectName", "checkProjectCombo", "archiveProjectCombo",
+                    "ctxProjectCombo", "convertProjectCombo", "editorProjectCombo",
+                    "timelineProjectCombo"
+                )
+                foreach ($comboName in $comboNames) {
+                    $combo = $d.Window.FindName($comboName)
+                    if ($null -eq $combo) { continue }
+                    foreach ($entry in $boxProjects) {
+                        $alreadyPresent = $false
+                        for ($i = 0; $i -lt $combo.Items.Count; $i++) {
+                            if ($combo.Items[$i].ToString() -eq $entry) {
+                                $alreadyPresent = $true
+                                break
+                            }
+                        }
+                        if (-not $alreadyPresent) {
+                            $combo.Items.Add($entry) | Out-Null
+                        }
+                    }
+                }
+            }
+        }
+        catch { }
+        finally {
+            $d.PS.Dispose()
+            $d.RS.Close()
+            $d.RS.Dispose()
+        }
+    }.GetNewClosure())
+    $pollTimer.Start()
 }
