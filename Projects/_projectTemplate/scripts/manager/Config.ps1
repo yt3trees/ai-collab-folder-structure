@@ -37,7 +37,10 @@ function Initialize-AppConfig {
             }
             else {
                 try {
-                    $testStr = [System.Text.Encoding]::UTF8.GetString($rawBytes)
+                    # Use strict UTF-8 (throwOnInvalidBytes=true) so Shift_JIS bytes
+                    # are not silently replaced with '?' and misdetected as UTF-8.
+                    $strictUtf8 = New-Object System.Text.UTF8Encoding($false, $true)
+                    $testStr = $strictUtf8.GetString($rawBytes)
                     $null = $testStr | ConvertFrom-Json
                     $detectedEncoding = New-Object System.Text.UTF8Encoding($false)
                 }

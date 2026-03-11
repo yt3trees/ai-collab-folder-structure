@@ -205,7 +205,20 @@ else {
 
 # 1.5 external_shared/ -> User Provided Box Paths (Optional)
 $externalSharedDir = "$docRoot\external_shared"
-$externalSharedConfig = "$boxShared\.external_shared_paths"
+$externalSharedConfig = "$boxShared\external_shared_paths"
+
+# Migrate old dotfile name to new name (without leading dot)
+$oldExternalSharedConfig = "$boxShared\.external_shared_paths"
+if (Test-Path $oldExternalSharedConfig) {
+    if (-not (Test-Path $externalSharedConfig)) {
+        Rename-Item -Path $oldExternalSharedConfig -NewName "external_shared_paths"
+        Write-Host "  Migrated: .external_shared_paths -> external_shared_paths" -ForegroundColor DarkGray
+    }
+    else {
+        Remove-Item -Path $oldExternalSharedConfig -Force
+        Write-Host "  Removed old .external_shared_paths (new file already exists)" -ForegroundColor DarkGray
+    }
+}
 
 # Collect all paths to process (from args + existing config, merged)
 $pathsToProcess = @()
@@ -231,7 +244,7 @@ if ($ExternalSharedPaths -and $ExternalSharedPaths.Count -gt 0) {
     # Save merged list to config file
     if ($pathsToProcess.Count -gt 0) {
         Set-Content -Path $externalSharedConfig -Value $pathsToProcess -Encoding UTF8
-        Write-Host "  Saved External Shared Paths to: .external_shared_paths" -ForegroundColor Green
+        Write-Host "  Saved External Shared Paths to: external_shared_paths" -ForegroundColor Green
         if ($existingPaths.Count -gt 0) {
             Write-Host "    (Merged with $($existingPaths.Count) existing path(s))" -ForegroundColor DarkGray
         }

@@ -64,7 +64,7 @@ Full tier:
 
 Mini tier omits `_ai-workspace/`. Domain projects live under `_domains/` or `_domains/_mini/`.
 
-`-ExternalSharedPaths` adds extra Box folder junctions under `external_shared/` and persists paths to `shared/.external_shared_paths`.
+`-ExternalSharedPaths` adds extra Box folder junctions under `external_shared/` and persists paths to `shared/external_shared_paths`.
 
 ## GUI Architecture (project_manager.ps1)
 

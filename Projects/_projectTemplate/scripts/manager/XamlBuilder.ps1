@@ -305,6 +305,9 @@ function Build-MainWindowXaml {
                                              VerticalScrollBarVisibility="Auto"/>
                                     <Button x:Name="btnSetupBrowseExternalShared" Grid.Column="1" Content="Add..." Width="40" Height="22" VerticalAlignment="Top" Background="{{Surface0}}" Foreground="{{Text}}" BorderBrush="{{Surface1}}"/>
                                 </Grid>
+                                <CheckBox x:Name="setupAlsoContextLayer"
+                                          Content="Also run AI Context Setup"
+                                          IsChecked="True" Foreground="{{Subtext0}}" Margin="0,4,0,0"/>
                                 <Button x:Name="btnSetup" Content="Run Setup"
                                         Style="{StaticResource RunButton}"/>
                             </StackPanel>

@@ -90,7 +90,20 @@ else {
 
 # external_shared/ (Optional)
 $externalSharedDir = "$docRoot\external_shared"
-$externalSharedConfig = "$boxShared\.external_shared_paths"
+$externalSharedConfig = "$boxShared\external_shared_paths"
+
+# Migrate old dotfile name to new name (without leading dot)
+$oldExternalSharedConfig = "$boxShared\.external_shared_paths"
+if (Test-Path $oldExternalSharedConfig) {
+    if (-not (Test-Path $externalSharedConfig)) {
+        Rename-Item -Path $oldExternalSharedConfig -NewName "external_shared_paths"
+        Write-Host "  Migrated: .external_shared_paths -> external_shared_paths" -ForegroundColor DarkGray
+    }
+    else {
+        Remove-Item -Path $oldExternalSharedConfig -Force
+        Write-Host "  Removed old .external_shared_paths (new file already exists)" -ForegroundColor DarkGray
+    }
+}
 
 if (Test-Path $externalSharedConfig) {
     $paths = Get-Content -Path $externalSharedConfig

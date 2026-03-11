@@ -40,7 +40,7 @@ function Initialize-TabSetup {
                     "${categoryPrefix}$($params.Name)"
                 }
 
-                $configPath = Join-Path $boxRoot "$projectSubPath\.external_shared_paths"
+                $configPath = Join-Path $boxRoot "$projectSubPath\external_shared_paths"
                 $txtExternalShared = $Window.FindName("setupExternalShared")
                 if (Test-Path $configPath) {
                     $lines = @(Get-Content -Path $configPath | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
@@ -130,5 +130,51 @@ function Initialize-TabSetup {
             $outputBox = $Window.FindName("txtSetupOutput")
             Invoke-ScriptWithOutput -ScriptPath $scriptPath -ArgumentString $argStr `
                 -OutputBox $outputBox -WindowRef $Window
+
+            # Optionally run AI Context setup immediately after (PC-B workflow)
+            $chkAlsoCtx = $Window.FindName("setupAlsoContextLayer")
+            if ($chkAlsoCtx.IsChecked -eq $true) {
+                $ctxScriptPath = Join-Path (Split-Path $ScriptDir) `
+                    "context-compression-layer\setup_context_layer.ps1"
+                if (Test-Path $ctxScriptPath) {
+                    $ctxArgStr = "-ProjectName '$safeName'"
+                    if ($params.IsMini) { $ctxArgStr += " -Mini" }
+                    if ($params.IsDomain) { $ctxArgStr += " -Category domain" }
+                    Invoke-ScriptWithOutput -ScriptPath $ctxScriptPath -ArgumentString $ctxArgStr `
+                        -OutputBox $outputBox -WindowRef $Window
+                }
+            }
+
+            # Refresh all dropdowns: replace [BOX] entry with plain project name
+            $plainName = $params.Name
+            if ($params.IsDomain -and $params.IsMini) { $plainName = "$($params.Name) [Domain][Mini]" }
+            elseif ($params.IsDomain) { $plainName = "$($params.Name) [Domain]" }
+            elseif ($params.IsMini) { $plainName = "$($params.Name) [Mini]" }
+
+            $allCombos = @("setupProjectName", "checkProjectCombo", "archiveProjectCombo",
+                           "ctxProjectCombo", "convertProjectCombo", "editorProjectCombo",
+                           "timelineProjectCombo")
+            foreach ($comboName in $allCombos) {
+                $comboCtrl = $Window.FindName($comboName)
+                if ($null -eq $comboCtrl) { continue }
+                # Remove [BOX] variant that matches this project
+                $toRemove = @()
+                for ($i = 0; $i -lt $comboCtrl.Items.Count; $i++) {
+                    $item = $comboCtrl.Items[$i].ToString()
+                    if ($item -match '\[BOX\]') {
+                        $stripped = ($item -replace '\s+\[BOX\]$', '').Trim()
+                        if ($stripped -eq $plainName) { $toRemove += $i }
+                    }
+                }
+                for ($i = $toRemove.Count - 1; $i -ge 0; $i--) {
+                    $comboCtrl.Items.RemoveAt($toRemove[$i])
+                }
+                # Add plain name if not already present
+                $alreadyPresent = $false
+                for ($i = 0; $i -lt $comboCtrl.Items.Count; $i++) {
+                    if ($comboCtrl.Items[$i].ToString() -eq $plainName) { $alreadyPresent = $true; break }
+                }
+                if (-not $alreadyPresent) { $comboCtrl.Items.Add($plainName) | Out-Null }
+            }
         }).GetNewClosure()
 }
