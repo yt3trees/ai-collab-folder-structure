@@ -557,75 +557,151 @@ function Invoke-RenderDashboardCards {
 
 # Run project discovery in a background Runspace; update cache and re-render when done.
 # Returns immediately so the UI thread is never blocked.
+#
+# IncludeTokens=$false : full project scan via ProjectDiscovery.ps1, returns Hashtable list
+# IncludeTokens=$true  : token-only scan via python, returns JSON string "{path:count,...}"
+#                        then merges into existing cache on the UI thread (avoids Deserialized
+#                        Hashtable problems when passing complex objects across runspace boundary)
 function Start-DashboardAsyncRefresh {
     param(
         [System.Windows.Window]$Window,
         [string]$FilterText,
         [bool]$ShowHidden,
-        [string]$ScriptDir
+        [string]$ScriptDir,
+        [bool]$IncludeTokens = $false
     )
     if ($script:DashRefreshRunning) { return }
     $script:DashRefreshRunning = $true
 
-    $workspaceRoot  = $script:AppState.WorkspaceRoot
-    $pathsConfig    = $script:AppState.PathsConfig
-    $discoveryPath  = Join-Path (Join-Path $ScriptDir "manager") "ProjectDiscovery.ps1"
+    $btnRef = $Window.FindName("btnDashRefresh")
+    if ($null -ne $btnRef) {
+        $btnRef.IsEnabled = $false
+        $btnRef.Content = "Loading..."
+    }
+
+    $workspaceRoot   = $script:AppState.WorkspaceRoot
+    $pathsConfig     = $script:AppState.PathsConfig
+    $discoveryPath   = Join-Path (Join-Path $ScriptDir "manager") "ProjectDiscovery.ps1"
+    $tokenScriptPath = Join-Path $ScriptDir "get_tokens.py"
 
     $rs = [runspacefactory]::CreateRunspace()
     $rs.Open()
-    $rs.SessionStateProxy.SetVariable('_WorkspaceRoot', $workspaceRoot)
-    $rs.SessionStateProxy.SetVariable('_PathsConfig',   $pathsConfig)
-    $rs.SessionStateProxy.SetVariable('_DiscoveryPath', $discoveryPath)
+    $rs.SessionStateProxy.SetVariable('_WorkspaceRoot',   $workspaceRoot)
+    $rs.SessionStateProxy.SetVariable('_PathsConfig',     $pathsConfig)
+    $rs.SessionStateProxy.SetVariable('_DiscoveryPath',   $discoveryPath)
+    $rs.SessionStateProxy.SetVariable('_TokenScriptPath', $tokenScriptPath)
 
     $ps = [powershell]::Create()
     $ps.Runspace = $rs
-    [void]$ps.AddScript({
-        $script:AppState = @{ WorkspaceRoot = $_WorkspaceRoot; PathsConfig = $_PathsConfig }
-        . $_DiscoveryPath
-        return (Get-ProjectInfoList -Force -SkipTokens)
-    })
+
+    if ($IncludeTokens) {
+        # Collect file paths from current cache on the UI thread (safe), pass to runspace
+        $filePaths = @()
+        if ($null -ne $script:ProjectInfoCache) {
+            foreach ($p in $script:ProjectInfoCache) {
+                if ($null -ne $p.FocusFile)   { $filePaths += $p.FocusFile }
+                if ($null -ne $p.SummaryFile) { $filePaths += $p.SummaryFile }
+            }
+        }
+        $rs.SessionStateProxy.SetVariable('_FilePaths', $filePaths)
+        # Runspace returns a JSON string - no complex object crossing the boundary
+        [void]$ps.AddScript({
+            if ($null -eq $_FilePaths -or $_FilePaths.Count -eq 0) { return '{}' }
+            $argsToPass = @('--files') + @($_FilePaths)
+            $out = & python $_TokenScriptPath @argsToPass 2>$null
+            if ($LASTEXITCODE -eq 0 -and (-not [string]::IsNullOrWhiteSpace($out))) { return $out }
+            return '{}'
+        })
+    } else {
+        [void]$ps.AddScript({
+            $script:AppState = @{ WorkspaceRoot = $_WorkspaceRoot; PathsConfig = $_PathsConfig; Projects = @() }
+            . $_DiscoveryPath
+            return (Get-ProjectInfoList -Force -SkipTokens)
+        })
+    }
     $asyncHandle = $ps.BeginInvoke()
 
-    # Poll on the Dispatcher thread (UI-safe); re-render when the Runspace is done
     $pollTimer = New-Object System.Windows.Threading.DispatcherTimer
     $pollTimer.Interval = [timespan]::FromMilliseconds(150)
     $pollTimer.Tag = @{
         PS = $ps; RS = $rs; Handle = $asyncHandle
         Window = $Window; FilterText = $FilterText; ShowHidden = $ShowHidden; ScriptDir = $ScriptDir
+        BtnRefresh = $btnRef; IncludeTokens = $IncludeTokens
+        Cache = $script:ProjectInfoCache
     }
     $pollTimer.Add_Tick({
         param($sender, $e)
         $d = $sender.Tag
         if (-not $d.Handle.IsCompleted) { return }
         $sender.Stop()
+        $panel = $d.Window.FindName("dashboardCards")
         try {
-            $results = $d.PS.EndInvoke($d.Handle)
-            if ($null -ne $results -and $results.Count -gt 0) {
-                $g0 = @($results | Where-Object { $_.Name -eq '_INHOUSE' })
-                $g1 = @($results | Where-Object { $_.Category -eq 'domain' -and $_.Tier -eq 'full' } | Sort-Object { $_.Name })
-                $g2 = @($results | Where-Object { $_.Category -eq 'domain' -and $_.Tier -eq 'mini' } | Sort-Object { $_.Name })
-                $g3 = @($results | Where-Object { $_.Name -ne '_INHOUSE' -and $_.Category -ne 'domain' } | Sort-Object { $_.Name })
-                $sorted = $g0 + $g1 + $g2 + $g3
-                $script:ProjectInfoCache     = $sorted
-                $script:ProjectInfoCacheTime = Get-Date
-                $script:AppState.Projects    = $sorted
-                $panel = $d.Window.FindName("dashboardCards")
-                if ($null -ne $panel) {
-                    Invoke-RenderDashboardCards -CardsPanel $panel -Projects $sorted `
-                        -Window $d.Window -FilterText $d.FilterText -ShowHidden $d.ShowHidden `
+            if ($d.IncludeTokens) {
+                # Token-only path: parse JSON and merge into cache passed via Tag
+                $tokenJson = ($d.PS.EndInvoke($d.Handle) | Select-Object -First 1)
+                if (-not [string]::IsNullOrWhiteSpace($tokenJson) -and $tokenJson -ne '{}') {
+                    $tokenDataRaw = $tokenJson | ConvertFrom-Json
+                    $tokenData = @{}
+                    foreach ($prop in $tokenDataRaw.PSObject.Properties) {
+                        $tokenData[$prop.Name.ToLowerInvariant()] = [int]$prop.Value
+                    }
+                    if ($null -ne $d.Cache) {
+                        foreach ($p in $d.Cache) {
+                            if ($null -ne $p.FocusFile) {
+                                $key = $p.FocusFile.ToLowerInvariant()
+                                if ($tokenData.ContainsKey($key)) { $p['FocusTokens'] = $tokenData[$key] }
+                            }
+                            if ($null -ne $p.SummaryFile) {
+                                $key = $p.SummaryFile.ToLowerInvariant()
+                                if ($tokenData.ContainsKey($key)) { $p['SummaryTokens'] = $tokenData[$key] }
+                            }
+                        }
+                    }
+                }
+                if ($null -ne $panel -and $null -ne $d.Cache) {
+                    $curFilter     = $d.Window.FindName("txtDashFilter").Text
+                    $curShowHidden = [bool]($d.Window.FindName("chkShowHidden").IsChecked)
+                    Invoke-RenderDashboardCards -CardsPanel $panel -Projects $d.Cache `
+                        -Window $d.Window -FilterText $curFilter -ShowHidden $curShowHidden `
                         -ScriptDir $d.ScriptDir
-                    $script:DashLastFilter     = $d.FilterText
-                    $script:DashLastShowHidden = $d.ShowHidden
-                    $script:DashLastBuildTime  = $script:ProjectInfoCacheTime
+                }
+            } else {
+                # Full scan path: results are plain Hashtables from this runspace (SkipTokens)
+                $results = @($d.PS.EndInvoke($d.Handle))
+                if ($null -ne $results -and $results.Count -gt 0) {
+                    $g0 = @($results | Where-Object { $_.Name -eq '_INHOUSE' })
+                    $g1 = @($results | Where-Object { $_.Category -eq 'domain' -and $_.Tier -eq 'full' } | Sort-Object { $_.Name })
+                    $g2 = @($results | Where-Object { $_.Category -eq 'domain' -and $_.Tier -eq 'mini' } | Sort-Object { $_.Name })
+                    $g3 = @($results | Where-Object { $_.Name -ne '_INHOUSE' -and $_.Category -ne 'domain' } | Sort-Object { $_.Name })
+                    $sorted = $g0 + $g1 + $g2 + $g3
+                    $script:ProjectInfoCache     = $sorted
+                    $script:ProjectInfoCacheTime = Get-Date
+                    $script:AppState.Projects    = $sorted
+                    if ($null -ne $panel) {
+                        $curFilter     = $d.Window.FindName("txtDashFilter").Text
+                        $curShowHidden = [bool]($d.Window.FindName("chkShowHidden").IsChecked)
+                        Invoke-RenderDashboardCards -CardsPanel $panel -Projects $sorted `
+                            -Window $d.Window -FilterText $curFilter -ShowHidden $curShowHidden `
+                            -ScriptDir $d.ScriptDir
+                        $script:DashLastFilter     = $curFilter
+                        $script:DashLastShowHidden = $curShowHidden
+                        $script:DashLastBuildTime  = $script:ProjectInfoCacheTime
+                    }
                 }
             }
         }
-        catch { }
+        catch {
+            # On error: leave existing panel content as-is
+        }
         finally {
             $d.PS.Dispose()
             $d.RS.Close()
             $d.RS.Dispose()
             $script:DashRefreshRunning = $false
+            if ($null -ne $d.BtnRefresh) {
+                $d.BtnRefresh.IsEnabled = $true
+                $d.BtnRefresh.Content = "Refresh"
+            }
         }
     }.GetNewClosure())
     $pollTimer.Start()
@@ -647,18 +723,40 @@ function Update-Dashboard {
         if ($cacheIsFresh -and $nothingChanged -and $cardsPanel.Children.Count -gt 0) { return }
     }
 
-    # Stale cache exists: render old data instantly, then refresh in background (no UI freeze)
+    # Stale cache exists: re-scan synchronously (SkipTokens) to keep cache as plain Hashtables
     if (-not $Force -and $null -ne $script:ProjectInfoCache) {
-        Invoke-RenderDashboardCards -CardsPanel $cardsPanel -Projects $script:ProjectInfoCache `
+        $projects = Get-ProjectInfoList -Force -SkipTokens
+        $g0 = @($projects | Where-Object { $_.Name -eq '_INHOUSE' })
+        $g1 = @($projects | Where-Object { $_.Category -eq 'domain' -and $_.Tier -eq 'full' } | Sort-Object { $_.Name })
+        $g2 = @($projects | Where-Object { $_.Category -eq 'domain' -and $_.Tier -eq 'mini' } | Sort-Object { $_.Name })
+        $g3 = @($projects | Where-Object { $_.Name -ne '_INHOUSE' -and $_.Category -ne 'domain' } | Sort-Object { $_.Name })
+        $sorted = $g0 + $g1 + $g2 + $g3
+        $script:ProjectInfoCache     = $sorted
+        $script:ProjectInfoCacheTime = Get-Date
+        $script:AppState.Projects    = $sorted
+        $script:DashLastFilter     = $FilterText
+        $script:DashLastShowHidden = $ShowHidden
+        $script:DashLastBuildTime  = $script:ProjectInfoCacheTime
+        Invoke-RenderDashboardCards -CardsPanel $cardsPanel -Projects $sorted `
             -Window $Window -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir
-        Start-DashboardAsyncRefresh -Window $Window -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir
         return
     }
 
-    # No cache yet or explicit Force (manual Refresh button): synchronous load
+    # Force (Refresh button): show stale cards immediately, then async refresh to avoid UI freeze
+    if ($Force) {
+        if ($null -ne $script:ProjectInfoCache) {
+            Invoke-RenderDashboardCards -CardsPanel $cardsPanel -Projects $script:ProjectInfoCache `
+                -Window $Window -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir
+        }
+        # Reset guard so Force always starts a fresh async (catch/else no longer clears panel, so race is safe)
+        $script:DashRefreshRunning = $false
+        Start-DashboardAsyncRefresh -Window $Window -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir -IncludeTokens $true
+        return
+    }
+
+    # No cache, no Force: synchronous fast scan (filesystem only, no Python) - same as original
     $cardsPanel.Children.Clear()
-    # SkipTokens on automatic refreshes; run Python only on explicit Refresh
-    $projects = Get-ProjectInfoList -Force:$Force -SkipTokens:(-not $Force)
+    $projects = Get-ProjectInfoList -SkipTokens
     $script:DashLastFilter     = $FilterText
     $script:DashLastShowHidden = $ShowHidden
     $script:DashLastBuildTime  = $script:ProjectInfoCacheTime
@@ -668,9 +766,11 @@ function Update-Dashboard {
 
 function Initialize-TabDashboard {
     param([System.Windows.Window]$Window, [string]$ScriptDir)
-    
-    # Initial load (async to avoid blocking UI startup)
-    Start-DashboardAsyncRefresh -Window $Window -FilterText "" -ShowHidden $false -ScriptDir $ScriptDir
+
+    # Initial load: synchronous fast scan (no tokens) so cache contains plain Hashtables.
+    # Must NOT use Start-DashboardAsyncRefresh here - runspace results are Deserialized.Hashtable
+    # which breaks dot-notation access ($p.FocusFile etc.) used later when building token file list.
+    Update-Dashboard -Window $Window -FilterText "" -ShowHidden $false -ScriptDir $ScriptDir
     
     $btnDashRefresh = $Window.FindName("btnDashRefresh")
     $txtDashFilter = $Window.FindName("txtDashFilter")

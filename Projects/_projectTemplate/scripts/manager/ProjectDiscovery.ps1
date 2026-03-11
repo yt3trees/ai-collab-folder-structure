@@ -135,7 +135,7 @@ function Get-BoxOnlyProjects {
 # Returns array of ProjectInfo hashtables (for dashboard cards)
 # -Force: skip cache and re-scan filesystem
 function Get-ProjectInfoList {
-    param([switch]$Force, [switch]$SkipTokens)
+    param([switch]$Force, [switch]$SkipTokens, [string]$TokenScriptPath = "")
 
     # Return cached results if available and fresh
     if (-not $Force -and $null -ne $script:ProjectInfoCache) {
@@ -175,7 +175,11 @@ function Get-ProjectInfoList {
 
     # Determine if Python tokenizer is available
     $script:HasPythonTokenizer = $false
-    $script:PythonTokenScript = Join-Path (Split-Path $PSScriptRoot) "get_tokens.py"
+    if (-not [string]::IsNullOrWhiteSpace($TokenScriptPath)) {
+        $script:PythonTokenScript = $TokenScriptPath
+    } else {
+        $script:PythonTokenScript = Join-Path (Split-Path $PSScriptRoot) "get_tokens.py"
+    }
     if (Get-Command python -ErrorAction SilentlyContinue) {
         if (Test-Path $script:PythonTokenScript) {
             $script:HasPythonTokenizer = $true
