@@ -1,0 +1,102 @@
+---
+name: update-focus-from-asana
+trigger: slash-command
+command: /update-focus-from-asana
+description: A Slash Command that fetches Asana tasks and suggests updates for the “What I'm Working On” and “Next Up” sections in current_focus.md. It automatically creates a backup before writing after user confirmation.
+---
+
+# Update Focus from Asana
+
+Asana タスクを読んで `current_focus.md` を更新するスラッシュコマンド。
+
+## 呼び出し方
+
+```
+/update-focus-from-asana [ProjectName]
+```
+
+## 動作フロー
+
+### Step 1: プロジェクトの特定
+
+`$ARGUMENTS` にプロジェクト名があればそれを使用する。
+なければ会話コンテキストから推定する。それも不明な場合は `Documents/Projects/` 直下のプロジェクト一覧を提示してユーザーに選択を求める。
+
+プロジェクトルートを確定したら以下のパスを解決する:
+
+- asana-tasks: `<ProjectRoot>/_ai-context/obsidian_notes/asana-tasks.md`
+- current_focus: `<ProjectRoot>/_ai-context/context/current_focus.md`
+- backup: `<ProjectRoot>/_ai-context/context/focus_history/YYYY-MM-DD.md` (今日の日付)
+
+### Step 2: ファイル存在チェック
+
+`asana-tasks.md` が存在しない場合:
+
+```
+asana-tasks.md が見つかりませんでした: <path>
+Asana sync を先に実行してください。終了します。
+```
+
+`current_focus.md` が存在しない場合:
+
+```
+current_focus.md が見つかりませんでした: <path>
+先に Context Compression Layer のセットアップを行ってください。終了します。
+```
+
+### Step 3: バックアップチェックと実行
+
+`focus_history/YYYY-MM-DD.md` が存在しない場合:
+- `current_focus.md` の内容をそのままコピーしてバックアップを作成する
+- 1行通知: `💾 バックアップ作成: focus_history/YYYY-MM-DD.md`
+
+既に存在する場合:
+- スキップして1行通知: `💾 本日のバックアップは既に存在します (スキップ)`
+
+バックアップは承認前に実施する (更新失敗でもバックアップは残る)。
+
+### Step 4: Asana タスク解析
+
+`asana-tasks.md` を読み込み、以下を抽出する:
+
+- 進行中タスク: `🔄` マーク、または `- [ ]` で未完了かつ優先度高 (High/最高)
+- 完了タスク: `✅` マーク、または `- [x]` 済み
+
+### Step 5: 更新提案の生成
+
+`current_focus.md` を読み込み、Asana タスクと照合して更新案を作成する。
+
+提示フォーマット:
+
+```
+📋 current_focus.md の更新提案 (プロジェクト: <ProjectName>)
+
+【今やってること】の変更:
+  現在: - xxx
+  提案: - [AI] xxx (Asana: #1234)
+  ※ 追加: - [AI] yyy (Asana: #5678)
+
+【次やること】の変更:
+  ※ 追加: - [AI] zzz (Asana: #9012)
+
+【完了タスクへの対応】:
+  - [完了提案] "aaa" → Asana #3456 が完了しています。この行に [完了] を付けますか？
+
+承認しますか？ (はい / 修正あり / 不要)
+```
+
+### Step 6: ユーザー確認 → 書き込み
+
+- 「はい」または「y」: `current_focus.md` を更新し、末尾の「更新:」日付も更新する
+- 「修正あり」: ユーザーの修正を反映してから書き込む
+- 「不要」または「n」: 書き込みをスキップ (バックアップは保持)
+
+## ルール
+
+- バックアップは承認前に実施する
+- 既存の人間が書いた行は原則残す
+- 完了した Asana タスクに対応する行は [完了] マーク提案のみ行い、自動削除しない
+- AI が追記する行には `[AI]` プレフィックスをつける
+- `asana-tasks.md` を直接編集しない (自動生成ファイルのため)
+- 承認なしに `current_focus.md` を書き込まない
+- `focus_history/` ディレクトリが存在しない場合は自動作成する
