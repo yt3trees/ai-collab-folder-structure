@@ -52,6 +52,28 @@ function Copy-IfNotExists {
     }
 }
 
+function Copy-TemplateWithReplace {
+    param(
+        [string]$Src,
+        [string]$Dst,
+        [hashtable]$Replacements
+    )
+    if (-not (Test-Path $Src)) {
+        Write-Host "  [WARN]   Template not found: $Src" -ForegroundColor DarkYellow
+        return
+    }
+    if (Test-Path $Dst) {
+        Write-Host "  [SKIP]   $Dst (already exists)" -ForegroundColor Yellow
+        return
+    }
+    $content = Get-Content $Src -Raw -Encoding UTF8
+    foreach ($key in $Replacements.Keys) {
+        $content = $content -replace [regex]::Escape($key), $Replacements[$key]
+    }
+    Set-Content -Path $Dst -Value $content -Encoding UTF8 -NoNewline
+    Write-Host "  [CREATE] $Dst" -ForegroundColor Green
+}
+
 function Ensure-Dir {
     param([string]$Path)
     if (-not (Test-Path $Path)) {
@@ -113,7 +135,16 @@ function Setup-Project {
     Copy-IfNotExists (Join-Path $TemplateDir "project_summary.md")    (Join-Path $obsAiCtx "project_summary.md")
     Copy-IfNotExists (Join-Path $TemplateDir "current_focus.md")      (Join-Path $obsAiCtx "current_focus.md")
     Copy-IfNotExists (Join-Path $TemplateDir "decision_log_TEMPLATE.md") (Join-Path $dlDir "TEMPLATE.md")
-    Copy-IfNotExists (Join-Path $TemplateDir "file_map.md")           (Join-Path $obsAiCtx "file_map.md")
+    $tierLabel = if ($IsMini) { "mini" } else { "full" }
+    $creationDate = (Get-Date).ToString("yyyy-MM-dd")
+    Copy-TemplateWithReplace `
+        -Src (Join-Path $TemplateDir "file_map.md") `
+        -Dst (Join-Path $obsAiCtx "file_map.md") `
+        -Replacements @{
+            "{{PROJECT_NAME}}"  = $Name
+            "{{TIER}}"          = $tierLabel
+            "{{CREATION_DATE}}" = $creationDate
+        }
     Copy-IfNotExists (Join-Path $TemplateDir "tensions.md")           (Join-Path $obsAiCtx "tensions.md")
 
     # Ensure context/ junction exists (_ai-context/context/ -> Obsidian ai-context/)
