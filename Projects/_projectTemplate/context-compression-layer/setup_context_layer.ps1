@@ -221,7 +221,8 @@ function Setup-Project {
                         Write-Host "    [CREATE] $cli/skills/$($skill.Name)" -ForegroundColor Green
                     }
                     elseif ($Force) {
-                        Copy-Item -Path $skill.FullName -Destination $dstSkill -Recurse -Force
+                        Remove-Item -Path $dstSkill -Recurse -Force
+                        Copy-Item -Path $skill.FullName -Destination $dstSkill -Recurse
                         Write-Host "    [UPDATE] $cli/skills/$($skill.Name) (overwritten)" -ForegroundColor Cyan
                     }
                     else {

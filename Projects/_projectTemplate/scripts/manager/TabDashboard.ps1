@@ -723,22 +723,14 @@ function Update-Dashboard {
         if ($cacheIsFresh -and $nothingChanged -and $cardsPanel.Children.Count -gt 0) { return }
     }
 
-    # Stale cache exists: re-scan synchronously (SkipTokens) to keep cache as plain Hashtables
+    # Stale cache exists: show stale cards immediately then async-refresh (avoids UI freeze)
+    # Do NOT reset DashRefreshRunning here - let the guard in Start-DashboardAsyncRefresh
+    # skip silently if a refresh is already in progress (prevents concurrent Runspace launch).
     if (-not $Force -and $null -ne $script:ProjectInfoCache) {
-        $projects = Get-ProjectInfoList -Force -SkipTokens
-        $g0 = @($projects | Where-Object { $_.Name -eq '_INHOUSE' })
-        $g1 = @($projects | Where-Object { $_.Category -eq 'domain' -and $_.Tier -eq 'full' } | Sort-Object { $_.Name })
-        $g2 = @($projects | Where-Object { $_.Category -eq 'domain' -and $_.Tier -eq 'mini' } | Sort-Object { $_.Name })
-        $g3 = @($projects | Where-Object { $_.Name -ne '_INHOUSE' -and $_.Category -ne 'domain' } | Sort-Object { $_.Name })
-        $sorted = $g0 + $g1 + $g2 + $g3
-        $script:ProjectInfoCache     = $sorted
-        $script:ProjectInfoCacheTime = Get-Date
-        $script:AppState.Projects    = $sorted
-        $script:DashLastFilter     = $FilterText
-        $script:DashLastShowHidden = $ShowHidden
-        $script:DashLastBuildTime  = $script:ProjectInfoCacheTime
-        Invoke-RenderDashboardCards -CardsPanel $cardsPanel -Projects $sorted `
+        Invoke-RenderDashboardCards -CardsPanel $cardsPanel -Projects $script:ProjectInfoCache `
             -Window $Window -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir
+        Start-DashboardAsyncRefresh -Window $Window -FilterText $FilterText -ShowHidden $ShowHidden `
+            -ScriptDir $ScriptDir -IncludeTokens $false
         return
     }
 
