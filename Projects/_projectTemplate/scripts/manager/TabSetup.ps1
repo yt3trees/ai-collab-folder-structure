@@ -176,5 +176,9 @@ function Initialize-TabSetup {
                 }
                 if (-not $alreadyPresent) { $comboCtrl.Items.Add($plainName) | Out-Null }
             }
+
+            # Clear dashboard cache entirely so next visit uses synchronous scan (same as restart)
+            $script:ProjectInfoCache = $null
+            $script:ProjectInfoCacheTime = [datetime]::MinValue
         }).GetNewClosure()
 }
