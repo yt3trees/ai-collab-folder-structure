@@ -135,7 +135,8 @@ function Save-AsanaSyncConfig {
         }
         else {
             try {
-                $testStr = [System.Text.Encoding]::UTF8.GetString($rawBytes)
+                $strictUtf8 = New-Object System.Text.UTF8Encoding($false, $true)
+                $testStr = $strictUtf8.GetString($rawBytes)
                 $null = $testStr | ConvertFrom-Json
                 $detectedEncoding = New-Object System.Text.UTF8Encoding($false)
             }
