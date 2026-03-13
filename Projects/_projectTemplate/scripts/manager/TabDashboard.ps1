@@ -729,6 +729,10 @@ function Update-Dashboard {
     if (-not $Force -and $null -ne $script:ProjectInfoCache) {
         Invoke-RenderDashboardCards -CardsPanel $cardsPanel -Projects $script:ProjectInfoCache `
             -Window $Window -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir
+        # Update tracked state immediately after rendering so rapid toggle does not hit
+        # nothingChanged early-return (DashLastShowHidden was only set in async callbacks before)
+        $script:DashLastFilter     = $FilterText
+        $script:DashLastShowHidden = $ShowHidden
         Start-DashboardAsyncRefresh -Window $Window -FilterText $FilterText -ShowHidden $ShowHidden `
             -ScriptDir $ScriptDir -IncludeTokens $false
         return
