@@ -23,7 +23,7 @@ function Get-ThemeResourcesXaml {
             Blue      = "#58a6ff"; Lavender = "#a5d6ff"; Sapphire = "#388bfd"; Sky = "#79c0ff"
             Mauve     = "#58a6ff"; Pink = "#ff7b72"; Flamingo = "#ffa198"; Rosewater = "#ff7b72"
             Red       = "#f85149"; Peach = "#ffa657"; Yellow = "#e3b341"; Green = "#7ee787"
-            Teal      = "#7ee787"; Maroon = "#f85149"
+            Teal      = "#39c5cf"; Maroon = "#f85149"
         }
     }
 
@@ -628,7 +628,7 @@ function Get-ThemeResourcesXaml {
 
 function Get-ThemeColors {
     param([string]$ThemeName = "Default")
-    
+
     $themes = @{
         "Default" = @{
             Base      = "#1e1e2e"; Mantle = "#181825"; Crust = "#11111b"
@@ -648,7 +648,7 @@ function Get-ThemeColors {
             Blue      = "#58a6ff"; Lavender = "#a5d6ff"; Sapphire = "#388bfd"; Sky = "#79c0ff"
             Mauve     = "#58a6ff"; Pink = "#ff7b72"; Flamingo = "#ffa198"; Rosewater = "#ff7b72"
             Red       = "#f85149"; Peach = "#ffa657"; Yellow = "#e3b341"; Green = "#7ee787"
-            Teal      = "#7ee787"; Maroon = "#f85149"
+            Teal      = "#39c5cf"; Maroon = "#f85149"
         }
     }
     

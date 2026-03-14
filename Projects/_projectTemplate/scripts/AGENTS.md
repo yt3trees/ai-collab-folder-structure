@@ -10,6 +10,16 @@ PowerShell WPF GUI (`project_manager.ps1`) and CLI scripts for managing a 3-laye
 - Layer 2 (Knowledge): `Box/Obsidian-Vault/Projects/<project>/`
 - Layer 3 (Artifact): `Box/Projects/<project>/`
 
+## Tech Stack
+
+| Component | Version | Notes |
+|-----------|---------|-------|
+| PowerShell | 5.1 (Windows PowerShell) | Do NOT use pwsh (7+) — incompatible |
+| .NET Framework | 4.x | WPF runtime |
+| WPF | - | Window built dynamically via XamlReader::Load |
+| AvalonEdit | 6.x | ICSharpCode.AvalonEdit.dll — text editor control |
+| JSON | - | ConvertTo-Json / ConvertFrom-Json (stdlib only) |
+
 ## Prerequisites
 
 All scripts require `_config/paths.json` at the workspace root (`Documents/Projects/_config/paths.json`):
@@ -34,6 +44,32 @@ All scripts require `_config/paths.json` at the workspace root (`Documents/Proje
 .\archive_project.ps1 -ProjectName "OldProject" [-DryRun] [-Force]
 .\convert_tier.ps1 -ProjectName "MyProject" -To full [-DryRun]
 ```
+
+## Dev Commands
+
+```powershell
+# Launch GUI
+.\_exec_project_manager.cmd
+
+# Syntax check a single .ps1 file (run after every edit)
+powershell -NoProfile -Command "$e=$null; $null=[System.Management.Automation.Language.Parser]::ParseFile('manager/TabTimeline.ps1',[ref]$null,[ref]$e); if($e){$e|%{Write-Error $_}}"
+```
+
+No automated tests exist. Verify changes by launching the GUI manually.
+
+## Safety & Permissions
+
+### Allowed without confirmation
+- Reading / editing `manager/*.ps1`
+- Editing XAML strings in `XamlBuilder.ps1`
+- Editing theme tokens in `Theme.ps1`
+
+### Ask before doing
+- Running `setup_project.ps1`, `archive_project.ps1`, `convert_tier.ps1` (mutates filesystem)
+- Touching junctions (`shared/`, `_ai-context/`) in any way
+- Structural changes to `_config/*.json`
+- Creating new module files (impacts dot-source order in `project_manager.ps1`)
+- Editing `project_manager.ps1` itself (entry point)
 
 ## Project Structure
 
@@ -154,10 +190,7 @@ Rules:
 
 ### 1. Editor text update (SuppressChangeEvent + AppState order)
 
-When loading a file into the AvalonEdit editor, ALWAYS:
-1. Update `$script:AppState.EditorState` FIRST (so the TextChanged handler sees correct state).
-2. Set `SuppressChangeEvent = $true` BEFORE assigning `$editor.Text`.
-3. Set `SuppressChangeEvent = $false` AFTER the assignment.
+Order matters — update AppState first, then wrap `$editor.Text` assignment with SuppressChangeEvent:
 
 ```powershell
 # CORRECT
@@ -182,8 +215,7 @@ $btn = $window.FindName("btnFoo")
 if ($null -ne $btn) { $btn.IsEnabled = $false }
 ```
 
-Never assume a control name exists. Typos in XAML x:Name or a renamed control will cause silent failures
-or NullReferenceException crashes.
+Typos in x:Name cause silent failures or NullReferenceException.
 
 ### 3. XAML x:Name uniqueness
 
@@ -215,31 +247,11 @@ $rs.SessionStateProxy.SetVariable('_WorkspaceRoot', $workspaceRoot)
 $rs.SessionStateProxy.SetVariable('_PathsConfig',   $pathsConfig)
 ```
 
-Inside the Runspace script block, reconstruct the minimal `$script:AppState` needed before calling
-any function from `ProjectDiscovery.ps1` or other modules.
+Reconstruct minimal `$script:AppState` in the Runspace before calling any module function.
 
 ### 7. Returning background results to the UI thread
 
-Use a DispatcherTimer polling pattern. Do NOT use `Add_Completed` callbacks from background threads —
-they run on the thread pool, not the WPF dispatcher, and will crash when touching UI controls.
-
-```powershell
-$timer = New-Object System.Windows.Threading.DispatcherTimer
-$timer.Interval = [timespan]::FromMilliseconds(200)
-$timer.Tag = @{ PS = $ps; RS = $rs; Handle = $asyncHandle; Window = $Window }
-$timer.Add_Tick({
-    param($sender, $e)
-    $d = $sender.Tag
-    if (-not $d.Handle.IsCompleted) { return }
-    $sender.Stop()
-    try {
-        $results = $d.PS.EndInvoke($d.Handle)
-        # safe to touch UI here — we are on the Dispatcher thread
-    } catch { }
-    finally { $d.PS.Dispose(); $d.RS.Close(); $d.RS.Dispose() }
-}.GetNewClosure())
-$timer.Start()
-```
+Do NOT use `Add_Completed` callbacks — they run on the thread pool, not the WPF Dispatcher, and crash when touching UI controls. Use DispatcherTimer polling instead. See `Start-BoxProjectsAsyncRefresh` in `ProjectDiscovery.ps1` for the full pattern.
 
 ### 8. SelectionChanged initial fire
 
@@ -247,15 +259,11 @@ To ensure a `SelectionChanged` handler fires on startup:
 1. Register the handler first.
 2. Then set `SelectedIndex = 0` (change from -1 to 0 triggers the event).
 
-If you set `SelectedIndex = 0` before registering the handler, no event fires.
-
 ### 9. Cache refresh after mutations
 
 After any tab operation that modifies the project list (setup, archive, convert), you must refresh:
 - `$script:AppState.Projects` via `Get-ProjectInfoList -Force`
 - All dropdown ComboBoxes via `Get-ProjectNameList` (rebuild Items)
-
-Stale cached data will make the Dashboard and other tabs show outdated information.
 
 ### 10. Event handler exception isolation
 
@@ -283,20 +291,17 @@ by `Build-MainWindowXaml`. Theme preference persists in `_config/settings.json`.
 When adding new XAML that uses theme colors, use the token syntax `{{TokenName}}` — do NOT hardcode
 hex values. Available tokens are defined in `Get-ThemeColors` in `Theme.ps1`.
 
----
+## Adding a New Tab Module
 
-## ScriptRunner Pattern
+Checklist when creating a new `TabFoo.ps1`:
+1. Add `TabFoo.ps1 -> Initialize-TabFoo` to the dot-source block in `project_manager.ps1`
+2. Add the XAML fragment in `XamlBuilder.ps1` and update the tab index comment at the top
+3. Ensure all `x:Name` values are unique across the entire window
+4. Register event handlers inside `Initialize-TabFoo`, not at module load time
+5. Wrap all event handler bodies in `try { ... } catch { }` (see pattern 10)
 
-`Invoke-ScriptWithOutput` launches subscripts synchronously:
-
-```powershell
-$cmd = "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; & '$ScriptPath' $ArgumentString *>&1"
-$psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -Command `"$cmd`""
-$psi.RedirectStandardOutput = $true
-$psi.StandardOutputEncoding = [System.Text.Encoding]::UTF8
-$process = [System.Diagnostics.Process]::Start($psi)
-$output = $process.StandardOutput.ReadToEnd()
-$process.WaitForExit()
-```
-
-The `ReadToEnd()` before `WaitForExit()` is intentional to drain the pipe and prevent deadlock.
+If `XamlReader::Load` crashes on startup, check in this order:
+1. Duplicate `x:Name` across tab XAML fragments (most common cause)
+2. Unclosed XML tags in the XAML string
+3. Wrong XML namespace or missing namespace declaration
+4. Theme token `{{TokenName}}` left unreplaced (Build-MainWindowXaml not called)

@@ -239,8 +239,11 @@ function Build-MainWindowXaml {
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Project: " VerticalAlignment="Center"
+                            <TextBlock x:Name="timelineProjectLabel" Grid.Column="0" Text="Project: "
+                                       VerticalAlignment="Center"
                                        Foreground="{{Subtext0}}" Margin="0,0,4,0" FontSize="12"/>
                             <ComboBox x:Name="timelineProjectCombo" Grid.Column="1" Margin="0,0,8,0"/>
                             <TextBlock Grid.Column="2" Text="Period: " VerticalAlignment="Center"
@@ -250,13 +253,22 @@ function Build-MainWindowXaml {
                                 <ComboBoxItem Content="90 days"/>
                                 <ComboBoxItem Content="All"/>
                             </ComboBox>
+                            <Button x:Name="timelineViewList" Grid.Column="5" Content="List"
+                                    Style="{StaticResource SmallButton}" Margin="4,0,2,0"/>
+                            <Button x:Name="timelineViewHeatmap" Grid.Column="6" Content="Heatmap"
+                                    Style="{StaticResource SmallButton}" Margin="2,0,0,0"/>
                         </Grid>
 
                         <!-- Timeline entries -->
                         <Border Grid.Row="1" Background="{{Mantle}}" CornerRadius="4"
                                 BorderBrush="{{Surface0}}" BorderThickness="1">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <StackPanel x:Name="timelineEntries" Margin="8"/>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <StackPanel x:Name="timelineEntries" Margin="8"/>
+                                    <StackPanel x:Name="timelineHeatmapPanel" Margin="8"
+                                                Visibility="Collapsed"/>
+                                </StackPanel>
                             </ScrollViewer>
                         </Border>
 

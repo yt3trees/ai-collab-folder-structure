@@ -1,4 +1,20 @@
 # TabTimeline.ps1 - Focus History Timeline tab: visual timeline across projects
+
+$script:TimelineViewMode = "List"
+
+# Script-level helper so event handlers can always access it (local function defs are not reliably
+# captured in WPF Add_SelectionChanged closures)
+function Get-TimelineDaysBack {
+    param([System.Windows.Controls.ComboBox]$Combo)
+    if ($null -eq $Combo) { return 30 }
+    switch ($Combo.SelectedIndex) {
+        0 { return 30 }
+        1 { return 90 }
+        2 { return 0 }
+        default { return 30 }
+    }
+}
+
 #
 # ---- Activity Tracking Specifications ----
 # This script (along with TabDashboard.ps1) visualizes project activity.
@@ -308,6 +324,354 @@ function Update-TimelineView {
     $statText.Text = "Total: $($filteredFiles.Count) entries ($uniqueDays active days)  |  Oldest: $oldest  |  Newest: $newest  |  Active rate: $activeRate%"
 }
 
+function Switch-TimelineView {
+    param([string]$Mode, [System.Windows.Window]$Window)
+    try {
+        $script:TimelineViewMode = $Mode
+
+        $entriesPanel    = $Window.FindName("timelineEntries")
+        $heatmapPanel    = $Window.FindName("timelineHeatmapPanel")
+        $projectLabel    = $Window.FindName("timelineProjectLabel")
+        $projectCombo    = $Window.FindName("timelineProjectCombo")
+        $btnList         = $Window.FindName("timelineViewList")
+        $btnHeatmap      = $Window.FindName("timelineViewHeatmap")
+
+        $c = Get-ThemeColors -ThemeName $script:AppState.Theme
+
+        if ($Mode -eq "List") {
+            if ($null -ne $entriesPanel)  { $entriesPanel.Visibility  = [System.Windows.Visibility]::Visible }
+            if ($null -ne $heatmapPanel)  { $heatmapPanel.Visibility  = [System.Windows.Visibility]::Collapsed }
+            if ($null -ne $projectLabel)  { $projectLabel.Visibility  = [System.Windows.Visibility]::Visible }
+            if ($null -ne $projectCombo)  { $projectCombo.Visibility  = [System.Windows.Visibility]::Visible }
+            if ($null -ne $btnList)       { $btnList.Background    = New-ColorBrush $c.Surface2 }
+            if ($null -ne $btnHeatmap)    { $btnHeatmap.Background = New-ColorBrush $c.Surface0 }
+            # timelineEntries already has content from the last List-mode render; just make it visible
+        }
+        else {
+            if ($null -ne $entriesPanel)  { $entriesPanel.Visibility  = [System.Windows.Visibility]::Collapsed }
+            if ($null -ne $heatmapPanel)  { $heatmapPanel.Visibility  = [System.Windows.Visibility]::Visible }
+            if ($null -ne $projectLabel)  { $projectLabel.Visibility  = [System.Windows.Visibility]::Collapsed }
+            if ($null -ne $projectCombo)  { $projectCombo.Visibility  = [System.Windows.Visibility]::Collapsed }
+            if ($null -ne $btnList)       { $btnList.Background    = New-ColorBrush $c.Surface0 }
+            if ($null -ne $btnHeatmap)    { $btnHeatmap.Background = New-ColorBrush $c.Surface2 }
+
+            $pCombo = $Window.FindName("timelinePeriodCombo")
+            $days = 30
+            if ($null -ne $pCombo) {
+                switch ($pCombo.SelectedIndex) {
+                    0 { $days = 30 }
+                    1 { $days = 90 }
+                    2 { $days = 0 }
+                    default { $days = 30 }
+                }
+            }
+            Update-HeatmapView -Window $Window -DaysBack $days
+        }
+    }
+    catch { }
+}
+
+function New-HeatmapHeader {
+    param([datetime]$StartDate, [datetime]$EndDate)
+
+    $row = New-Object System.Windows.Controls.StackPanel
+    $row.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+
+    # Spacer for project name column
+    $spacer = New-Object System.Windows.Controls.Border
+    $spacer.Width = 150
+    $row.Children.Add($spacer) | Out-Null
+
+    $current = $StartDate
+    $first = $true
+    while ($current -le $EndDate) {
+        $cell = New-Object System.Windows.Controls.TextBlock
+        $cell.Width = 10
+        $cell.Height = 16
+        $cell.Margin = New-Object System.Windows.Thickness(1)
+        $cell.FontSize = 8
+        $cell.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $cell.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $cell.Foreground = New-ColorBrush "#6c7086"
+
+        if ($first -or $current.Day -eq 1) {
+            $cell.Text = $current.ToString("MMM")
+        }
+        else {
+            $cell.Text = ""
+        }
+
+        $row.Children.Add($cell) | Out-Null
+        $first = $false
+        $current = $current.AddDays(1)
+    }
+
+    return $row
+}
+
+function New-HeatmapRow {
+    param(
+        [hashtable]$ProjectInfo,
+        [datetime]$StartDate,
+        [datetime]$EndDate,
+        [System.Windows.Window]$Window
+    )
+
+    $c = Get-ThemeColors -ThemeName $script:AppState.Theme
+
+    # Build lookup sets for O(1) date checking
+    $focusSet    = @{}
+    $decisionSet = @{}
+    if ($null -ne $ProjectInfo.FocusHistoryDates) {
+        foreach ($d in $ProjectInfo.FocusHistoryDates) {
+            $focusSet[$d.ToString("yyyy-MM-dd")] = $true
+        }
+    }
+    if ($null -ne $ProjectInfo.DecisionLogDates) {
+        foreach ($d in $ProjectInfo.DecisionLogDates) {
+            $decisionSet[$d.ToString("yyyy-MM-dd")] = $true
+        }
+    }
+
+    # Determine display name suffix for combo matching
+    $suffix = ""
+    if ($ProjectInfo.Tier -eq "mini" -and $ProjectInfo.Category -eq "domain") { $suffix = " [Domain][Mini]" }
+    elseif ($ProjectInfo.Tier -eq "mini")                                       { $suffix = " [Mini]" }
+    elseif ($ProjectInfo.Category -eq "domain")                                 { $suffix = " [Domain]" }
+    $displayName = $ProjectInfo.Name + $suffix
+
+    $row = New-Object System.Windows.Controls.StackPanel
+    $row.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $row.Margin = New-Object System.Windows.Thickness(0, 1, 0, 1)
+
+    # Project name label (clickable)
+    $nameBlock = New-Object System.Windows.Controls.TextBlock
+    $nameBlock.Text = $ProjectInfo.Name
+    $nameBlock.Width = 150
+    $nameBlock.FontSize = 11
+    $nameBlock.Foreground = New-ColorBrush $c.Subtext1
+    $nameBlock.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $nameBlock.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+    $nameBlock.Cursor = [System.Windows.Input.Cursors]::Hand
+    $nameBlock.ToolTip = $displayName
+
+    $nameBlock.Tag = @{ DisplayName = $displayName; Window = $Window }
+    $nameBlock.Add_MouseLeftButtonDown({
+        param($s, $e)
+        try {
+            $data = $s.Tag
+            $w = $data.Window
+            Switch-TimelineView -Mode "List" -Window $w
+            $combo = $w.FindName("timelineProjectCombo")
+            if ($null -ne $combo) {
+                foreach ($item in $combo.Items) {
+                    if ($item.ToString() -eq $data.DisplayName) {
+                        $combo.SelectedItem = $item
+                        break
+                    }
+                }
+            }
+            $e.Handled = $true
+        }
+        catch { }
+    }.GetNewClosure())
+
+    $row.Children.Add($nameBlock) | Out-Null
+
+    # Date cells
+    $aiCtxContent = $ProjectInfo.AiContextContentPath
+    $histDir = Join-Path $aiCtxContent "focus_history"
+    $logDir  = Join-Path $aiCtxContent "decision_log"
+
+    $current = $StartDate
+    while ($current -le $EndDate) {
+        $ds = $current.ToString("yyyy-MM-dd")
+        $hasFocus    = $focusSet.ContainsKey($ds)
+        $hasDecision = $decisionSet.ContainsKey($ds)
+
+        $colorHex = if ($hasFocus -and $hasDecision) { $c.Teal }
+                    elseif ($hasFocus)                { $c.Green }
+                    elseif ($hasDecision)             { $c.Blue }
+                    else                              { $c.Surface1 }
+
+        $ttText = if ($hasFocus -and $hasDecision) { "$ds`nFocus + Decision" }
+                  elseif ($hasFocus)               { "$ds`nFocus" }
+                  elseif ($hasDecision)            { "$ds`nDecision" }
+                  else                             { "$ds`nNo activity" }
+
+        $rect = New-Object System.Windows.Shapes.Rectangle
+        $rect.Width   = 10
+        $rect.Height  = 16
+        $rect.Margin  = New-Object System.Windows.Thickness(1)
+        $rect.RadiusX = 2
+        $rect.RadiusY = 2
+        $rect.Fill    = New-ColorBrush $colorHex
+        $rect.ToolTip = $ttText
+
+        if ($hasFocus -or $hasDecision) {
+            $rect.Cursor = [System.Windows.Input.Cursors]::Hand
+            $capturedDate    = $ds
+            $capturedHistDir = $histDir
+            $capturedLogDir  = $logDir
+            $capturedWindow  = $Window
+
+            $rect.Tag = @{
+                DateStr = $capturedDate
+                HistDir = $capturedHistDir
+                LogDir  = $capturedLogDir
+                Window  = $capturedWindow
+            }
+            $rect.Add_MouseLeftButtonDown({
+                param($s, $e)
+                try {
+                    $data = $s.Tag
+                    $w    = $data.Window
+                    $fp   = $null
+
+                    # Try focus_history first
+                    $focusFile = Join-Path $data.HistDir "$($data.DateStr).md"
+                    if (Test-Path $focusFile) {
+                        $fp = $focusFile
+                    }
+                    else {
+                        # Fallback: first matching decision_log file
+                        $decFiles = Get-ChildItem $data.LogDir -Filter "$($data.DateStr)_*.md" `
+                                        -ErrorAction SilentlyContinue
+                        if ($null -ne $decFiles -and $decFiles.Count -gt 0) {
+                            $fp = ($decFiles | Select-Object -First 1).FullName
+                        }
+                    }
+
+                    if ($null -ne $fp) {
+                        $tabMain = $w.FindName("tabMain")
+                        if ($null -ne $tabMain) { $tabMain.SelectedIndex = 1 }
+                        Open-FileInEditor -FilePath $fp -Window $w
+                    }
+                    $e.Handled = $true
+                }
+                catch { }
+            }.GetNewClosure())
+        }
+
+        $row.Children.Add($rect) | Out-Null
+        $current = $current.AddDays(1)
+    }
+
+    return $row
+}
+
+function Update-HeatmapView {
+    param([System.Windows.Window]$Window, [int]$DaysBack = 30)
+    try {
+        $heatmapPanel = $Window.FindName("timelineHeatmapPanel")
+        $statText     = $Window.FindName("timelineStatText")
+        if ($null -eq $heatmapPanel) { return }
+
+        $heatmapPanel.Children.Clear()
+
+        # Get all projects (use cache if fresh)
+        $allProjects = Get-ProjectInfoList
+
+        # Filter out hidden projects
+        $visibleProjects = @($allProjects | Where-Object { -not (Test-ProjectHidden -Info $_) })
+
+        if ($visibleProjects.Count -eq 0) {
+            if ($null -ne $statText) { $statText.Text = "No projects" }
+            return
+        }
+
+        $today = (Get-Date).Date
+
+        # Determine date range
+        if ($DaysBack -gt 0) {
+            $startDate = $today.AddDays(-$DaysBack)
+        }
+        else {
+            # All: find earliest activity date across all projects
+            $earliest = $today
+            foreach ($proj in $visibleProjects) {
+                if ($null -ne $proj.FocusHistoryDates -and $proj.FocusHistoryDates.Count -gt 0) {
+                    $minD = ($proj.FocusHistoryDates | Measure-Object -Minimum).Minimum
+                    if ($minD -lt $earliest) { $earliest = $minD }
+                }
+                if ($null -ne $proj.DecisionLogDates -and $proj.DecisionLogDates.Count -gt 0) {
+                    $minD = ($proj.DecisionLogDates | Measure-Object -Minimum).Minimum
+                    if ($minD -lt $earliest) { $earliest = $minD }
+                }
+            }
+            $startDate = $earliest
+        }
+        $endDate = $today
+
+        # Header row
+        $header = New-HeatmapHeader -StartDate $startDate -EndDate $endDate
+        $heatmapPanel.Children.Add($header) | Out-Null
+
+        # Project rows
+        $totalActiveDays = 0
+        foreach ($proj in $visibleProjects) {
+            $projRow = New-HeatmapRow -ProjectInfo $proj -StartDate $startDate -EndDate $endDate -Window $Window
+            $heatmapPanel.Children.Add($projRow) | Out-Null
+
+            # Count active days in range for stats
+            $allDates = @()
+            if ($null -ne $proj.FocusHistoryDates) { $allDates += $proj.FocusHistoryDates }
+            if ($null -ne $proj.DecisionLogDates)  { $allDates += $proj.DecisionLogDates }
+            $uniqueActive = @($allDates | Where-Object { $_ -ge $startDate -and $_ -le $endDate } |
+                ForEach-Object { $_.ToString("yyyy-MM-dd") } | Sort-Object -Unique)
+            $totalActiveDays += $uniqueActive.Count
+        }
+
+        # Stats
+        $periodDays = ($endDate - $startDate).Days + 1
+        if ($null -ne $statText) {
+            $statText.Text = "$($visibleProjects.Count) projects  |  Period: $periodDays days  |  Active days (total): $totalActiveDays"
+        }
+
+        # Legend
+        $legend = $Window.FindName("timelineStats")
+        if ($null -ne $legend) {
+            # Remove existing legend items (keep only statText)
+            $toRemove = @()
+            foreach ($child in $legend.Children) {
+                if ($child -ne $statText) { $toRemove += $child }
+            }
+            foreach ($item in $toRemove) { $legend.Children.Remove($item) | Out-Null }
+
+            $c = Get-ThemeColors -ThemeName $script:AppState.Theme
+
+            $legendItems = @(
+                @{ Color = $c.Green; Label = " Focus" },
+                @{ Color = $c.Blue;  Label = " Decision" },
+                @{ Color = $c.Teal;  Label = " Both" }
+            )
+            foreach ($li in $legendItems) {
+                $sep = New-Object System.Windows.Controls.TextBlock
+                $sep.Text = "   "
+                $sep.FontSize = 11
+                $legend.Children.Add($sep) | Out-Null
+
+                $sq = New-Object System.Windows.Shapes.Rectangle
+                $sq.Width   = 10
+                $sq.Height  = 10
+                $sq.RadiusX = 2
+                $sq.RadiusY = 2
+                $sq.Fill = New-ColorBrush $li.Color
+                $sq.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $legend.Children.Add($sq) | Out-Null
+
+                $lbl = New-Object System.Windows.Controls.TextBlock
+                $lbl.Text = $li.Label
+                $lbl.FontSize = 11
+                $lbl.Foreground = New-ColorBrush "#6c7086"
+                $lbl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+                $legend.Children.Add($lbl) | Out-Null
+            }
+        }
+    }
+    catch { }
+}
+
 function Initialize-TabTimeline {
     param([System.Windows.Window]$Window)
 
@@ -319,47 +683,64 @@ function Initialize-TabTimeline {
         $projectCombo.Items.Add($p) | Out-Null
     }
 
-    # Helper: resolve period ComboBox selection to days-back value
-    function Get-SelectedDaysBack {
-        param([System.Windows.Controls.ComboBox]$Combo)
-        $sel = $Combo.SelectedIndex
-        switch ($sel) {
-            0 { return 30 }
-            1 { return 90 }
-            2 { return 0 }   # all
-            default { return 30 }
-        }
-    }
-
     # Project selection changed
     $projectCombo.Add_SelectionChanged({
-            $combo = $Window.FindName("timelineProjectCombo")
-            if ($null -eq $combo.SelectedItem) { return }
-            $comboText = $combo.SelectedItem.ToString()
-            if ([string]::IsNullOrWhiteSpace($comboText)) { return }
+            try {
+                $combo = $Window.FindName("timelineProjectCombo")
+                if ($null -eq $combo.SelectedItem) { return }
+                $comboText = $combo.SelectedItem.ToString()
+                if ([string]::IsNullOrWhiteSpace($comboText)) { return }
 
-            $proj = Get-SelectedEditorProject -ComboText $comboText
-            if ($null -eq $proj) { return }
+                $proj = Get-SelectedEditorProject -ComboText $comboText
+                if ($null -eq $proj) { return }
 
-            $pCombo = $Window.FindName("timelinePeriodCombo")
-            $days = Get-SelectedDaysBack -Combo $pCombo
-            Update-TimelineView -Window $Window -ProjectInfo $proj -DaysBack $days
+                $pCombo = $Window.FindName("timelinePeriodCombo")
+                $days = Get-TimelineDaysBack -Combo $pCombo
+                Update-TimelineView -Window $Window -ProjectInfo $proj -DaysBack $days
+            }
+            catch { }
         })
 
     # Period selection changed
     $periodCombo.Add_SelectionChanged({
-            $combo = $Window.FindName("timelineProjectCombo")
-            if ($null -eq $combo.SelectedItem) { return }
-            $comboText = $combo.SelectedItem.ToString()
-            if ([string]::IsNullOrWhiteSpace($comboText)) { return }
+            try {
+                $pCombo = $Window.FindName("timelinePeriodCombo")
+                $days = Get-TimelineDaysBack -Combo $pCombo
 
-            $proj = Get-SelectedEditorProject -ComboText $comboText
-            if ($null -eq $proj) { return }
+                if ($script:TimelineViewMode -eq "Heatmap") {
+                    Update-HeatmapView -Window $Window -DaysBack $days
+                }
+                else {
+                    $combo = $Window.FindName("timelineProjectCombo")
+                    if ($null -eq $combo.SelectedItem) { return }
+                    $comboText = $combo.SelectedItem.ToString()
+                    if ([string]::IsNullOrWhiteSpace($comboText)) { return }
 
-            $pCombo = $Window.FindName("timelinePeriodCombo")
-            $days = Get-SelectedDaysBack -Combo $pCombo
-            Update-TimelineView -Window $Window -ProjectInfo $proj -DaysBack $days
+                    $proj = Get-SelectedEditorProject -ComboText $comboText
+                    if ($null -eq $proj) { return }
+
+                    Update-TimelineView -Window $Window -ProjectInfo $proj -DaysBack $days
+                }
+            }
+            catch { }
         })
+
+    # View toggle buttons
+    $btnViewList    = $Window.FindName("timelineViewList")
+    $btnViewHeatmap = $Window.FindName("timelineViewHeatmap")
+
+    if ($null -ne $btnViewList) {
+        $btnViewList.Add_Click({
+            try { Switch-TimelineView -Mode "List" -Window $Window }
+            catch { }
+        }.GetNewClosure())
+    }
+    if ($null -ne $btnViewHeatmap) {
+        $btnViewHeatmap.Add_Click({
+            try { Switch-TimelineView -Mode "Heatmap" -Window $Window }
+            catch { }
+        }.GetNewClosure())
+    }
 
     # Refresh timeline when the Timeline tab becomes active
     $tabMain = $Window.FindName("tabMain")
@@ -370,17 +751,31 @@ function Initialize-TabTimeline {
 
             $tab = $sender
             if ($tab.SelectedIndex -eq 2) { # Timeline tab
-                $combo = $Window.FindName("timelineProjectCombo")
-                if ($null -eq $combo.SelectedItem) { return }
-                $comboText = $combo.SelectedItem.ToString()
-                if ([string]::IsNullOrWhiteSpace($comboText)) { return }
+                try {
+                    $pCombo = $Window.FindName("timelinePeriodCombo")
+                    $days = Get-TimelineDaysBack -Combo $pCombo
 
-                $proj = Get-SelectedEditorProject -ComboText $comboText
-                if ($null -eq $proj) { return }
+                    if ($script:TimelineViewMode -eq "Heatmap") {
+                        Update-HeatmapView -Window $Window -DaysBack $days
+                    }
+                    else {
+                        $combo = $Window.FindName("timelineProjectCombo")
+                        if ($null -eq $combo.SelectedItem) { return }
+                        $comboText = $combo.SelectedItem.ToString()
+                        if ([string]::IsNullOrWhiteSpace($comboText)) { return }
 
-                $pCombo = $Window.FindName("timelinePeriodCombo")
-                $days = Get-SelectedDaysBack -Combo $pCombo
-                Update-TimelineView -Window $Window -ProjectInfo $proj -DaysBack $days
+                        $proj = Get-SelectedEditorProject -ComboText $comboText
+                        if ($null -eq $proj) { return }
+
+                        Update-TimelineView -Window $Window -ProjectInfo $proj -DaysBack $days
+                    }
+                }
+                catch { }
             }
         })
+
+    # Pattern #8: trigger initial load by selecting first project
+    if ($projectCombo.Items.Count -gt 0) {
+        $projectCombo.SelectedIndex = 0
+    }
 }
