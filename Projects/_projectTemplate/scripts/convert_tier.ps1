@@ -29,7 +29,7 @@ if (-not (Test-Path $pathsConfigFile)) {
     Write-Host "Please create _config\paths.json with localProjectsRoot, boxProjectsRoot, obsidianVaultRoot" -ForegroundColor DarkYellow
     exit 1
 }
-$pathsConfig = Get-Content $pathsConfigFile -Raw | ConvertFrom-Json
+$pathsConfig = Get-Content $pathsConfigFile -Raw -Encoding UTF8 | ConvertFrom-Json
 
 $localProjectsRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConfig.localProjectsRoot)
 $boxProjectsRoot = [System.Environment]::ExpandEnvironmentVariables($pathsConfig.boxProjectsRoot)

@@ -160,7 +160,7 @@ function Build-MainWindowXaml {
                         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
                                       HorizontalScrollBarVisibility="Disabled">
                             <WrapPanel x:Name="dashboardCards" Orientation="Horizontal"
-                                       Margin="0,0,0,8"/>
+                                       Margin="0"/>
                         </ScrollViewer>
                     </Grid>
                 </TabItem>

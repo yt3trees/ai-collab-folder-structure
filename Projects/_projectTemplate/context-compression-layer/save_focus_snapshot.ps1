@@ -31,7 +31,7 @@ if (-not (Test-Path $configPath)) {
     exit 1
 }
 
-$config = Get-Content $configPath -Raw | ConvertFrom-Json
+$config = Get-Content $configPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $projectsRoot = [System.Environment]::ExpandEnvironmentVariables($config.localProjectsRoot)
 
 if ($Workspace) {
