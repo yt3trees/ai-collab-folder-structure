@@ -162,16 +162,20 @@ function Get-ProjectInfoList {
     # Helper: check junction/directory status
     function Get-JunctionStatus {
         param([string]$Path)
-        if (-not (Test-Path $Path)) { return "Missing" }
-        $item = Get-Item $Path -ErrorAction SilentlyContinue
+        $item = Get-Item $Path -Force -ErrorAction SilentlyContinue
         if ($null -eq $item) { return "Missing" }
-        # Check if it's a ReparsePoint (junction) and whether it resolves.
-        # Use Test-Path "$Path\." instead of Get-ChildItem to avoid enumerating all children.
         if ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
-            if (-not (Test-Path "$Path\.")) { return "Broken" }
+            # Junction/symlink: verify the target actually exists.
+            # Test-Path on the junction itself can return $true even when the target
+            # is deleted (Windows keeps the entry), so we check .Target instead.
+            $target = $item.Target
+            if ([string]::IsNullOrWhiteSpace($target) -or (-not (Test-Path $target))) {
+                return "Broken"
+            }
         }
         return "OK"
     }
+
 
     # Determine if Python tokenizer is available
     $script:HasPythonTokenizer = $false

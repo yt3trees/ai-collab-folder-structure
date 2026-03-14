@@ -749,7 +749,16 @@ function Build-MainWindowXaml {
                                            FontWeight="SemiBold" Margin="0,20,0,8"/>
                                 <Label Content="Today Queue: max items to show (1-50)"/>
                                 <TextBox x:Name="settingsTodayQueueLimit" Width="60"
-                                         HorizontalAlignment="Left" MaxLength="2" Margin="0,0,0,16"/>
+                                         HorizontalAlignment="Left" MaxLength="2" Margin="0,0,0,12"/>
+                                <Label Content="Auto-refresh interval" Margin="0,0,0,0"/>
+                                <ComboBox x:Name="settingsDashAutoRefreshCombo" Width="90"
+                                          HorizontalAlignment="Left" Margin="0,0,0,16">
+                                    <ComboBoxItem Content="Off" Tag="0"/>
+                                    <ComboBoxItem Content="10 min" Tag="10"/>
+                                    <ComboBoxItem Content="15 min" Tag="15"/>
+                                    <ComboBoxItem Content="30 min" Tag="30"/>
+                                    <ComboBoxItem Content="60 min" Tag="60"/>
+                                </ComboBox>
 
                                 <!-- Startup -->
                                 <TextBlock Text="Startup" Foreground="{{Mauve}}" FontSize="15"

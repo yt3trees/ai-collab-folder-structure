@@ -37,6 +37,19 @@ function Initialize-TabSettings {
         $txtQueueLimit.Text = [string]$script:AppState.DashboardTodayQueueLimit
     }
 
+    # --- Auto-refresh interval ---
+    $cmbAutoRefresh = $Window.FindName("settingsDashAutoRefreshCombo")
+    if ($null -ne $cmbAutoRefresh) {
+        $current = [int]$script:AppState.DashboardAutoRefreshMinutes
+        $selected = $false
+        for ($i = 0; $i -lt $cmbAutoRefresh.Items.Count; $i++) {
+            $tagVal = 0
+            [int]::TryParse([string]$cmbAutoRefresh.Items[$i].Tag, [ref]$tagVal) | Out-Null
+            if ($tagVal -eq $current) { $cmbAutoRefresh.SelectedIndex = $i; $selected = $true; break }
+        }
+        if (-not $selected) { $cmbAutoRefresh.SelectedIndex = 0 }
+    }
+
     # Load current config
     $config = Get-HotkeyConfig
     $modParts = $config.Modifiers -split '\+' | ForEach-Object { $_.Trim().ToLower() }
@@ -76,6 +89,18 @@ function Initialize-TabSettings {
                 }
                 else {
                     $txtQueueLimit.Text = [string]$script:AppState.DashboardTodayQueueLimit
+                }
+            }
+
+            # Handle Auto-refresh interval
+            $cmbAutoRefresh = $Window.FindName("settingsDashAutoRefreshCombo")
+            if ($null -ne $cmbAutoRefresh -and $null -ne $cmbAutoRefresh.SelectedItem) {
+                $minutes = 0
+                [int]::TryParse([string]$cmbAutoRefresh.SelectedItem.Tag, [ref]$minutes) | Out-Null
+                $script:AppState.DashboardAutoRefreshMinutes = $minutes
+                Save-AppSettings
+                if (Get-Command Start-DashboardAutoRefreshTimer -ErrorAction SilentlyContinue) {
+                    Start-DashboardAutoRefreshTimer -Window $Window
                 }
             }
 

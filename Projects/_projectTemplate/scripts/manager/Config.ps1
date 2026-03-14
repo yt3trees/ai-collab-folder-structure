@@ -6,8 +6,9 @@ $script:AppState = @{
     ScriptDir       = ""
     PathsConfig     = $null
     Theme           = "Default"
-    DashboardTodayQueueVisible = $true
-    DashboardTodayQueueLimit   = 5
+    DashboardTodayQueueVisible    = $true
+    DashboardTodayQueueLimit      = 5
+    DashboardAutoRefreshMinutes   = 0
     Projects        = @()
     HiddenProjects  = @()
     SelectedProject = $null
@@ -101,6 +102,11 @@ function Import-AppSettings {
                 $v = [int]$loaded.DashboardTodayQueueLimit
                 if ($v -ge 1 -and $v -le 50) { $script:AppState.DashboardTodayQueueLimit = $v }
             }
+            if ($null -ne $loaded.DashboardAutoRefreshMinutes) {
+                $v = [int]$loaded.DashboardAutoRefreshMinutes
+                $allowed = @(0, 10, 15, 30, 60)
+                if ($allowed -contains $v) { $script:AppState.DashboardAutoRefreshMinutes = $v }
+            }
         }
         catch {
             # Use defaults
@@ -114,9 +120,10 @@ function Save-AppSettings {
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
 
     $settings = @{
-        Theme = $script:AppState.Theme
-        DashboardTodayQueueVisible = [bool]$script:AppState.DashboardTodayQueueVisible
-        DashboardTodayQueueLimit   = [int]$script:AppState.DashboardTodayQueueLimit
+        Theme                         = $script:AppState.Theme
+        DashboardTodayQueueVisible    = [bool]$script:AppState.DashboardTodayQueueVisible
+        DashboardTodayQueueLimit      = [int]$script:AppState.DashboardTodayQueueLimit
+        DashboardAutoRefreshMinutes   = [int]$script:AppState.DashboardAutoRefreshMinutes
     }
     $settings | ConvertTo-Json | Set-Content $path -Encoding UTF8
 }

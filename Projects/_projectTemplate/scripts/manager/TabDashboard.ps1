@@ -200,7 +200,20 @@ function New-ProjectCard {
         $titleRow.Children.Add($hiddenBadge) | Out-Null
     }
 
-
+    # --- Junction health badge (only when broken) ---
+    $brokenJunctions = @()
+    if ($Info.JunctionShared  -ne "OK") { $brokenJunctions += "shared" }
+    if ($Info.JunctionObsidian -ne "OK") { $brokenJunctions += "obsidian" }
+    if ($Info.JunctionContext  -ne "OK") { $brokenJunctions += "context" }
+    if ($brokenJunctions.Count -gt 0) {
+        $junctionBadge = New-Object System.Windows.Controls.TextBlock
+        $junctionBadge.Text = " [!!] Junction: $($brokenJunctions -join ', ')"
+        $junctionBadge.FontSize = 11
+        $junctionBadge.Foreground = New-ColorBrush $c.Red
+        $junctionBadge.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+        $junctionBadge.ToolTip = "Broken junctions: $($brokenJunctions -join ', ')"
+        $titleRow.Children.Add($junctionBadge) | Out-Null
+    }
 
     $stack.Children.Add($titleRow) | Out-Null
 
@@ -534,6 +547,41 @@ $script:DashLastFilter     = $null
 $script:DashLastShowHidden = $null
 $script:DashLastBuildTime  = [datetime]::MinValue
 $script:DashRefreshRunning = $false
+$script:DashAutoRefreshTimer = $null
+
+function Stop-DashboardAutoRefreshTimer {
+    if ($null -ne $script:DashAutoRefreshTimer) {
+        $script:DashAutoRefreshTimer.Stop()
+        $script:DashAutoRefreshTimer = $null
+    }
+}
+
+function Start-DashboardAutoRefreshTimer {
+    param([System.Windows.Window]$Window)
+    Stop-DashboardAutoRefreshTimer
+    $minutes = [int]$script:AppState.DashboardAutoRefreshMinutes
+    if ($minutes -le 0) { return }
+    $timer = New-Object System.Windows.Threading.DispatcherTimer
+    $timer.Interval = [TimeSpan]::FromMinutes($minutes)
+    $timer.Tag = $Window
+    $timer.Add_Tick({
+        param($sender, $e)
+        $win = $sender.Tag
+        $scriptDir = $script:AppState.ScriptDir
+        $filter = ""
+        $showHidden = $false
+        try {
+            $f = $win.FindName("txtDashFilter")
+            if ($null -ne $f) { $filter = $f.Text }
+            $h = $win.FindName("chkShowHidden")
+            if ($null -ne $h) { $showHidden = [bool]$h.IsChecked }
+        } catch {}
+        Start-DashboardAsyncRefresh -Window $win -FilterText $filter -ShowHidden $showHidden `
+            -ScriptDir $scriptDir -IncludeTokens $false
+    }.GetNewClosure())
+    $timer.Start()
+    $script:DashAutoRefreshTimer = $timer
+}
 
 # ---- Today Queue Snooze ----
 
@@ -1601,6 +1649,8 @@ function Initialize-TabDashboard {
                 }
             }.GetNewClosure())
     }
+
+    Start-DashboardAutoRefreshTimer -Window $Window
 }
     $themeName = if ([string]::IsNullOrWhiteSpace([string]$script:AppState.Theme)) { "Default" } else { [string]$script:AppState.Theme }
     $tc = Get-ThemeColors -ThemeName $themeName
