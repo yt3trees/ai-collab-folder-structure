@@ -548,6 +548,17 @@ $script:DashLastShowHidden = $null
 $script:DashLastBuildTime  = [datetime]::MinValue
 $script:DashRefreshRunning = $false
 $script:DashAutoRefreshTimer = $null
+$script:DashRefreshPollTimers = @{}
+
+function Set-AppStateProjectsSafe {
+    param([object[]]$Projects)
+    if ($script:AppState -is [hashtable]) {
+        $script:AppState["Projects"] = $Projects
+    }
+    else {
+        $script:AppState.Projects = $Projects
+    }
+}
 
 function Stop-DashboardAutoRefreshTimer {
     if ($null -ne $script:DashAutoRefreshTimer) {
@@ -695,6 +706,8 @@ function Start-DashboardAsyncRefresh {
     $discoveryPath   = Join-Path (Join-Path $ScriptDir "manager") "ProjectDiscovery.ps1"
     $tokenScriptPath = Join-Path $ScriptDir "get_tokens.py"
 
+    $timerKey = [guid]::NewGuid().ToString("N")
+
     $rs = [runspacefactory]::CreateRunspace()
     $rs.Open()
     $rs.SessionStateProxy.SetVariable('_WorkspaceRoot',   $workspaceRoot)
@@ -727,7 +740,7 @@ function Start-DashboardAsyncRefresh {
         [void]$ps.AddScript({
             $script:AppState = @{ WorkspaceRoot = $_WorkspaceRoot; PathsConfig = $_PathsConfig; Projects = @() }
             . $_DiscoveryPath
-            return (Get-ProjectInfoList -Force -SkipTokens)
+            return (Get-ProjectInfoList -Force)
         })
     }
     $asyncHandle = $ps.BeginInvoke()
@@ -739,6 +752,7 @@ function Start-DashboardAsyncRefresh {
         Window = $Window; FilterText = $FilterText; ShowHidden = $ShowHidden; ScriptDir = $ScriptDir
         BtnRefresh = $btnRef; IncludeTokens = $IncludeTokens
         Cache = $script:ProjectInfoCache
+        TimerKey = $timerKey
     }
     $pollTimer.Add_Tick({
         param($sender, $e)
@@ -787,7 +801,7 @@ function Start-DashboardAsyncRefresh {
                     $sorted = $g0 + $g1 + $g2 + $g3
                     $script:ProjectInfoCache     = $sorted
                     $script:ProjectInfoCacheTime = Get-Date
-                    $script:AppState.Projects    = $sorted
+                    Set-AppStateProjectsSafe -Projects $sorted
                     if ($null -ne $panel) {
                         $curFilter     = $d.Window.FindName("txtDashFilter").Text
                         $curShowHidden = [bool]($d.Window.FindName("chkShowHidden").IsChecked)
@@ -805,9 +819,12 @@ function Start-DashboardAsyncRefresh {
             # On error: leave existing panel content as-is
         }
         finally {
-            $d.PS.Dispose()
-            $d.RS.Close()
-            $d.RS.Dispose()
+            if ($script:DashRefreshPollTimers.ContainsKey($d.TimerKey)) {
+                $script:DashRefreshPollTimers.Remove($d.TimerKey)
+            }
+            try { $d.PS.Dispose() } catch {}
+            try { $d.RS.Close() } catch {}
+            try { $d.RS.Dispose() } catch {}
             $script:DashRefreshRunning = $false
             if ($null -ne $d.BtnRefresh) {
                 $d.BtnRefresh.IsEnabled = $true
@@ -815,6 +832,7 @@ function Start-DashboardAsyncRefresh {
             }
         }
     }.GetNewClosure())
+    $script:DashRefreshPollTimers[$timerKey] = $pollTimer
     $pollTimer.Start()
 }
 
@@ -851,13 +869,31 @@ function Update-Dashboard {
 
     # Force (Refresh button): show stale cards immediately, then async refresh to avoid UI freeze
     if ($Force) {
-        if ($null -ne $script:ProjectInfoCache) {
-            Invoke-RenderDashboardCards -CardsPanel $cardsPanel -Projects $script:ProjectInfoCache `
-                -Window $Window -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir
+        try {
+            $projects = @(Get-ProjectInfoList -Force)
+            if ($projects.Count -gt 0) {
+                $script:ProjectInfoCache     = $projects
+                $script:ProjectInfoCacheTime = Get-Date
+                Set-AppStateProjectsSafe -Projects $projects
+            }
+            $script:DashLastFilter     = $FilterText
+            $script:DashLastShowHidden = $ShowHidden
+            $script:DashLastBuildTime  = $script:ProjectInfoCacheTime
+            Invoke-RenderDashboardCards -CardsPanel $cardsPanel -Projects $projects -Window $Window `
+                -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir
+            $status = $Window.FindName("statusProject")
+            if ($null -ne $status) { $status.Text = "Dashboard refreshed: $((Get-Date).ToString('HH:mm:ss'))" }
         }
-        # Reset guard so Force always starts a fresh async (catch/else no longer clears panel, so race is safe)
-        $script:DashRefreshRunning = $false
-        Start-DashboardAsyncRefresh -Window $Window -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir -IncludeTokens $true
+        catch {
+            $status = $Window.FindName("statusProject")
+            if ($null -ne $status) { $status.Text = "Dashboard refresh failed: $($_.Exception.Message)" }
+            [System.Windows.MessageBox]::Show(
+                "Dashboard refresh failed:`n$($_.Exception.Message)",
+                "Refresh Error",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Error
+            ) | Out-Null
+        }
         return
     }
 
@@ -1574,10 +1610,23 @@ function Initialize-TabDashboard {
     if ($null -ne $btnDashRefresh) {
         $btnDashRefresh.Add_Click({
                 $win = $Window
+                $btn = $win.FindName("btnDashRefresh")
+                if ($null -ne $btn) {
+                    $btn.IsEnabled = $false
+                    $btn.Content = "Loading..."
+                }
                 $filter = $win.FindName("txtDashFilter").Text
                 $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
-                Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -Force -ScriptDir $ScriptDir
-                Update-DashboardTodayQueueWidget -Window $win
+                try {
+                    Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -Force -ScriptDir $ScriptDir
+                    Update-DashboardTodayQueueWidget -Window $win
+                }
+                finally {
+                    if ($null -ne $btn) {
+                        $btn.IsEnabled = $true
+                        $btn.Content = "Refresh"
+                    }
+                }
             }.GetNewClosure())
     }
 

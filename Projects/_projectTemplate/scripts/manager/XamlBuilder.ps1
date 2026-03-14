@@ -828,9 +828,13 @@ function Build-MainWindowXaml {
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock x:Name="statusProject" Grid.Column="0" Text="Ready"
                                Foreground="{{Overlay0}}" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="lblDashStats" Grid.Column="0" Text=""
+                               Foreground="{{Overlay0}}" FontSize="11" FontFamily="Consolas"
+                               VerticalAlignment="Center" Visibility="Collapsed"/>
                     <TextBlock x:Name="statusFile" Grid.Column="1" Text=""
                                Foreground="{{Overlay0}}" FontSize="11" VerticalAlignment="Center"
                                Margin="16,0"/>

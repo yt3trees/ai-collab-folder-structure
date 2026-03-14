@@ -394,7 +394,12 @@ function Get-ProjectInfoList {
     $g2 = @($projects | Where-Object { $_.Category -eq 'domain' -and $_.Tier -eq 'mini' } | Sort-Object { $_.Name })
     $g3 = @($projects | Where-Object { $_.Name -ne '_INHOUSE' -and $_.Category -ne 'domain' } | Sort-Object { $_.Name })
     $sorted = $g0 + $g1 + $g2 + $g3
-    $script:AppState.Projects    = $sorted
+    if ($script:AppState -is [hashtable]) {
+        $script:AppState["Projects"] = $sorted
+    }
+    else {
+        $script:AppState.Projects = $sorted
+    }
     $script:ProjectInfoCache     = $sorted
     $script:ProjectInfoCacheTime = Get-Date
 
