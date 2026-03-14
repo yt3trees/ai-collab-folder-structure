@@ -65,56 +65,64 @@ function Build-MainWindowXaml {
                         <Grid Grid.Row="0" Margin="0,4,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <Button x:Name="btnDashRefresh" Content="Refresh"
-                                    Grid.Column="0" Style="{StaticResource SmallButton}" Margin="0,0,8,0"/>
-                            <Button x:Name="btnDashToggleTodayQueue" Content="&#x25BE;"
-                                    Grid.Column="2" Margin="0,0,10,0"
-                                    Style="{StaticResource SmallButton}"
-                                    Padding="8,3" FontSize="15" Cursor="Hand"
-                                    Width="28" MinWidth="28" MaxWidth="28"
-                                    HorizontalAlignment="Right"
-                                    HorizontalContentAlignment="Center"
-                                    Focusable="False" FocusVisualStyle="{x:Null}"
-                                    Background="Transparent" Foreground="{{Subtext0}}"
-                                    BorderBrush="Transparent" BorderThickness="0"
-                                    ToolTip="Toggle Today Queue"/>
-                            <CheckBox x:Name="chkShowHidden" Grid.Column="3" Content="Show Hidden"
-                                      Foreground="{{Subtext0}}" FontSize="12" VerticalAlignment="Center"
-                                      Margin="0,0,16,0"/>
-                            <TextBlock Grid.Column="4" Text="Filter: " VerticalAlignment="Center"
+                                    Grid.Column="0" Style="{StaticResource SmallButton}" Margin="0,0,12,0"/>
+                            <TextBlock Grid.Column="2" Text="Filter: " VerticalAlignment="Center"
                                        Foreground="{{Subtext0}}" Margin="0,0,4,0" FontSize="12"/>
-                            <TextBox x:Name="txtDashFilter" Grid.Column="5" FontSize="12" Padding="6,4"/>
+                            <TextBox x:Name="txtDashFilter" Grid.Column="3" FontSize="12" Padding="6,4"/>
+                            <CheckBox x:Name="chkShowHidden" Grid.Column="4" Content="Show Hidden"
+                                      Foreground="{{Subtext0}}" FontSize="12" VerticalAlignment="Center"
+                                      Margin="12,0,0,0"/>
                         </Grid>
 
-                        <!-- Today Queue widget -->
-                        <Border x:Name="bdDashTodayQueue" Grid.Row="1" Margin="0,0,0,8" Padding="8"
-                                Background="{{Base}}" CornerRadius="6"
-                                BorderBrush="{{Surface0}}" BorderThickness="1">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
+                        <!-- Today Queue section (header always visible, body collapsible) -->
+                        <StackPanel Grid.Row="1" Margin="0,0,0,8">
+                            <!-- Queue section header: always visible -->
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="btnDashToggleTodayQueue" Content="&#x25BE;"
+                                        Grid.Column="0" Margin="0,0,4,0"
+                                        Style="{StaticResource SmallButton}"
+                                        Padding="6,2" FontSize="13" Cursor="Hand"
+                                        Width="24" MinWidth="24" MaxWidth="24"
+                                        HorizontalContentAlignment="Center"
+                                        Focusable="False" FocusVisualStyle="{x:Null}"
+                                        Background="Transparent" Foreground="{{Subtext0}}"
+                                        BorderBrush="Transparent" BorderThickness="0"
+                                        ToolTip="Toggle Today Queue"/>
+                                <TextBlock x:Name="lblDashQueueTitle" Grid.Column="1" Text="Today Queue"
+                                           Foreground="{{Mauve}}" FontWeight="SemiBold" FontSize="12"
+                                           VerticalAlignment="Center" Cursor="Hand"
+                                           ToolTip="Toggle Today Queue"/>
+                                <Button x:Name="btnDashTodayQueueRefresh" Content="Refresh"
+                                        Grid.Column="3" Style="{StaticResource SmallButton}" Margin="8,0,0,0"/>
+                            </Grid>
 
-                                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
-                                    <TextBlock Text="Today Queue" Foreground="{{Mauve}}"
-                                               FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
-                                    <Button x:Name="btnDashTodayQueueRefresh" Content="Refresh"
-                                            Style="{StaticResource SmallButton}" Margin="8,0,0,0"/>
-                                </StackPanel>
+                            <!-- Queue body: collapsible -->
+                            <Border x:Name="bdDashTodayQueue" Padding="8"
+                                    Background="{{Base}}" CornerRadius="6"
+                                    BorderBrush="{{Surface0}}" BorderThickness="1">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
-                                <TextBlock x:Name="lblDashTodayQueueStatus" Grid.Row="1"
-                                           Text="Dashboard Queue: Ready"
-                                           Foreground="{{Subtext0}}" FontSize="11" Margin="0,0,0,6"/>
+                                    <TextBlock x:Name="lblDashTodayQueueStatus" Grid.Row="0"
+                                               Text="Dashboard Queue: Ready"
+                                               Foreground="{{Subtext0}}" FontSize="11" Margin="0,0,0,6"/>
 
-                                <ListBox x:Name="lstDashTodayQueue" Grid.Row="2"
+                                    <ListBox x:Name="lstDashTodayQueue" Grid.Row="1"
                                          FontFamily="Consolas" FontSize="12"
                                          BorderThickness="0" Background="Transparent"
                                          Foreground="{{Text}}" MaxHeight="170"
@@ -152,9 +160,10 @@ function Build-MainWindowXaml {
                                             </Style.Triggers>
                                         </Style>
                                     </ListBox.ItemContainerStyle>
-                                </ListBox>
-                            </Grid>
-                        </Border>
+                                    </ListBox>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
 
                         <!-- Cards area -->
                         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"

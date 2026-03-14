@@ -1341,6 +1341,13 @@ function Initialize-TabDashboard {
             }.GetNewClosure())
     }
 
+    $lblDashQueueTitle = $Window.FindName("lblDashQueueTitle")
+    if ($null -ne $lblDashQueueTitle) {
+        $lblDashQueueTitle.Add_MouseLeftButtonUp({
+                Toggle-DashboardTodayQueue -Window $Window
+            }.GetNewClosure())
+    }
+
     $btnDashQueueRefresh = $Window.FindName("btnDashTodayQueueRefresh")
     if ($null -ne $btnDashQueueRefresh) {
         $btnDashQueueRefresh.Add_Click({
