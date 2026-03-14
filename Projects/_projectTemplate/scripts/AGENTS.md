@@ -110,11 +110,14 @@ TabConvert.ps1         -> Initialize-TabConvert
 TabAsanaSync.ps1       -> Initialize-TabAsanaSync
 TabSettings.ps1        -> Initialize-TabSettings
 TabTimeline.ps1        -> Initialize-TabTimeline
+TabTodayQueue.ps1      -> Initialize-TabTodayQueue
 CommandPalette.ps1     -> Initialize-CommandPalette
 FeatureMorningBriefing.ps1 -> Invoke-MorningBriefing
 ```
 
 `TabEditorContextMenu.ps1` is NOT in the main dot-source list. It is loaded by `TabEditor.ps1` via `. (Join-Path $PSScriptRoot "TabEditorContextMenu.ps1")`.
+
+`TabTodayQueue.ps1` provides the Today Queue widget embedded in the Dashboard tab (not a standalone tab). Key exports: `Get-TodayQueueTasksFromProject`, `Get-TodayQueuePriority`, `Invoke-TodayQueueCompleteAsanaTask`, `Select-TodayQueueProjectInEditor`. These are called cross-module from `TabDashboard.ps1`; guarded with `Get-Command` checks.
 
 Tab index mapping — source of truth is the comment at the top of `XamlBuilder.ps1`:
 - 0=Dashboard, 1=Editor, 2=Timeline, 3=Setup, 4=AI Context, 5=Check, 6=Archive, 7=Convert, 8=Asana Sync, 9=Settings
