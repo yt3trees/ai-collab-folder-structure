@@ -7,6 +7,7 @@ $script:AppState = @{
     PathsConfig     = $null
     Theme           = "Default"
     DashboardTodayQueueVisible = $true
+    DashboardTodayQueueLimit   = 5
     Projects        = @()
     HiddenProjects  = @()
     SelectedProject = $null
@@ -96,6 +97,10 @@ function Import-AppSettings {
             if ($null -ne $loaded.DashboardTodayQueueVisible) {
                 $script:AppState.DashboardTodayQueueVisible = [bool]$loaded.DashboardTodayQueueVisible
             }
+            if ($null -ne $loaded.DashboardTodayQueueLimit) {
+                $v = [int]$loaded.DashboardTodayQueueLimit
+                if ($v -ge 1 -and $v -le 50) { $script:AppState.DashboardTodayQueueLimit = $v }
+            }
         }
         catch {
             # Use defaults
@@ -111,6 +116,7 @@ function Save-AppSettings {
     $settings = @{
         Theme = $script:AppState.Theme
         DashboardTodayQueueVisible = [bool]$script:AppState.DashboardTodayQueueVisible
+        DashboardTodayQueueLimit   = [int]$script:AppState.DashboardTodayQueueLimit
     }
     $settings | ConvertTo-Json | Set-Content $path -Encoding UTF8
 }

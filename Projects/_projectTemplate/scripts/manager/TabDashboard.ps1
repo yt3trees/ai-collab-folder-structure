@@ -1231,7 +1231,8 @@ function Update-DashboardTodayQueueWidget {
                 @{ Expression = { $_.ProjectDisplayName } }, `
                 @{ Expression = { $_.Title } })
 
-        $showCount = [Math]::Min(5, $sorted.Count)
+        $queueLimit = [int]$script:AppState.DashboardTodayQueueLimit
+        $showCount = [Math]::Min($queueLimit, $sorted.Count)
         for ($i = 0; $i -lt $showCount; $i++) {
             [void]$list.Items.Add((New-DashboardTodayQueueListItem -Task $sorted[$i] -Window $Window))
         }

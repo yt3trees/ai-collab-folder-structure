@@ -730,6 +730,13 @@ function Build-MainWindowXaml {
                                 <TextBox x:Name="settingsKeyInput" Width="100" HorizontalAlignment="Left"
                                          MaxLength="5"/>
 
+                                <!-- Dashboard -->
+                                <TextBlock Text="Dashboard" Foreground="{{Mauve}}" FontSize="15"
+                                           FontWeight="SemiBold" Margin="0,20,0,8"/>
+                                <Label Content="Today Queue: max items to show (1-50)"/>
+                                <TextBox x:Name="settingsTodayQueueLimit" Width="60"
+                                         HorizontalAlignment="Left" MaxLength="2" Margin="0,0,0,16"/>
+
                                 <!-- Startup -->
                                 <TextBlock Text="Startup" Foreground="{{Mauve}}" FontSize="15"
                                            FontWeight="SemiBold" Margin="0,20,0,8"/>

@@ -31,6 +31,12 @@ function Initialize-TabSettings {
     $chkStartup = $Window.FindName("settingsStartup")
     $txtOutput = $Window.FindName("txtSettingsOutput")
 
+    # --- Today Queue limit ---
+    $txtQueueLimit = $Window.FindName("settingsTodayQueueLimit")
+    if ($null -ne $txtQueueLimit) {
+        $txtQueueLimit.Text = [string]$script:AppState.DashboardTodayQueueLimit
+    }
+
     # Load current config
     $config = Get-HotkeyConfig
     $modParts = $config.Modifiers -split '\+' | ForEach-Object { $_.Trim().ToLower() }
@@ -59,6 +65,19 @@ function Initialize-TabSettings {
 
             $txtOutput.Text = ""
             $restartRequired = $false
+
+            # Handle Today Queue limit
+            $txtQueueLimit = $Window.FindName("settingsTodayQueueLimit")
+            if ($null -ne $txtQueueLimit) {
+                $limitVal = 0
+                if ([int]::TryParse($txtQueueLimit.Text.Trim(), [ref]$limitVal) -and $limitVal -ge 1 -and $limitVal -le 50) {
+                    $script:AppState.DashboardTodayQueueLimit = $limitVal
+                    Save-AppSettings
+                }
+                else {
+                    $txtQueueLimit.Text = [string]$script:AppState.DashboardTodayQueueLimit
+                }
+            }
 
             # Handle Theme Save
             if ($null -ne $cmbTheme) {
