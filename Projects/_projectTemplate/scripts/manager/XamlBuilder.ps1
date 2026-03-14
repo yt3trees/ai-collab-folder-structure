@@ -89,6 +89,7 @@ function Build-MainWindowXaml {
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <Button x:Name="btnDashToggleTodayQueue" Content="&#x25BE;"
                                         Grid.Column="0" Margin="0,0,4,0"
@@ -104,8 +105,12 @@ function Build-MainWindowXaml {
                                            Foreground="{{Mauve}}" FontWeight="SemiBold" FontSize="12"
                                            VerticalAlignment="Center" Cursor="Hand"
                                            ToolTip="Toggle Today Queue"/>
+                                <Button x:Name="btnDashUnsnooze" Grid.Column="3"
+                                        Style="{StaticResource SmallButton}" Margin="4,0,0,0"
+                                        Foreground="{{Subtext0}}" Visibility="Collapsed"
+                                        ToolTip="Clear all snoozes"/>
                                 <Button x:Name="btnDashTodayQueueRefresh" Content="Refresh"
-                                        Grid.Column="3" Style="{StaticResource SmallButton}" Margin="8,0,0,0"/>
+                                        Grid.Column="4" Style="{StaticResource SmallButton}" Margin="4,0,0,0"/>
                             </Grid>
 
                             <!-- Queue body: collapsible -->

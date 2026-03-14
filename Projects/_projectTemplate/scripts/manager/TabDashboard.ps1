@@ -535,6 +535,69 @@ $script:DashLastShowHidden = $null
 $script:DashLastBuildTime  = [datetime]::MinValue
 $script:DashRefreshRunning = $false
 
+# ---- Today Queue Snooze ----
+
+$script:TodayQueueSnooze = @{}
+
+function Get-SnoozeFilePath {
+    return Join-Path (Join-Path $script:AppState.WorkspaceRoot "_config") "today_queue_snooze.json"
+}
+
+function Load-TodayQueueSnooze {
+    try {
+        $path = Get-SnoozeFilePath
+        if (-not (Test-Path $path)) { return }
+        $raw = Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json
+        $script:TodayQueueSnooze = @{}
+        $now = Get-Date
+        foreach ($prop in $raw.PSObject.Properties) {
+            $dt = [datetime]::Parse($prop.Value)
+            if ($dt -gt $now) { $script:TodayQueueSnooze[$prop.Name] = $dt }
+        }
+    }
+    catch {}
+}
+
+function Save-TodayQueueSnooze {
+    try {
+        $obj = @{}
+        $now = Get-Date
+        foreach ($kv in $script:TodayQueueSnooze.GetEnumerator()) {
+            if ($kv.Value -gt $now) { $obj[$kv.Key] = $kv.Value.ToString("o") }
+        }
+        ConvertTo-Json -InputObject $obj | Set-Content (Get-SnoozeFilePath) -Encoding UTF8
+    }
+    catch {}
+}
+
+function Add-TodayQueueSnooze {
+    param([string]$Key)
+    if ($null -eq $script:TodayQueueSnooze) { $script:TodayQueueSnooze = @{} }
+    $script:TodayQueueSnooze[$Key] = (Get-Date).Date.AddDays(1)
+    Save-TodayQueueSnooze
+}
+
+function Clear-TodayQueueSnooze {
+    $script:TodayQueueSnooze = @{}
+}
+
+function Test-TodayQueueSnoozed {
+    param([string]$Key)
+    if ($null -eq $script:TodayQueueSnooze) { return $false }
+    if ($script:TodayQueueSnooze.ContainsKey($Key)) {
+        if ($script:TodayQueueSnooze[$Key] -gt (Get-Date)) { return $true }
+        $script:TodayQueueSnooze.Remove($Key)
+    }
+    return $false
+}
+
+function Get-TodayQueueSnoozeKey {
+    param([hashtable]$Task)
+    $gid = [string]$Task.AsanaTaskGid
+    if (-not [string]::IsNullOrWhiteSpace($gid)) { return $gid }
+    return ([string]$Task.ProjectDisplayName) + "|" + ([string]$Task.Title)
+}
+
 # Render cards from a pre-fetched project list (no I/O)
 function Invoke-RenderDashboardCards {
     param(
@@ -883,6 +946,47 @@ function Start-DashboardRefreshAfterAsanaSync {
     $timer.Start()
 }
 
+function Update-UnsnoozeButton {
+    param([System.Windows.Window]$Window, [int]$Count)
+    $btn = $Window.FindName("btnDashUnsnooze")
+    if ($null -eq $btn) { return }
+    if ($Count -gt 0) {
+        $btn.Content = ([string][char]0x21A9) + " $Count snoozed"
+        $btn.Visibility = [System.Windows.Visibility]::Visible
+    }
+    else {
+        $btn.Visibility = [System.Windows.Visibility]::Collapsed
+    }
+}
+
+function New-DashboardQueueSectionHeader {
+    param([string]$Label)
+    $tc = Get-ThemeColors -ThemeName $script:AppState.Theme
+    $grid = New-Object System.Windows.Controls.Grid
+    $grid.Margin = New-Object System.Windows.Thickness(0, 6, 0, 2)
+    $col0 = New-Object System.Windows.Controls.ColumnDefinition
+    $col0.Width = [System.Windows.GridLength]::Auto
+    $col1 = New-Object System.Windows.Controls.ColumnDefinition
+    $col1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    $grid.ColumnDefinitions.Add($col0) | Out-Null
+    $grid.ColumnDefinitions.Add($col1) | Out-Null
+    $lbl = New-Object System.Windows.Controls.TextBlock
+    $lbl.Text = $Label
+    $lbl.FontSize = 10
+    $lbl.Foreground = New-ColorBrush $tc.Overlay0
+    $lbl.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $lbl.Margin = New-Object System.Windows.Thickness(2, 0, 6, 0)
+    [System.Windows.Controls.Grid]::SetColumn($lbl, 0)
+    $grid.Children.Add($lbl) | Out-Null
+    $line = New-Object System.Windows.Shapes.Rectangle
+    $line.Height = 1
+    $line.Fill = New-ColorBrush $tc.Surface1
+    $line.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    [System.Windows.Controls.Grid]::SetColumn($line, 1)
+    $grid.Children.Add($line) | Out-Null
+    return $grid
+}
+
 function New-DashboardTodayQueueListItem {
     param(
         [hashtable]$Task,
@@ -907,11 +1011,14 @@ function New-DashboardTodayQueueListItem {
     $c3.Width = [System.Windows.GridLength]::Auto
     $c4 = New-Object System.Windows.Controls.ColumnDefinition
     $c4.Width = [System.Windows.GridLength]::Auto
+    $c5 = New-Object System.Windows.Controls.ColumnDefinition
+    $c5.Width = [System.Windows.GridLength]::Auto
     $row.ColumnDefinitions.Add($c0) | Out-Null
     $row.ColumnDefinitions.Add($c1) | Out-Null
     $row.ColumnDefinitions.Add($c2) | Out-Null
     $row.ColumnDefinitions.Add($c3) | Out-Null
     $row.ColumnDefinitions.Add($c4) | Out-Null
+    $row.ColumnDefinitions.Add($c5) | Out-Null
 
     $projectNameForDisplay = ([string]$Task.ProjectDisplayName) -replace '\s*\[(?:Domain|Mini)\]', ''
     $projectNameForDisplay = $projectNameForDisplay.Trim()
@@ -1174,8 +1281,65 @@ function New-DashboardTodayQueueListItem {
             [System.Windows.MessageBox]::Show($_.Exception.Message, "Error") | Out-Null
         }
     })
-    [System.Windows.Controls.Grid]::SetColumn($doneBtn, 4)
+    [System.Windows.Controls.Grid]::SetColumn($doneBtn, 5)
     $row.Children.Add($doneBtn) | Out-Null
+
+    # Snooze button
+    $snoozeBtn = New-Object System.Windows.Controls.Button
+    $snoozeBtn.Content = "z"
+    $baseSnoozeStyle = $Window.TryFindResource("CardButton")
+    if ($null -eq $baseSnoozeStyle) { $baseSnoozeStyle = $Window.TryFindResource("SmallButton") }
+
+    if ($null -ne $baseSnoozeStyle) {
+        $snoozeBtnStyle = New-Object System.Windows.Style([System.Windows.Controls.Button], $baseSnoozeStyle)
+
+        $snzRel = New-Object System.Windows.Data.RelativeSource([System.Windows.Data.RelativeSourceMode]::FindAncestor)
+        $snzRel.AncestorType = [System.Windows.Controls.ListBoxItem]
+        $snzRel.AncestorLevel = 1
+
+        foreach ($prop in @("IsSelected", "IsMouseOver", "IsKeyboardFocusWithin")) {
+            $binding = New-Object System.Windows.Data.Binding
+            $binding.RelativeSource = $snzRel
+            $binding.Path = New-Object System.Windows.PropertyPath($prop)
+            $trigger = New-Object System.Windows.DataTrigger
+            $trigger.Binding = $binding
+            $trigger.Value = $true
+            $trigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BackgroundProperty,    (New-ColorBrush $tc.Surface2)))) | Out-Null
+            $trigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderBrushProperty,    (New-ColorBrush $tc.Overlay0)))) | Out-Null
+            $trigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderThicknessProperty, (New-Object System.Windows.Thickness(1))))) | Out-Null
+            $snoozeBtnStyle.Triggers.Add($trigger) | Out-Null
+        }
+        $snoozeBtn.Style = $snoozeBtnStyle
+    }
+    else {
+        $snoozeBtn.Background = New-ColorBrush $tc.Surface1
+        $snoozeBtn.Foreground = New-ColorBrush $tc.Subtext1
+        $snoozeBtn.BorderThickness = New-Object System.Windows.Thickness(0)
+    }
+    $snoozeBtn.Width = 30
+    $snoozeBtn.Height = 30
+    $snoozeBtn.MinWidth = 30
+    $snoozeBtn.Padding = New-Object System.Windows.Thickness(0)
+    $snoozeBtn.HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Center
+    $snoozeBtn.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
+    $snoozeBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+    $snoozeBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $snoozeBtn.Margin = New-Object System.Windows.Thickness(4, 1, 0, 0)
+    $snoozeBtn.ToolTip = "Snooze until tomorrow"
+    $snoozeBtn.Tag = @{ Window = $Window; Key = (Get-TodayQueueSnoozeKey -Task $Task) }
+    $snoozeBtn.Add_Click({
+        param($sender, $e)
+        try {
+            $d = $sender.Tag
+            Add-TodayQueueSnooze -Key $d.Key
+            Update-DashboardTodayQueueWidget -Window $d.Window
+        }
+        catch {
+            [System.Windows.MessageBox]::Show($_.Exception.Message, "Error") | Out-Null
+        }
+    })
+    [System.Windows.Controls.Grid]::SetColumn($snoozeBtn, 4)
+    $row.Children.Add($snoozeBtn) | Out-Null
 
     return $row
 }
@@ -1215,6 +1379,7 @@ function Update-DashboardTodayQueueWidget {
 
         if ($allTasks.Count -eq 0) {
             $status.Text = "Dashboard Queue: No in-progress tasks."
+            Update-UnsnoozeButton -Window $Window -Count 0
             return
         }
 
@@ -1231,13 +1396,45 @@ function Update-DashboardTodayQueueWidget {
                 @{ Expression = { $_.ProjectDisplayName } }, `
                 @{ Expression = { $_.Title } })
 
-        $queueLimit = [int]$script:AppState.DashboardTodayQueueLimit
-        $showCount = [Math]::Min($queueLimit, $sorted.Count)
-        for ($i = 0; $i -lt $showCount; $i++) {
-            [void]$list.Items.Add((New-DashboardTodayQueueListItem -Task $sorted[$i] -Window $Window))
+        # Filter snoozed tasks
+        $visibleTasks = @($sorted | Where-Object { -not (Test-TodayQueueSnoozed -Key (Get-TodayQueueSnoozeKey -Task $_)) })
+        $totalVisible = $visibleTasks.Count
+        $snoozeCount  = $sorted.Count - $totalVisible
+
+        if ($totalVisible -eq 0) {
+            $msg = if ($snoozeCount -gt 0) { "Dashboard Queue: All tasks snoozed ($snoozeCount)." } else { "Dashboard Queue: No in-progress tasks." }
+            $status.Text = $msg
+            Update-UnsnoozeButton -Window $Window -Count $snoozeCount
+            return
         }
 
-        $status.Text = "Dashboard Queue: $($sorted.Count) tasks (showing $showCount)"
+        $queueLimit = [int]$script:AppState.DashboardTodayQueueLimit
+        $showCount = [Math]::Min($queueLimit, $totalVisible)
+        $lastBucketGroup = -1
+
+        for ($i = 0; $i -lt $showCount; $i++) {
+            $t = $visibleTasks[$i]
+            $bucket = [int]$t.SortBucket
+            $bucketGroup = if ($bucket -le 1) { $bucket } elseif ($bucket -le 3) { 2 } elseif ($bucket -eq 4) { 3 } else { 4 }
+            if ($bucketGroup -ne $lastBucketGroup) {
+                $sectionLabel = switch ($bucketGroup) {
+                    0 { "Overdue" }
+                    1 { "Today" }
+                    2 { "This Week" }
+                    3 { "Later" }
+                    default { "No Due" }
+                }
+                [void]$list.Items.Add((New-DashboardQueueSectionHeader -Label $sectionLabel))
+                $lastBucketGroup = $bucketGroup
+            }
+            [void]$list.Items.Add((New-DashboardTodayQueueListItem -Task $t -Window $Window))
+        }
+
+        $statusMsg = "Dashboard Queue: $totalVisible tasks (showing $showCount)"
+        if ($snoozeCount -gt 0) { $statusMsg += ", $snoozeCount snoozed" }
+        $status.Text = $statusMsg
+
+        Update-UnsnoozeButton -Window $Window -Count $snoozeCount
     }
     catch {
         $status.Text = "Dashboard Queue: Failed to load."
@@ -1311,6 +1508,8 @@ function Toggle-DashboardTodayQueue {
 function Initialize-TabDashboard {
     param([System.Windows.Window]$Window, [string]$ScriptDir)
 
+    Load-TodayQueueSnooze
+
     # Initial load: synchronous fast scan (no tokens) so cache contains plain Hashtables.
     # Must NOT use Start-DashboardAsyncRefresh here - runspace results are Deserialized.Hashtable
     # which breaks dot-notation access ($p.FocusFile etc.) used later when building token file list.
@@ -1352,6 +1551,21 @@ function Initialize-TabDashboard {
     if ($null -ne $btnDashQueueRefresh) {
         $btnDashQueueRefresh.Add_Click({
                 Update-DashboardTodayQueueWidget -Window $Window
+            }.GetNewClosure())
+    }
+
+    $btnDashUnsnooze = $Window.FindName("btnDashUnsnooze")
+    if ($null -ne $btnDashUnsnooze) {
+        $btnDashUnsnooze.Add_Click({
+                try {
+                    $win = $Window
+                    Clear-TodayQueueSnooze
+                    Save-TodayQueueSnooze
+                    Update-DashboardTodayQueueWidget -Window $win
+                }
+                catch {
+                    [System.Windows.MessageBox]::Show($_.Exception.Message, "Unsnooze Error") | Out-Null
+                }
             }.GetNewClosure())
     }
     
