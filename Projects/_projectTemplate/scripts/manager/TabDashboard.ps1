@@ -963,7 +963,7 @@ function New-DashboardQueueSectionHeader {
     param([string]$Label)
     $tc = Get-ThemeColors -ThemeName $script:AppState.Theme
     $grid = New-Object System.Windows.Controls.Grid
-    $grid.Margin = New-Object System.Windows.Thickness(0, 6, 0, 2)
+    $grid.Margin = New-Object System.Windows.Thickness(0, 4, 0, 4)
     $col0 = New-Object System.Windows.Controls.ColumnDefinition
     $col0.Width = [System.Windows.GridLength]::Auto
     $col1 = New-Object System.Windows.Controls.ColumnDefinition
