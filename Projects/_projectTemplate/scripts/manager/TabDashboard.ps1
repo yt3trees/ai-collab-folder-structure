@@ -657,6 +657,63 @@ function Get-TodayQueueSnoozeKey {
     return ([string]$Task.ProjectDisplayName) + "|" + ([string]$Task.Title)
 }
 
+function Update-DashboardStats {
+    param(
+        [System.Windows.Window]$Window,
+        [object[]]$Projects,
+        [string]$FilterText,
+        [bool]$ShowHidden
+    )
+    if ($null -eq $Window) { return }
+    $lbl = $Window.FindName("lblDashStats")
+    $statusProject = $Window.FindName("statusProject")
+    if ($null -eq $lbl) { return }
+
+    $totalAll = 0
+    $totalVisible = 0
+    $activeToday = 0
+    $focusStale = 0
+    $focusStaleThreshold = 7
+    if ($null -ne $Projects) {
+        $f = if ($null -eq $FilterText) { "" } else { [string]$FilterText }
+        $f = $f.Trim().ToLowerInvariant()
+        foreach ($p in $Projects) {
+            $totalAll++
+            $isHidden = Test-ProjectHidden -Info $p
+            if ($isHidden -and -not $ShowHidden) { continue }
+            if ($f -ne "" -and ([string]$p.Name).ToLowerInvariant() -notlike "*$f*") { continue }
+            $totalVisible++
+            if ($p.FocusAge -eq 0) { $activeToday++ }
+            if ($null -eq $p.FocusAge -or [int]$p.FocusAge -gt $focusStaleThreshold) { $focusStale++ }
+        }
+    }
+
+    $overdueCount = [int]$script:DashOverdueCount
+    $parts = @()
+    if ($totalVisible -eq $totalAll) { $parts += "$totalVisible projects" }
+    else { $parts += "$totalVisible / $totalAll projects" }
+    if ($activeToday -gt 0) { $parts += "$activeToday active today" }
+    if ($overdueCount -gt 0) { $parts += "$overdueCount overdue tasks" }
+    if ($focusStale -gt 0) { $parts += "$focusStale Focus stale (${focusStaleThreshold}d+)" }
+    $lbl.Text = ($parts -join "  |  ")
+
+    $onDashboard = $false
+    try {
+        $tabMain = $Window.FindName("tabMain")
+        if ($null -ne $tabMain) { $onDashboard = ($tabMain.SelectedIndex -eq 0) }
+    }
+    catch {}
+
+    if ($onDashboard) {
+        $lbl.Visibility = [System.Windows.Visibility]::Visible
+        if ($null -ne $statusProject) { $statusProject.Visibility = [System.Windows.Visibility]::Collapsed }
+    }
+    else {
+        $lbl.Visibility = [System.Windows.Visibility]::Collapsed
+        if ($null -ne $statusProject) { $statusProject.Visibility = [System.Windows.Visibility]::Visible }
+    }
+}
+
 # Render cards from a pre-fetched project list (no I/O)
 function Invoke-RenderDashboardCards {
     param(
@@ -675,6 +732,7 @@ function Invoke-RenderDashboardCards {
         if ($filter -ne "" -and $proj.Name.ToLower() -notlike "*$filter*") { continue }
         $CardsPanel.Children.Add((New-ProjectCard -Info $proj -Window $Window -IsHidden $isHidden -ScriptDir $ScriptDir)) | Out-Null
     }
+    Update-DashboardStats -Window $Window -Projects $Projects -FilterText $FilterText -ShowHidden $ShowHidden
 }
 
 # Run project discovery in a background Runspace; update cache and re-render when done.
@@ -881,12 +939,8 @@ function Update-Dashboard {
             $script:DashLastBuildTime  = $script:ProjectInfoCacheTime
             Invoke-RenderDashboardCards -CardsPanel $cardsPanel -Projects $projects -Window $Window `
                 -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir
-            $status = $Window.FindName("statusProject")
-            if ($null -ne $status) { $status.Text = "Dashboard refreshed: $((Get-Date).ToString('HH:mm:ss'))" }
         }
         catch {
-            $status = $Window.FindName("statusProject")
-            if ($null -ne $status) { $status.Text = "Dashboard refresh failed: $($_.Exception.Message)" }
             [System.Windows.MessageBox]::Show(
                 "Dashboard refresh failed:`n$($_.Exception.Message)",
                 "Refresh Error",
@@ -1592,12 +1646,22 @@ function Toggle-DashboardTodayQueue {
 function Initialize-TabDashboard {
     param([System.Windows.Window]$Window, [string]$ScriptDir)
 
+    $ensureStatus = {
+        param([System.Windows.Window]$w)
+        if ($null -eq $w) { return }
+        $sp = $w.FindName("statusProject")
+        if ($null -ne $sp -and [string]::IsNullOrWhiteSpace([string]$sp.Text)) {
+            $sp.Text = "Ready"
+        }
+    }
+
     Load-TodayQueueSnooze
 
     # Initial load: synchronous fast scan (no tokens) so cache contains plain Hashtables.
     # Must NOT use Start-DashboardAsyncRefresh here - runspace results are Deserialized.Hashtable
     # which breaks dot-notation access ($p.FocusFile etc.) used later when building token file list.
     Update-Dashboard -Window $Window -FilterText "" -ShowHidden $false -ScriptDir $ScriptDir
+    & $ensureStatus $Window
     $queueVisible = Set-DashboardTodayQueueVisibility -Window $Window
     if ($queueVisible) {
         Update-DashboardTodayQueueWidget -Window $Window
@@ -1689,8 +1753,25 @@ function Initialize-TabDashboard {
         $tabMain.Add_SelectionChanged({
                 param($s, $e)
                 if ($e.OriginalSource -ne $s) { return }
+                $win = $Window
+                $statLbl = $win.FindName("lblDashStats")
+                $statProject = $win.FindName("statusProject")
                 if ($s.SelectedIndex -eq 0) {
-                    $win = $Window
+                    if ($null -ne $statLbl -and -not [string]::IsNullOrWhiteSpace([string]$statLbl.Text)) {
+                        $statLbl.Visibility = [System.Windows.Visibility]::Visible
+                        if ($null -ne $statProject) { $statProject.Visibility = [System.Windows.Visibility]::Collapsed }
+                    }
+                    else {
+                        if ($null -ne $statProject) { $statProject.Visibility = [System.Windows.Visibility]::Visible }
+                        if ($null -ne $statLbl) { $statLbl.Visibility = [System.Windows.Visibility]::Collapsed }
+                    }
+                }
+                else {
+                    if ($null -ne $statLbl) { $statLbl.Visibility = [System.Windows.Visibility]::Collapsed }
+                    if ($null -ne $statProject) { $statProject.Visibility = [System.Windows.Visibility]::Visible }
+                }
+                if ($s.SelectedIndex -eq 0) {
+                    & $ensureStatus $win
                     $filter = $win.FindName("txtDashFilter").Text
                     $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
                     Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -ScriptDir $ScriptDir
@@ -1701,5 +1782,3 @@ function Initialize-TabDashboard {
 
     Start-DashboardAutoRefreshTimer -Window $Window
 }
-    $themeName = if ([string]::IsNullOrWhiteSpace([string]$script:AppState.Theme)) { "Default" } else { [string]$script:AppState.Theme }
-    $tc = Get-ThemeColors -ThemeName $themeName
