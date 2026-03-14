@@ -31,6 +31,102 @@ function Get-TodayQueueTaskSourceFile {
     return $null
 }
 
+function Get-TodayQueueAsanaToken {
+    $envToken = [string]$env:ASANA_TOKEN
+    if (-not [string]::IsNullOrWhiteSpace($envToken)) { return $envToken }
+
+    $workspaceRoot = $null
+    if ($script:AppState -is [hashtable] -and $script:AppState.ContainsKey("WorkspaceRoot")) {
+        $workspaceRoot = [string]$script:AppState["WorkspaceRoot"]
+    }
+    elseif ($null -ne $script:AppState -and $null -ne $script:AppState.WorkspaceRoot) {
+        $workspaceRoot = [string]$script:AppState.WorkspaceRoot
+    }
+
+    if ([string]::IsNullOrWhiteSpace($workspaceRoot)) {
+        $workspaceRoot = Split-Path (Split-Path (Split-Path $PSScriptRoot))
+    }
+
+    $configPath = Join-Path (Join-Path $workspaceRoot "_globalScripts") "config.json"
+    if (-not (Test-Path $configPath)) { return "" }
+
+    $configObj = $null
+    foreach ($encName in @("utf-8", "cp932")) {
+        try {
+            $raw = Get-Content -Path $configPath -Raw -Encoding $encName -ErrorAction Stop
+            $configObj = $raw | ConvertFrom-Json
+            break
+        }
+        catch {
+            continue
+        }
+    }
+
+    if ($null -eq $configObj) { return "" }
+    if ($null -eq $configObj.PSObject.Properties["asana_token"]) { return "" }
+    return [string]$configObj.asana_token
+}
+
+function Invoke-TodayQueueCompleteAsanaTask {
+    param(
+        [string]$TaskGid,
+        [string]$TaskTitle
+    )
+
+    if ([string]::IsNullOrWhiteSpace($TaskGid)) {
+        return @{ Success = $false; Message = "Asana task GID is missing." }
+    }
+
+    $token = Get-TodayQueueAsanaToken
+    if ([string]::IsNullOrWhiteSpace($token)) {
+        return @{ Success = $false; Message = "ASANA_TOKEN / _globalScripts/config.json の asana_token が未設定です。" }
+    }
+
+    $uri = "https://app.asana.com/api/1.0/tasks/$TaskGid"
+    $bodyObj = @{ data = @{ completed = $true } }
+    $body = $bodyObj | ConvertTo-Json -Depth 5
+
+    try {
+        [void](Invoke-RestMethod -Method Put `
+                -Uri $uri `
+                -Headers @{ Authorization = "Bearer $token" } `
+                -ContentType "application/json" `
+                -Body $body `
+                -TimeoutSec 30 `
+                -ErrorAction Stop)
+        return @{ Success = $true; Message = "Asana task completed: $TaskTitle ($TaskGid)" }
+    }
+    catch {
+        return @{ Success = $false; Message = "Asana update failed: $($_.Exception.Message)" }
+    }
+}
+
+function Start-TodayQueueRefreshAfterAsanaSync {
+    param([System.Windows.Window]$Window)
+
+    if ($null -eq $Window) { return }
+    if ($null -eq $script:AsanaSyncState) { return }
+    if (-not $script:AsanaSyncState.ContainsKey("Running")) { return }
+
+    $timer = New-Object System.Windows.Threading.DispatcherTimer
+    $timer.Interval = [TimeSpan]::FromSeconds(1)
+
+    $attempt = 0
+    $maxAttempt = 180
+    $targetWindow = $Window
+    $capturedTimer = $timer
+
+    $timer.Add_Tick(({
+        $attempt++
+        if (($script:AsanaSyncState.Running -eq $false) -or ($attempt -ge $maxAttempt)) {
+            $capturedTimer.Stop()
+            try { Update-TodayQueueBetaView -Window $targetWindow } catch {}
+        }
+    }).GetNewClosure())
+
+    $timer.Start()
+}
+
 function Get-TodayQueueTasksFromProject {
     param([object]$ProjectInfo)
 
@@ -80,6 +176,16 @@ function Get-TodayQueueTasksFromProject {
             try { $dueDate = [datetime]::ParseExact($Matches[1], "yyyy-MM-dd", $null) } catch { $dueDate = $null }
         }
 
+        $asanaUrl = $null
+        $asanaTaskGid = $null
+        if ($body -match '\[\[Asana\]\((https?://[^)]+)\)\]\s*$') {
+            $asanaUrl = [string]$Matches[1]
+            $urlWithoutQuery = ($asanaUrl -split '\?')[0].TrimEnd('/')
+            if ($urlWithoutQuery -match '/(\d+)$') {
+                $asanaTaskGid = [string]$Matches[1]
+            }
+        }
+
         $title = $body -replace '\s+\[\[Asana\]\([^)]+\)\]\s*$', ''
         $title = $title -replace '\s+\(Due:\s*\d{4}-\d{2}-\d{2}\)\s*$', ''
         $title = $title -replace '^\[(担当|コラボ|他)\]\s*', ''
@@ -90,6 +196,8 @@ function Get-TodayQueueTasksFromProject {
                 Title              = $title
                 DueDate            = $dueDate
                 StartFile          = $sourceFile
+                AsanaUrl           = $asanaUrl
+                AsanaTaskGid       = $asanaTaskGid
             }) | Out-Null
     }
 
@@ -145,8 +253,11 @@ function New-TodayQueueListItem {
     $c0.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
     $c1 = New-Object System.Windows.Controls.ColumnDefinition
     $c1.Width = [System.Windows.GridLength]::Auto
+    $c2 = New-Object System.Windows.Controls.ColumnDefinition
+    $c2.Width = [System.Windows.GridLength]::Auto
     $row.ColumnDefinitions.Add($c0) | Out-Null
     $row.ColumnDefinitions.Add($c1) | Out-Null
+    $row.ColumnDefinitions.Add($c2) | Out-Null
 
     $label = New-Object System.Windows.Controls.TextBlock
     $label.Text = "[$($Task.ProjectDisplayName)] $($Task.Title)  |  $($Task.DueText)"
@@ -175,6 +286,86 @@ function New-TodayQueueListItem {
 
     [System.Windows.Controls.Grid]::SetColumn($btn, 1)
     $row.Children.Add($btn) | Out-Null
+
+    $doneBtn = New-Object System.Windows.Controls.Button
+    $doneBtn.Content = "Done"
+    $doneBtn.Style = $Window.TryFindResource("SmallButton")
+    $doneBtn.Margin = New-Object System.Windows.Thickness(6, 0, 0, 0)
+    $doneBtn.IsEnabled = -not [string]::IsNullOrWhiteSpace([string]$Task.AsanaTaskGid)
+    $doneBtn.Tag = @{
+        Window          = $Window
+        ProjectName     = $Task.ProjectDisplayName
+        TaskTitle       = $Task.Title
+        TaskGid         = $Task.AsanaTaskGid
+        Row             = $row
+    }
+    $doneBtn.Add_Click({
+            param($sender, $e)
+            $d = $sender.Tag
+            $window = $d.Window
+            $title = [string]$d.TaskTitle
+            $gid = [string]$d.TaskGid
+            if ([string]::IsNullOrWhiteSpace($gid)) {
+                [System.Windows.MessageBox]::Show(
+                    "Asana task GID が見つからないため完了処理できません。",
+                    "Today Queue",
+                    [System.Windows.MessageBoxButton]::OK,
+                    [System.Windows.MessageBoxImage]::Warning
+                ) | Out-Null
+                return
+            }
+
+            $confirm = [System.Windows.MessageBox]::Show(
+                "Asanaで完了にしますか？`n[$($d.ProjectName)] $title",
+                "Confirm Done",
+                [System.Windows.MessageBoxButton]::YesNo,
+                [System.Windows.MessageBoxImage]::Question
+            )
+            if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
+
+            $sender.IsEnabled = $false
+            $result = Invoke-TodayQueueCompleteAsanaTask -TaskGid $gid -TaskTitle $title
+            if (-not $result.Success) {
+                $sender.IsEnabled = $true
+                [System.Windows.MessageBox]::Show(
+                    $result.Message,
+                    "Asana Update Failed",
+                    [System.Windows.MessageBoxButton]::OK,
+                    [System.Windows.MessageBoxImage]::Error
+                ) | Out-Null
+                return
+            }
+
+            $status = $window.FindName("lblTodayQueueBetaStatus")
+            if ($null -ne $status) {
+                $status.Text = "TodayQueueBeta v3: Done synced to Asana. Running Asana Sync..."
+            }
+
+            $list = $window.FindName("lstTodayQueueBeta")
+            if ($null -ne $list -and $null -ne $d.Row) {
+                [void]$list.Items.Remove($d.Row)
+            }
+
+            if (Get-Command Invoke-AsanaSync -ErrorAction SilentlyContinue) {
+                try {
+                    Invoke-AsanaSync
+                    Start-TodayQueueRefreshAfterAsanaSync -Window $window
+                }
+                catch {
+                    if ($null -ne $status) {
+                        $status.Text = "TodayQueueBeta v3: Done synced to Asana. Sync refresh failed."
+                    }
+                }
+            }
+            else {
+                if ($null -ne $status) {
+                    $status.Text = "TodayQueueBeta v3: Done synced to Asana. Run Asana Sync to refresh."
+                }
+            }
+        })
+
+    [System.Windows.Controls.Grid]::SetColumn($doneBtn, 2)
+    $row.Children.Add($doneBtn) | Out-Null
 
     return $row
 }

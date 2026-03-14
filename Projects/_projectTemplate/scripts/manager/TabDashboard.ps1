@@ -760,6 +760,129 @@ function Update-Dashboard {
         -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir
 }
 
+function Show-ConfirmDoneDialog {
+    param(
+        [string]$ProjectName,
+        [string]$TaskTitle,
+        [System.Windows.Window]$Owner
+    )
+
+    $c = Get-ThemeColors -ThemeName $script:AppState.Theme
+
+    $dlg = New-Object System.Windows.Window
+    $dlg.WindowStyle = [System.Windows.WindowStyle]::None
+    $dlg.AllowsTransparency = $true
+    $dlg.ResizeMode = [System.Windows.ResizeMode]::NoResize
+    $dlg.Width = 420
+    $dlg.SizeToContent = [System.Windows.SizeToContent]::Height
+    $dlg.WindowStartupLocation = [System.Windows.WindowStartupLocation]::CenterOwner
+    $dlg.ShowInTaskbar = $false
+    if ($null -ne $Owner) { $dlg.Owner = $Owner }
+
+    $outer = New-Object System.Windows.Controls.Border
+    $outer.Background = New-ColorBrush $c.Surface0
+    $outer.BorderBrush = New-ColorBrush $c.Surface2
+    $outer.BorderThickness = New-Object System.Windows.Thickness(1)
+    $outer.CornerRadius = New-Object System.Windows.CornerRadius(8)
+    $outer.Padding = New-Object System.Windows.Thickness(20, 16, 20, 12)
+
+    $stack = New-Object System.Windows.Controls.StackPanel
+
+    $header = New-Object System.Windows.Controls.TextBlock
+    $header.Text = "Mark as Done in Asana?"
+    $header.Foreground = New-ColorBrush $c.Text
+    $header.FontSize = 13
+    $header.FontFamily = New-Object System.Windows.Media.FontFamily("Segoe UI")
+    $header.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $header.Margin = New-Object System.Windows.Thickness(0, 0, 0, 6)
+    $stack.Children.Add($header) | Out-Null
+
+    $projNameClean = $ProjectName -replace '\s*\[(?:Domain|Mini)\]', ''
+    $info = New-Object System.Windows.Controls.TextBlock
+    $info.Text = "[$($projNameClean.Trim())]  $TaskTitle"
+    $info.Foreground = New-ColorBrush $c.Subtext1
+    $info.FontSize = 11
+    $info.FontFamily = New-Object System.Windows.Media.FontFamily("Consolas, Segoe UI")
+    $info.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+    $info.Margin = New-Object System.Windows.Thickness(0, 0, 0, 16)
+    $stack.Children.Add($info) | Out-Null
+
+    $btnPanel = New-Object System.Windows.Controls.StackPanel
+    $btnPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+    $btnPanel.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+
+    $smallBtnStyle = if ($null -ne $Owner) { $Owner.TryFindResource("SmallButton") } else { $null }
+
+    $cancelBtn = New-Object System.Windows.Controls.Button
+    $cancelBtn.Content = "Cancel"
+    $cancelBtn.Width = 80
+    $cancelBtn.Height = 28
+    $cancelBtn.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+    if ($null -ne $smallBtnStyle) { $cancelBtn.Style = $smallBtnStyle }
+    $cancelBtn.Background = New-ColorBrush $c.Surface1
+    $cancelBtn.Foreground = New-ColorBrush $c.Subtext1
+    $cancelBtn.Add_Click({ $dlg.DialogResult = $false }.GetNewClosure())
+
+    $confirmBtn = New-Object System.Windows.Controls.Button
+    $confirmBtn.Content = "Done"
+    $confirmBtn.Width = 80
+    $confirmBtn.Height = 28
+    if ($null -ne $smallBtnStyle) { $confirmBtn.Style = $smallBtnStyle }
+    $confirmBtn.Background = New-ColorBrush $c.Green
+    $confirmBtn.Foreground = New-ColorBrush $c.Base
+    $confirmBtn.FontWeight = [System.Windows.FontWeights]::SemiBold
+    $confirmBtn.Add_Click({ $dlg.DialogResult = $true }.GetNewClosure())
+
+    $btnPanel.Children.Add($cancelBtn) | Out-Null
+    $btnPanel.Children.Add($confirmBtn) | Out-Null
+    $stack.Children.Add($btnPanel) | Out-Null
+
+    $outer.Child = $stack
+    $dlg.Content = $outer
+
+    $dlg.Add_PreviewKeyDown({
+        param($s, $ev)
+        if ($ev.Key -eq [System.Windows.Input.Key]::Return) {
+            $ev.Handled = $true
+            $s.DialogResult = $true
+        }
+        elseif ($ev.Key -eq [System.Windows.Input.Key]::Escape) {
+            $ev.Handled = $true
+            $s.DialogResult = $false
+        }
+    })
+    $dlg.Add_MouseLeftButtonDown({ $this.DragMove() })
+
+    $ok = $dlg.ShowDialog()
+    return ($ok -eq $true)
+}
+
+function Start-DashboardRefreshAfterAsanaSync {
+    param([System.Windows.Window]$Window)
+
+    if ($null -eq $Window) { return }
+    if ($null -eq $script:AsanaSyncState) { return }
+    if (-not $script:AsanaSyncState.ContainsKey("Running")) { return }
+
+    $timer = New-Object System.Windows.Threading.DispatcherTimer
+    $timer.Interval = [TimeSpan]::FromSeconds(1)
+
+    $attempt = 0
+    $maxAttempt = 180
+    $targetWindow = $Window
+    $capturedTimer = $timer
+
+    $timer.Add_Tick(({
+        $attempt++
+        if (($script:AsanaSyncState.Running -eq $false) -or ($attempt -ge $maxAttempt)) {
+            $capturedTimer.Stop()
+            try { Update-DashboardTodayQueueWidget -Window $targetWindow } catch {}
+        }
+    }).GetNewClosure())
+
+    $timer.Start()
+}
+
 function New-DashboardTodayQueueListItem {
     param(
         [hashtable]$Task,
@@ -782,10 +905,13 @@ function New-DashboardTodayQueueListItem {
     $c2.Width = [System.Windows.GridLength]::new(80)
     $c3 = New-Object System.Windows.Controls.ColumnDefinition
     $c3.Width = [System.Windows.GridLength]::Auto
+    $c4 = New-Object System.Windows.Controls.ColumnDefinition
+    $c4.Width = [System.Windows.GridLength]::Auto
     $row.ColumnDefinitions.Add($c0) | Out-Null
     $row.ColumnDefinitions.Add($c1) | Out-Null
     $row.ColumnDefinitions.Add($c2) | Out-Null
     $row.ColumnDefinitions.Add($c3) | Out-Null
+    $row.ColumnDefinitions.Add($c4) | Out-Null
 
     $projectNameForDisplay = ([string]$Task.ProjectDisplayName) -replace '\s*\[(?:Domain|Mini)\]', ''
     $projectNameForDisplay = $projectNameForDisplay.Trim()
@@ -908,6 +1034,149 @@ function New-DashboardTodayQueueListItem {
     [System.Windows.Controls.Grid]::SetColumn($btn, 3)
     $row.Children.Add($btn) | Out-Null
 
+    $doneBtn = New-Object System.Windows.Controls.Button
+    $doneBtn.Content = [string][char]0x2713
+    $baseDoneBtnStyle = $Window.TryFindResource("CardButton")
+    if ($null -eq $baseDoneBtnStyle) {
+        $baseDoneBtnStyle = $Window.TryFindResource("SmallButton")
+    }
+
+    if ($null -ne $baseDoneBtnStyle) {
+        $doneBtnStyle = New-Object System.Windows.Style([System.Windows.Controls.Button], $baseDoneBtnStyle)
+
+        $doneRel = New-Object System.Windows.Data.RelativeSource([System.Windows.Data.RelativeSourceMode]::FindAncestor)
+        $doneRel.AncestorType = [System.Windows.Controls.ListBoxItem]
+        $doneRel.AncestorLevel = 1
+
+        $doneSelBinding = New-Object System.Windows.Data.Binding
+        $doneSelBinding.RelativeSource = $doneRel
+        $doneSelBinding.Path = New-Object System.Windows.PropertyPath("IsSelected")
+
+        $doneSelTrigger = New-Object System.Windows.DataTrigger
+        $doneSelTrigger.Binding = $doneSelBinding
+        $doneSelTrigger.Value = $true
+        $doneSelTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BackgroundProperty, (New-ColorBrush $tc.Surface2)))) | Out-Null
+        $doneSelTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderBrushProperty, (New-ColorBrush $tc.Overlay0)))) | Out-Null
+        $doneSelTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderThicknessProperty, (New-Object System.Windows.Thickness(1))))) | Out-Null
+        $doneBtnStyle.Triggers.Add($doneSelTrigger) | Out-Null
+
+        $doneHoverBinding = New-Object System.Windows.Data.Binding
+        $doneHoverBinding.RelativeSource = $doneRel
+        $doneHoverBinding.Path = New-Object System.Windows.PropertyPath("IsMouseOver")
+
+        $doneHoverTrigger = New-Object System.Windows.DataTrigger
+        $doneHoverTrigger.Binding = $doneHoverBinding
+        $doneHoverTrigger.Value = $true
+        $doneHoverTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BackgroundProperty, (New-ColorBrush $tc.Surface2)))) | Out-Null
+        $doneHoverTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderBrushProperty, (New-ColorBrush $tc.Overlay0)))) | Out-Null
+        $doneHoverTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderThicknessProperty, (New-Object System.Windows.Thickness(1))))) | Out-Null
+        $doneBtnStyle.Triggers.Add($doneHoverTrigger) | Out-Null
+
+        $doneFocusBinding = New-Object System.Windows.Data.Binding
+        $doneFocusBinding.RelativeSource = $doneRel
+        $doneFocusBinding.Path = New-Object System.Windows.PropertyPath("IsKeyboardFocusWithin")
+
+        $doneFocusTrigger = New-Object System.Windows.DataTrigger
+        $doneFocusTrigger.Binding = $doneFocusBinding
+        $doneFocusTrigger.Value = $true
+        $doneFocusTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BackgroundProperty, (New-ColorBrush $tc.Surface2)))) | Out-Null
+        $doneFocusTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderBrushProperty, (New-ColorBrush $tc.Overlay0)))) | Out-Null
+        $doneFocusTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderThicknessProperty, (New-Object System.Windows.Thickness(1))))) | Out-Null
+        $doneBtnStyle.Triggers.Add($doneFocusTrigger) | Out-Null
+
+        $doneBtn.Style = $doneBtnStyle
+    }
+    else {
+        $doneBtn.Background = New-ColorBrush $tc.Surface1
+        $doneBtn.Foreground = New-ColorBrush $tc.Text
+        $doneBtn.BorderThickness = New-Object System.Windows.Thickness(0)
+    }
+    $doneBtn.Width = 30
+    $doneBtn.Height = 30
+    $doneBtn.MinWidth = 30
+    $doneBtn.Padding = New-Object System.Windows.Thickness(0)
+    $doneBtn.HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Center
+    $doneBtn.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
+    $doneBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+    $doneBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $doneBtn.Margin = New-Object System.Windows.Thickness(4, 1, 0, 0)
+    $doneBtn.ToolTip = "Mark Asana task complete"
+    $doneBtn.IsEnabled = -not [string]::IsNullOrWhiteSpace([string]$Task.AsanaTaskGid)
+    $doneBtn.Tag = @{
+        Window      = $Window
+        ProjectName = $Task.ProjectDisplayName
+        TaskTitle   = $Task.Title
+        TaskGid     = $Task.AsanaTaskGid
+        Row         = $row
+    }
+    $doneBtn.Add_Click({
+        param($sender, $e)
+        try {
+            $d = $sender.Tag
+            $win = $d.Window
+            $title = [string]$d.TaskTitle
+            $gid = [string]$d.TaskGid
+
+            if ([string]::IsNullOrWhiteSpace($gid)) {
+                [System.Windows.MessageBox]::Show(
+                    "Asana task GID not found.",
+                    "Dashboard Queue",
+                    [System.Windows.MessageBoxButton]::OK,
+                    [System.Windows.MessageBoxImage]::Warning
+                ) | Out-Null
+                return
+            }
+
+            $confirmed = Show-ConfirmDoneDialog -ProjectName $d.ProjectName -TaskTitle $title -Owner $win
+            if (-not $confirmed) { return }
+
+            $sender.IsEnabled = $false
+            $result = Invoke-TodayQueueCompleteAsanaTask -TaskGid $gid -TaskTitle $title
+            if (-not $result.Success) {
+                $sender.IsEnabled = $true
+                [System.Windows.MessageBox]::Show(
+                    $result.Message,
+                    "Asana Update Failed",
+                    [System.Windows.MessageBoxButton]::OK,
+                    [System.Windows.MessageBoxImage]::Error
+                ) | Out-Null
+                return
+            }
+
+            $status = $win.FindName("lblDashTodayQueueStatus")
+            if ($null -ne $status) {
+                $status.Text = "Dashboard Queue: Done synced to Asana. Running Asana Sync..."
+            }
+
+            $list = $win.FindName("lstDashTodayQueue")
+            if ($null -ne $list -and $null -ne $d.Row) {
+                [void]$list.Items.Remove($d.Row)
+            }
+
+            if (Get-Command Invoke-AsanaSync -ErrorAction SilentlyContinue) {
+                try {
+                    Invoke-AsanaSync
+                    Start-DashboardRefreshAfterAsanaSync -Window $win
+                }
+                catch {
+                    if ($null -ne $status) {
+                        $status.Text = "Dashboard Queue: Done synced to Asana. Sync refresh failed."
+                    }
+                }
+            }
+            else {
+                if ($null -ne $status) {
+                    $status.Text = "Dashboard Queue: Done synced to Asana. Run Asana Sync to refresh."
+                }
+            }
+        }
+        catch {
+            [System.Windows.MessageBox]::Show($_.Exception.Message, "Error") | Out-Null
+        }
+    })
+    [System.Windows.Controls.Grid]::SetColumn($doneBtn, 4)
+    $row.Children.Add($doneBtn) | Out-Null
+
     return $row
 }
 
@@ -928,7 +1197,8 @@ function Update-DashboardTodayQueueWidget {
         $required = @(
             "Get-TodayQueueTasksFromProject",
             "Get-TodayQueuePriority",
-            "Select-TodayQueueProjectInEditor"
+            "Select-TodayQueueProjectInEditor",
+            "Invoke-TodayQueueCompleteAsanaTask"
         )
         foreach ($name in $required) {
             if (-not (Get-Command $name -ErrorAction SilentlyContinue)) {
