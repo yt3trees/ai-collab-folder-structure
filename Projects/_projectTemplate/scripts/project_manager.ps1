@@ -74,6 +74,7 @@ else {
 . "$managerDir\TabAsanaSync.ps1"
 . "$managerDir\TabSettings.ps1"
 . "$managerDir\TabTimeline.ps1"
+. "$managerDir\TabTodayQueue.ps1"
 . "$managerDir\CommandPalette.ps1"
 . "$managerDir\FeatureMorningBriefing.ps1"
 

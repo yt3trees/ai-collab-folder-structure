@@ -148,7 +148,7 @@ function New-ProjectCard {
     # Outer card border
     $card = New-Object System.Windows.Controls.Border
     $card.Width = 260
-    $card.MinHeight = 160
+    $card.MinHeight = 150
     $card.Margin = New-Object System.Windows.Thickness(0, 0, 8, 8)
     $card.Background = New-ColorBrush $c.Surface0
     $card.BorderBrush = New-ColorBrush $c.Surface1
@@ -760,6 +760,283 @@ function Update-Dashboard {
         -FilterText $FilterText -ShowHidden $ShowHidden -ScriptDir $ScriptDir
 }
 
+function New-DashboardTodayQueueListItem {
+    param(
+        [hashtable]$Task,
+        [System.Windows.Window]$Window
+    )
+
+    $row = New-Object System.Windows.Controls.Grid
+    $row.Margin = New-Object System.Windows.Thickness(0, 0, 0, 4)
+    $row.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $row.MinHeight = 32
+
+    $themeName = if ([string]::IsNullOrWhiteSpace([string]$script:AppState.Theme)) { "Default" } else { [string]$script:AppState.Theme }
+    $tc = Get-ThemeColors -ThemeName $themeName
+
+    $c0 = New-Object System.Windows.Controls.ColumnDefinition
+    $c0.Width = [System.Windows.GridLength]::new(220)
+    $c1 = New-Object System.Windows.Controls.ColumnDefinition
+    $c1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+    $c2 = New-Object System.Windows.Controls.ColumnDefinition
+    $c2.Width = [System.Windows.GridLength]::new(80)
+    $c3 = New-Object System.Windows.Controls.ColumnDefinition
+    $c3.Width = [System.Windows.GridLength]::Auto
+    $row.ColumnDefinitions.Add($c0) | Out-Null
+    $row.ColumnDefinitions.Add($c1) | Out-Null
+    $row.ColumnDefinitions.Add($c2) | Out-Null
+    $row.ColumnDefinitions.Add($c3) | Out-Null
+
+    $projectNameForDisplay = ([string]$Task.ProjectDisplayName) -replace '\s*\[(?:Domain|Mini)\]', ''
+    $projectNameForDisplay = $projectNameForDisplay.Trim()
+
+    $project = New-Object System.Windows.Controls.TextBlock
+    $project.Text = $projectNameForDisplay
+    $project.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+    $project.Foreground = New-ColorBrush $tc.Subtext0
+    $project.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $project.LineStackingStrategy = [System.Windows.LineStackingStrategy]::BlockLineHeight
+    $project.LineHeight = 18
+    $project.Margin = New-Object System.Windows.Thickness(5, 0, 0, 0)
+    [System.Windows.Controls.Grid]::SetColumn($project, 0)
+    $row.Children.Add($project) | Out-Null
+
+    $taskTitleForDisplay = ([string]$Task.Title) -replace '^\[[^\]]+\]\s*', ''
+    $taskTitleForDisplay = $taskTitleForDisplay.Trim()
+
+    $title = New-Object System.Windows.Controls.TextBlock
+    $title.Text = $taskTitleForDisplay
+    $title.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+    $title.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $title.LineStackingStrategy = [System.Windows.LineStackingStrategy]::BlockLineHeight
+    $title.LineHeight = 18
+    $title.Margin = New-Object System.Windows.Thickness(0, 0, 0, 0)
+    [System.Windows.Controls.Grid]::SetColumn($title, 1)
+    $row.Children.Add($title) | Out-Null
+
+    $due = New-Object System.Windows.Controls.TextBlock
+    $due.Text = $Task.DueText
+    $due.Foreground = New-ColorBrush $tc.Subtext0
+    $due.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Right
+    $due.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $due.LineStackingStrategy = [System.Windows.LineStackingStrategy]::BlockLineHeight
+    $due.LineHeight = 18
+    $due.Margin = New-Object System.Windows.Thickness(8, 0, 8, 0)
+    [System.Windows.Controls.Grid]::SetColumn($due, 2)
+    $row.Children.Add($due) | Out-Null
+
+    $btn = New-Object System.Windows.Controls.Button
+    $btn.Content = ">"
+    $baseBtnStyle = $Window.TryFindResource("CardButton")
+    if ($null -eq $baseBtnStyle) {
+        $baseBtnStyle = $Window.TryFindResource("SmallButton")
+    }
+
+    if ($null -ne $baseBtnStyle) {
+        $btnStyle = New-Object System.Windows.Style([System.Windows.Controls.Button], $baseBtnStyle)
+
+        $rel = New-Object System.Windows.Data.RelativeSource([System.Windows.Data.RelativeSourceMode]::FindAncestor)
+        $rel.AncestorType = [System.Windows.Controls.ListBoxItem]
+        $rel.AncestorLevel = 1
+
+        $selBinding = New-Object System.Windows.Data.Binding
+        $selBinding.RelativeSource = $rel
+        $selBinding.Path = New-Object System.Windows.PropertyPath("IsSelected")
+
+        $selTrigger = New-Object System.Windows.DataTrigger
+        $selTrigger.Binding = $selBinding
+        $selTrigger.Value = $true
+        $selTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BackgroundProperty, (New-ColorBrush $tc.Surface2)))) | Out-Null
+        $selTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderBrushProperty, (New-ColorBrush $tc.Overlay0)))) | Out-Null
+        $selTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderThicknessProperty, (New-Object System.Windows.Thickness(1))))) | Out-Null
+        $btnStyle.Triggers.Add($selTrigger) | Out-Null
+
+        $hoverBinding = New-Object System.Windows.Data.Binding
+        $hoverBinding.RelativeSource = $rel
+        $hoverBinding.Path = New-Object System.Windows.PropertyPath("IsMouseOver")
+
+        $hoverTrigger = New-Object System.Windows.DataTrigger
+        $hoverTrigger.Binding = $hoverBinding
+        $hoverTrigger.Value = $true
+        $hoverTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BackgroundProperty, (New-ColorBrush $tc.Surface2)))) | Out-Null
+        $hoverTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderBrushProperty, (New-ColorBrush $tc.Overlay0)))) | Out-Null
+        $hoverTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderThicknessProperty, (New-Object System.Windows.Thickness(1))))) | Out-Null
+        $btnStyle.Triggers.Add($hoverTrigger) | Out-Null
+
+        $focusBinding = New-Object System.Windows.Data.Binding
+        $focusBinding.RelativeSource = $rel
+        $focusBinding.Path = New-Object System.Windows.PropertyPath("IsKeyboardFocusWithin")
+
+        $focusTrigger = New-Object System.Windows.DataTrigger
+        $focusTrigger.Binding = $focusBinding
+        $focusTrigger.Value = $true
+        $focusTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BackgroundProperty, (New-ColorBrush $tc.Surface2)))) | Out-Null
+        $focusTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderBrushProperty, (New-ColorBrush $tc.Overlay0)))) | Out-Null
+        $focusTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderThicknessProperty, (New-Object System.Windows.Thickness(1))))) | Out-Null
+        $btnStyle.Triggers.Add($focusTrigger) | Out-Null
+
+        $btn.Style = $btnStyle
+    }
+    else {
+        $btn.Background = New-ColorBrush $tc.Surface1
+        $btn.Foreground = New-ColorBrush $tc.Text
+        $btn.BorderThickness = New-Object System.Windows.Thickness(0)
+    }
+    $btn.Width = 30
+    $btn.Height = 30
+    $btn.MinWidth = 30
+    $btn.Padding = New-Object System.Windows.Thickness(0)
+    $btn.HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Center
+    $btn.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
+    $btn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+    $btn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $btn.Margin = New-Object System.Windows.Thickness(0, 1, 0, 0)
+    $btn.ToolTip = "Start task"
+    $btn.Tag = @{
+        Window      = $Window
+        ProjectName = $Task.ProjectDisplayName
+        StartFile   = $Task.StartFile
+    }
+    $btn.Add_Click({
+            param($sender, $e)
+            $d = $sender.Tag
+            Select-TodayQueueProjectInEditor -Window $d.Window -ProjectDisplayName $d.ProjectName
+            if (-not [string]::IsNullOrWhiteSpace([string]$d.StartFile) -and (Test-Path $d.StartFile)) {
+                Open-FileInEditor -FilePath $d.StartFile -Window $d.Window
+            }
+        })
+    [System.Windows.Controls.Grid]::SetColumn($btn, 3)
+    $row.Children.Add($btn) | Out-Null
+
+    return $row
+}
+
+function Update-DashboardTodayQueueWidget {
+    param([System.Windows.Window]$Window)
+
+    $queueBorder = $Window.FindName("bdDashTodayQueue")
+    if ($null -ne $queueBorder -and $queueBorder.Visibility -ne [System.Windows.Visibility]::Visible) { return }
+
+    $list = $Window.FindName("lstDashTodayQueue")
+    $status = $Window.FindName("lblDashTodayQueueStatus")
+    if ($null -eq $list -or $null -eq $status) { return }
+
+    $list.Items.Clear()
+    $status.Text = "Dashboard Queue: Loading..."
+
+    try {
+        $required = @(
+            "Get-TodayQueueTasksFromProject",
+            "Get-TodayQueuePriority",
+            "Select-TodayQueueProjectInEditor"
+        )
+        foreach ($name in $required) {
+            if (-not (Get-Command $name -ErrorAction SilentlyContinue)) {
+                $status.Text = "Dashboard Queue: TodayQueue module unavailable."
+                return
+            }
+        }
+
+        $projects = Get-ProjectInfoList -SkipTokens
+        $allTasks = @()
+        foreach ($p in $projects) {
+            $allTasks += @(Get-TodayQueueTasksFromProject -ProjectInfo $p)
+        }
+
+        if ($allTasks.Count -eq 0) {
+            $status.Text = "Dashboard Queue: No in-progress tasks."
+            return
+        }
+
+        foreach ($t in $allTasks) {
+            $prio = Get-TodayQueuePriority -Task $t
+            $t["SortBucket"] = $prio.Bucket
+            $t["SortRank"] = $prio.Rank
+            $t["DueText"] = $prio.Label
+        }
+
+        $sorted = @($allTasks | Sort-Object `
+                @{ Expression = { $_.SortBucket } }, `
+                @{ Expression = { $_.SortRank } }, `
+                @{ Expression = { $_.ProjectDisplayName } }, `
+                @{ Expression = { $_.Title } })
+
+        $showCount = [Math]::Min(5, $sorted.Count)
+        for ($i = 0; $i -lt $showCount; $i++) {
+            [void]$list.Items.Add((New-DashboardTodayQueueListItem -Task $sorted[$i] -Window $Window))
+        }
+
+        $status.Text = "Dashboard Queue: $($sorted.Count) tasks (showing $showCount)"
+    }
+    catch {
+        $status.Text = "Dashboard Queue: Failed to load."
+    }
+}
+
+function Set-DashboardTodayQueueVisibility {
+    param([System.Windows.Window]$Window)
+
+    $queueBorder = $Window.FindName("bdDashTodayQueue")
+    $btnToggle = $Window.FindName("btnDashToggleTodayQueue")
+    if ($null -eq $queueBorder) { return $false }
+
+    $isVisible = $true
+    try {
+        if ($script:AppState -is [hashtable] -and $script:AppState.ContainsKey("DashboardTodayQueueVisible")) {
+            $isVisible = [bool]$script:AppState["DashboardTodayQueueVisible"]
+        }
+        elseif ($null -ne $script:AppState.DashboardTodayQueueVisible) {
+            $isVisible = [bool]$script:AppState.DashboardTodayQueueVisible
+        }
+    }
+    catch { $isVisible = $true }
+
+    $queueBorder.Visibility = if ($isVisible) {
+        [System.Windows.Visibility]::Visible
+    }
+    else {
+        [System.Windows.Visibility]::Collapsed
+    }
+
+    if ($null -ne $btnToggle) {
+        $btnToggle.Content = if ($isVisible) { "$([char]0x25BE)" } else { "$([char]0x25B8)" }
+    }
+
+    return $isVisible
+}
+
+function Toggle-DashboardTodayQueue {
+    param([System.Windows.Window]$Window)
+
+    $queueBorder = $Window.FindName("bdDashTodayQueue")
+    if ($null -eq $queueBorder) { return }
+
+    $currentVisible = ($queueBorder.Visibility -eq [System.Windows.Visibility]::Visible)
+    $nextVisible = -not $currentVisible
+
+    # Apply to UI first so user always gets immediate feedback.
+    $queueBorder.Visibility = if ($nextVisible) {
+        [System.Windows.Visibility]::Visible
+    }
+    else {
+        [System.Windows.Visibility]::Collapsed
+    }
+
+    if ($script:AppState -is [hashtable]) {
+        $script:AppState["DashboardTodayQueueVisible"] = [bool]$nextVisible
+    }
+    else {
+        $script:AppState.DashboardTodayQueueVisible = [bool]$nextVisible
+    }
+
+    $null = Set-DashboardTodayQueueVisibility -Window $Window
+    if ($nextVisible) {
+        Update-DashboardTodayQueueWidget -Window $Window
+    }
+
+    try { Save-AppSettings } catch {}
+}
+
 function Initialize-TabDashboard {
     param([System.Windows.Window]$Window, [string]$ScriptDir)
 
@@ -767,6 +1044,10 @@ function Initialize-TabDashboard {
     # Must NOT use Start-DashboardAsyncRefresh here - runspace results are Deserialized.Hashtable
     # which breaks dot-notation access ($p.FocusFile etc.) used later when building token file list.
     Update-Dashboard -Window $Window -FilterText "" -ShowHidden $false -ScriptDir $ScriptDir
+    $queueVisible = Set-DashboardTodayQueueVisibility -Window $Window
+    if ($queueVisible) {
+        Update-DashboardTodayQueueWidget -Window $Window
+    }
     
     $btnDashRefresh = $Window.FindName("btnDashRefresh")
     $txtDashFilter = $Window.FindName("txtDashFilter")
@@ -778,6 +1059,21 @@ function Initialize-TabDashboard {
                 $filter = $win.FindName("txtDashFilter").Text
                 $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
                 Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -Force -ScriptDir $ScriptDir
+                Update-DashboardTodayQueueWidget -Window $win
+            }.GetNewClosure())
+    }
+
+    $btnDashToggleQueue = $Window.FindName("btnDashToggleTodayQueue")
+    if ($null -ne $btnDashToggleQueue) {
+        $btnDashToggleQueue.Add_Click({
+                Toggle-DashboardTodayQueue -Window $Window
+            }.GetNewClosure())
+    }
+
+    $btnDashQueueRefresh = $Window.FindName("btnDashTodayQueueRefresh")
+    if ($null -ne $btnDashQueueRefresh) {
+        $btnDashQueueRefresh.Add_Click({
+                Update-DashboardTodayQueueWidget -Window $Window
             }.GetNewClosure())
     }
     
@@ -809,7 +1105,10 @@ function Initialize-TabDashboard {
                     $filter = $win.FindName("txtDashFilter").Text
                     $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
                     Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -ScriptDir $ScriptDir
+                    Update-DashboardTodayQueueWidget -Window $win
                 }
             }.GetNewClosure())
     }
 }
+    $themeName = if ([string]::IsNullOrWhiteSpace([string]$script:AppState.Theme)) { "Default" } else { [string]$script:AppState.Theme }
+    $tc = Get-ThemeColors -ThemeName $themeName

@@ -11,8 +11,8 @@ function Build-MainWindowXaml {
     $xamlTemplate = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Project Manager" Height="800" Width="1150"
-        MinHeight="600" MinWidth="900"
+        Title="Project Manager" Height="940" Width="1150"
+        MinHeight="720" MinWidth="900"
         WindowStartupLocation="CenterScreen" ResizeMode="CanResizeWithGrip"
         WindowStyle="None" AllowsTransparency="True"
         Background="Transparent" Foreground="{{Text}}">
@@ -57,12 +57,14 @@ function Build-MainWindowXaml {
                     <Grid Margin="8">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
                         <!-- Toolbar -->
                         <Grid Grid.Row="0" Margin="0,4,0,8">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
@@ -71,16 +73,91 @@ function Build-MainWindowXaml {
                             </Grid.ColumnDefinitions>
                             <Button x:Name="btnDashRefresh" Content="Refresh"
                                     Grid.Column="0" Style="{StaticResource SmallButton}" Margin="0,0,8,0"/>
-                            <CheckBox x:Name="chkShowHidden" Grid.Column="2" Content="Show Hidden"
+                            <Button x:Name="btnDashToggleTodayQueue" Content="&#x25BE;"
+                                    Grid.Column="2" Margin="0,0,10,0"
+                                    Style="{StaticResource SmallButton}"
+                                    Padding="8,3" FontSize="15" Cursor="Hand"
+                                    Width="28" MinWidth="28" MaxWidth="28"
+                                    HorizontalAlignment="Right"
+                                    HorizontalContentAlignment="Center"
+                                    Focusable="False" FocusVisualStyle="{x:Null}"
+                                    Background="Transparent" Foreground="{{Subtext0}}"
+                                    BorderBrush="Transparent" BorderThickness="0"
+                                    ToolTip="Toggle Today Queue"/>
+                            <CheckBox x:Name="chkShowHidden" Grid.Column="3" Content="Show Hidden"
                                       Foreground="{{Subtext0}}" FontSize="12" VerticalAlignment="Center"
                                       Margin="0,0,16,0"/>
-                            <TextBlock Grid.Column="3" Text="Filter: " VerticalAlignment="Center"
+                            <TextBlock Grid.Column="4" Text="Filter: " VerticalAlignment="Center"
                                        Foreground="{{Subtext0}}" Margin="0,0,4,0" FontSize="12"/>
-                            <TextBox x:Name="txtDashFilter" Grid.Column="4" FontSize="12" Padding="6,4"/>
+                            <TextBox x:Name="txtDashFilter" Grid.Column="5" FontSize="12" Padding="6,4"/>
                         </Grid>
 
+                        <!-- Today Queue widget -->
+                        <Border x:Name="bdDashTodayQueue" Grid.Row="1" Margin="0,0,0,8" Padding="8"
+                                Background="{{Base}}" CornerRadius="6"
+                                BorderBrush="{{Surface0}}" BorderThickness="1">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
+                                    <TextBlock Text="Today Queue" Foreground="{{Mauve}}"
+                                               FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                                    <Button x:Name="btnDashTodayQueueRefresh" Content="Refresh"
+                                            Style="{StaticResource SmallButton}" Margin="8,0,0,0"/>
+                                </StackPanel>
+
+                                <TextBlock x:Name="lblDashTodayQueueStatus" Grid.Row="1"
+                                           Text="Dashboard Queue: Ready"
+                                           Foreground="{{Subtext0}}" FontSize="11" Margin="0,0,0,6"/>
+
+                                <ListBox x:Name="lstDashTodayQueue" Grid.Row="2"
+                                         FontFamily="Consolas" FontSize="12"
+                                         BorderThickness="0" Background="Transparent"
+                                         Foreground="{{Text}}" MaxHeight="170"
+                                         HorizontalContentAlignment="Stretch">
+                                    <ListBox.ItemContainerStyle>
+                                        <Style TargetType="ListBoxItem">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                            <Setter Property="Padding" Value="4,2"/>
+                                            <Setter Property="Margin" Value="0,0,0,3"/>
+                                            <Setter Property="Background" Value="{{Surface0}}"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="ListBoxItem">
+                                                        <Border Background="{TemplateBinding Background}"
+                                                                BorderBrush="Transparent"
+                                                                BorderThickness="0"
+                                                                CornerRadius="4"
+                                                                Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="{{Surface1}}"/>
+                                                </Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter Property="Background" Value="{{Surface1}}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ListBox.ItemContainerStyle>
+                                </ListBox>
+                            </Grid>
+                        </Border>
+
                         <!-- Cards area -->
-                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
                                       HorizontalScrollBarVisibility="Disabled">
                             <WrapPanel x:Name="dashboardCards" Orientation="Horizontal"
                                        Margin="0,0,0,8"/>

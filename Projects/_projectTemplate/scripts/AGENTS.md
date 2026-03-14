@@ -259,6 +259,50 @@ To ensure a `SelectionChanged` handler fires on startup:
 1. Register the handler first.
 2. Then set `SelectedIndex = 0` (change from -1 to 0 triggers the event).
 
+---
+
+## LESSONS LEARNED (Today Queue Integration, 2026-03)
+
+### 1. Rollout strategy for risky UI features
+
+- For Dashboard-level additions, implement first as an isolated tab/widget and verify behavior before coupling to critical paths.
+- Keep fallback paths until Dashboard integration is proven stable.
+- Remove temporary verification UI only after production path is confirmed.
+
+### 2. Dashboard integration must be fail-safe
+
+- Any optional feature in Dashboard must never break card rendering.
+- Before calling cross-module functions, guard with `Get-Command`.
+- Wrap queue rendering in `try/catch`; on failure, update only status text and continue.
+
+### 3. Fact-based debugging protocol (no guesswork)
+
+- After each edit, run parser checks for modified files.
+- Confirm symbol existence with `Get-Command` for load-bearing functions.
+- Use targeted `rg` checks for control names and init hooks to avoid silent mismatches.
+- Validate one hypothesis per change; avoid bundled speculative edits.
+
+### 4. Encoding policy for Windows PowerShell 5.1
+
+- Non-ASCII-heavy `.ps1` modules can fail under `powershell.exe` if encoding is wrong.
+- For files with Japanese regex/text handling, prefer UTF-8 with BOM to avoid parse/runtime issues.
+- When symptoms are "Ready fixed", "no logs", or handlers not firing, check encoding early.
+
+### 5. WPF UI polish rules used here
+
+- Keep action columns fixed-width for visual stability (`Start` button alignment).
+- Use display-only normalization for labels:
+  - Project display: hide `[Mini]` / `[Domain]` in Dashboard queue list.
+  - Task display: hide leading `[XXX]` tag in Dashboard queue list.
+- Never alter underlying identity strings used by selection/open logic.
+
+### 6. Interaction-state styling guidance
+
+- Default button style should blend with existing card button tone.
+- Use brighter state only on row `IsSelected` / `IsMouseOver` / `IsKeyboardFocusWithin`.
+- Ensure selected rows remain operable and visually distinct (avoid fully transparent item backgrounds).
+
+
 ### 9. Cache refresh after mutations
 
 After any tab operation that modifies the project list (setup, archive, convert), you must refresh:

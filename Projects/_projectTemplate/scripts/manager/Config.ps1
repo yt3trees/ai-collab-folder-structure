@@ -6,6 +6,7 @@ $script:AppState = @{
     ScriptDir       = ""
     PathsConfig     = $null
     Theme           = "Default"
+    DashboardTodayQueueVisible = $true
     Projects        = @()
     HiddenProjects  = @()
     SelectedProject = $null
@@ -92,6 +93,9 @@ function Import-AppSettings {
             if ($null -ne $loaded.Theme) {
                 $script:AppState.Theme = $loaded.Theme
             }
+            if ($null -ne $loaded.DashboardTodayQueueVisible) {
+                $script:AppState.DashboardTodayQueueVisible = [bool]$loaded.DashboardTodayQueueVisible
+            }
         }
         catch {
             # Use defaults
@@ -106,6 +110,7 @@ function Save-AppSettings {
 
     $settings = @{
         Theme = $script:AppState.Theme
+        DashboardTodayQueueVisible = [bool]$script:AppState.DashboardTodayQueueVisible
     }
     $settings | ConvertTo-Json | Set-Content $path -Encoding UTF8
 }
