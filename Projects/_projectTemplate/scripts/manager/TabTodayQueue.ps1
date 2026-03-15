@@ -173,6 +173,7 @@ function Get-TodayQueueTasksFromProject {
             $body = $Matches[1].Trim()
             if ([string]::IsNullOrWhiteSpace($body)) { continue }
             if ($body -match '^<!--\s*Memo area') { $currentParent = $null; continue }
+            if ($body -match '^\[コラボ\]') { $currentParent = $null; continue }
 
             $dueDate = $null
             if ($body -match '\(Due:\s*(\d{4}-\d{2}-\d{2})\)') {
