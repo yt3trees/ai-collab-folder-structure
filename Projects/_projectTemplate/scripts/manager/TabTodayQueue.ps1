@@ -276,7 +276,7 @@ function Select-TodayQueueProjectInEditor {
     )
 
     $tabMain = $Window.FindName("tabMain")
-    if ($null -ne $tabMain) { $tabMain.SelectedIndex = 1 }
+    if ($null -ne $tabMain) { $tabMain.SelectedIndex = $script:TAB_EDITOR }
 
     $combo = $Window.FindName("editorProjectCombo")
     if ($null -eq $combo) { return }

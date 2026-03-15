@@ -161,7 +161,7 @@ function New-TimelineEntry {
 
             # 1. Switch to Editor tab
             $tabMain = $w.FindName("tabMain")
-            $tabMain.SelectedIndex = 1
+            $tabMain.SelectedIndex = $script:TAB_EDITOR
 
             # 2. Sync project combo in Editor tab (this triggers tree population)
             $editorProjectCombo = $w.FindName("editorProjectCombo")
@@ -544,7 +544,7 @@ function New-HeatmapRow {
 
                     if ($null -ne $fp) {
                         $tabMain = $w.FindName("tabMain")
-                        if ($null -ne $tabMain) { $tabMain.SelectedIndex = 1 }
+                        if ($null -ne $tabMain) { $tabMain.SelectedIndex = $script:TAB_EDITOR }
                         Open-FileInEditor -FilePath $fp -Window $w
                     }
                     $e.Handled = $true

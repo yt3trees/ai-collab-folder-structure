@@ -89,16 +89,13 @@ function Build-CommandList {
 
     # --- Tab switch commands ---
     $tabDefs = @(
-        @{ Index = 0; Label = "Dashboard" },
-        @{ Index = 1; Label = "Editor" },
-        @{ Index = 2; Label = "Timeline" },
-        @{ Index = 3; Label = "Setup" },
-        @{ Index = 4; Label = "AI Context" },
-        @{ Index = 5; Label = "Check" },
-        @{ Index = 6; Label = "Archive" },
-        @{ Index = 7; Label = "Convert" },
-        @{ Index = 8; Label = "Asana Sync" },
-        @{ Index = 9; Label = "Settings" }
+        @{ Index = $script:TAB_DASHBOARD;  Label = "Dashboard" },
+        @{ Index = $script:TAB_EDITOR;     Label = "Editor" },
+        @{ Index = $script:TAB_TIMELINE;   Label = "Timeline" },
+        @{ Index = $script:TAB_GIT_REPOS;  Label = "Git Repos" },
+        @{ Index = $script:TAB_ASANA_SYNC; Label = "Asana Sync" },
+        @{ Index = $script:TAB_SETUP;      Label = "Setup" },
+        @{ Index = $script:TAB_SETTINGS;   Label = "Settings" }
     )
 
     foreach ($tab in $tabDefs) {
@@ -110,7 +107,7 @@ function Build-CommandList {
                 Action   = {
                     param($w)
                     $tabMain = $w.FindName("tabMain")
-                    $tabMain.SelectedIndex = $localIndex
+                    if ($null -ne $tabMain) { $tabMain.SelectedIndex = $localIndex }
                 }.GetNewClosure()
             }) | Out-Null
     }
@@ -127,6 +124,12 @@ function Build-CommandList {
         }) | Out-Null
 
     # --- Project commands ---
+    # Capture script-scoped tab indices as local vars (GetNewClosure() cannot see $script: from outer scope)
+    $localTabEditor   = $script:TAB_EDITOR
+    $localTabSetup    = $script:TAB_SETUP
+    $localTabTimeline = $script:TAB_TIMELINE
+    $localSetupCheck  = $script:SETUP_TAB_CHECK
+
     $projects = $script:AppState.Projects
     if ($null -eq $projects -or $projects.Count -eq 0) {
         $projects = Get-ProjectInfoList
@@ -154,7 +157,9 @@ function Build-CommandList {
                 Action   = {
                     param($w)
                     $tabMain = $w.FindName("tabMain")
-                    $tabMain.SelectedIndex = 3
+                    if ($null -ne $tabMain) { $tabMain.SelectedIndex = $localTabSetup }
+                    $tabSetupInner = $w.FindName("tabSetupInner")
+                    if ($null -ne $tabSetupInner) { $tabSetupInner.SelectedIndex = $localSetupCheck }
                     $combo = $w.FindName("checkProjectCombo")
                     $combo.Text = $displayName
                     $w.FindName("checkMini").IsChecked = $localIsMini
@@ -170,15 +175,17 @@ function Build-CommandList {
                 Action   = {
                     param($w)
                     $tabMain = $w.FindName("tabMain")
-                    $tabMain.SelectedIndex = 1
+                    if ($null -ne $tabMain) { $tabMain.SelectedIndex = $localTabEditor }
                     $editorCombo = $w.FindName("editorProjectCombo")
-                    for ($i = 0; $i -lt $editorCombo.Items.Count; $i++) {
-                        if ($editorCombo.Items[$i].ToString() -eq $displayName) {
-                            if ($editorCombo.SelectedIndex -eq $i) {
-                                $editorCombo.SelectedIndex = -1
+                    if ($null -ne $editorCombo) {
+                        for ($i = 0; $i -lt $editorCombo.Items.Count; $i++) {
+                            if ($editorCombo.Items[$i].ToString() -eq $displayName) {
+                                if ($editorCombo.SelectedIndex -eq $i) {
+                                    $editorCombo.SelectedIndex = -1
+                                }
+                                $editorCombo.SelectedIndex = $i
+                                break
                             }
-                            $editorCombo.SelectedIndex = $i
-                            break
                         }
                     }
                 }.GetNewClosure()
@@ -216,15 +223,17 @@ function Build-CommandList {
                 Action   = {
                     param($w)
                     $tabMain = $w.FindName("tabMain")
-                    $tabMain.SelectedIndex = 1
+                    if ($null -ne $tabMain) { $tabMain.SelectedIndex = $localTabEditor }
                     $editorCombo = $w.FindName("editorProjectCombo")
-                    for ($i = 0; $i -lt $editorCombo.Items.Count; $i++) {
-                        if ($editorCombo.Items[$i].ToString() -eq $displayName) {
-                            if ($editorCombo.SelectedIndex -eq $i) {
-                                $editorCombo.SelectedIndex = -1
+                    if ($null -ne $editorCombo) {
+                        for ($i = 0; $i -lt $editorCombo.Items.Count; $i++) {
+                            if ($editorCombo.Items[$i].ToString() -eq $displayName) {
+                                if ($editorCombo.SelectedIndex -eq $i) {
+                                    $editorCombo.SelectedIndex = -1
+                                }
+                                $editorCombo.SelectedIndex = $i
+                                break
                             }
-                            $editorCombo.SelectedIndex = $i
-                            break
                         }
                     }
                 }.GetNewClosure()
@@ -238,15 +247,17 @@ function Build-CommandList {
                 Action   = {
                     param($w)
                     $tabMain = $w.FindName("tabMain")
-                    $tabMain.SelectedIndex = 2
+                    if ($null -ne $tabMain) { $tabMain.SelectedIndex = $localTabTimeline }
                     $tlCombo = $w.FindName("timelineProjectCombo")
-                    for ($i = 0; $i -lt $tlCombo.Items.Count; $i++) {
-                        if ($tlCombo.Items[$i].ToString() -eq $displayName) {
-                            if ($tlCombo.SelectedIndex -eq $i) {
-                                $tlCombo.SelectedIndex = -1
+                    if ($null -ne $tlCombo) {
+                        for ($i = 0; $i -lt $tlCombo.Items.Count; $i++) {
+                            if ($tlCombo.Items[$i].ToString() -eq $displayName) {
+                                if ($tlCombo.SelectedIndex -eq $i) {
+                                    $tlCombo.SelectedIndex = -1
+                                }
+                                $tlCombo.SelectedIndex = $i
+                                break
                             }
-                            $tlCombo.SelectedIndex = $i
-                            break
                         }
                     }
                 }.GetNewClosure()
@@ -408,7 +419,11 @@ function Invoke-PaletteCommand {
     Hide-CommandPalette
 
     if ($null -ne $cmd -and $null -ne $cmd.Action) {
-        & $cmd.Action $script:PaletteState.Window
+        try {
+            & $cmd.Action $script:PaletteState.Window
+        } catch {
+            [System.Windows.MessageBox]::Show($_.Exception.Message, "Command Error") | Out-Null
+        }
     }
 }
 

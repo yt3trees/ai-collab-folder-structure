@@ -540,7 +540,7 @@ function Build-MainWindowXaml {
 
                 <!-- Tab 5: Setup (contains sub-tabs: New / Check / Archive / Convert) -->
                 <TabItem Header="Setup">
-                    <TabControl BorderBrush="{{Surface1}}" Margin="0,4,0,0">
+                    <TabControl x:Name="tabSetupInner" BorderBrush="{{Surface1}}" Margin="0,4,0,0">
 
                         <!-- Sub-tab 0: New -->
                         <TabItem Header="New">

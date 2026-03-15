@@ -367,7 +367,7 @@ function New-ProjectCard {
                     break
                 }
             }
-            $tabMain.SelectedIndex = 2
+            $tabMain.SelectedIndex = $script:TAB_TIMELINE
             $e.Handled = $true
         })
     $stack.Children.Add($activityGroup) | Out-Null
@@ -405,7 +405,7 @@ function New-ProjectCard {
             param($sender, $e)
             $target = $sender.Tag
             $tabMain = $Window.FindName("tabMain")
-            $tabMain.SelectedIndex = 1
+            $tabMain.SelectedIndex = $script:TAB_EDITOR
             $editorCombo = $Window.FindName("editorProjectCombo")
             for ($i = 0; $i -lt $editorCombo.Items.Count; $i++) {
                 if ($editorCombo.Items[$i].ToString() -eq $target) {

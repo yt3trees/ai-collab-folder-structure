@@ -164,7 +164,7 @@ function Invoke-MorningBriefing {
     # Use existing EditorHelpers function
     $tabMain = $Window.FindName("tabMain")
     if ($null -ne $tabMain) {
-        $tabMain.SelectedIndex = 1  # 1 = Editor
+        $tabMain.SelectedIndex = $script:TAB_EDITOR
     }
     
     Open-FileInEditor -FilePath $outputPath -Window $Window

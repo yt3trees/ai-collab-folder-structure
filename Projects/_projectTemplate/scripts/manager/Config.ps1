@@ -22,6 +22,21 @@ $script:AppState = @{
     }
 }
 
+# Tab index constants (source of truth: XamlBuilder.ps1 top comment)
+$script:TAB_DASHBOARD  = 0
+$script:TAB_EDITOR     = 1
+$script:TAB_TIMELINE   = 2
+$script:TAB_GIT_REPOS  = 3
+$script:TAB_ASANA_SYNC = 4
+$script:TAB_SETUP      = 5
+$script:TAB_SETTINGS   = 6
+
+# Setup sub-tab index constants
+$script:SETUP_TAB_NEW     = 0
+$script:SETUP_TAB_CHECK   = 1
+$script:SETUP_TAB_ARCHIVE = 2
+$script:SETUP_TAB_CONVERT = 3
+
 function Initialize-AppConfig {
     param([string]$ScriptDir)
 
