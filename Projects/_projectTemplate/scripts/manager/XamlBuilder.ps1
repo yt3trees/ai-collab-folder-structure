@@ -91,6 +91,7 @@ function Build-MainWindowXaml {
                                          <ColumnDefinition Width="Auto"/>
                                          <ColumnDefinition Width="Auto"/>
                                          <ColumnDefinition Width="Auto"/>
+                                         <ColumnDefinition Width="Auto"/>
                                      </Grid.ColumnDefinitions>
                                  <Button x:Name="btnDashToggleTodayQueue" Content="&#x25BE;"
                                          Grid.Column="0" Margin="0,0,4,0"
@@ -106,16 +107,18 @@ function Build-MainWindowXaml {
                                             Foreground="{{Mauve}}" FontWeight="SemiBold" FontSize="12"
                                             VerticalAlignment="Center" Cursor="Hand"
                                             ToolTip="Toggle Today Queue"/>
-                                 <Button x:Name="btnDashTodayQueueViewMode" Content="Detail"
-                                         Grid.Column="3" Style="{StaticResource SmallButton}" Margin="4,0,0,0"
-                                         Foreground="{{Subtext0}}" ToolTip="Toggle queue view mode"
-                                         Focusable="False" FocusVisualStyle="{x:Null}"/>
                                  <Button x:Name="btnDashUnsnooze" Grid.Column="4"
                                          Style="{StaticResource SmallButton}" Margin="4,0,0,0"
                                          Foreground="{{Subtext0}}" Visibility="Collapsed"
                                          ToolTip="Clear all snoozes"/>
                                  <Button x:Name="btnDashTodayQueueRefresh" Content="Refresh"
                                          Grid.Column="5" Style="{StaticResource SmallButton}" Margin="4,0,0,0"/>
+                                 <Button x:Name="btnDashTodayQueueViewMode" Content="&#x25EB;"
+                                         Grid.Column="6" Style="{StaticResource SmallButton}" Margin="4,0,0,0"
+                                         Foreground="{{Subtext0}}" ToolTip="Action view (switch to List)"
+                                         Width="24" MinWidth="24" MaxWidth="24"
+                                         Padding="6,2" FontSize="13" HorizontalContentAlignment="Center"
+                                         Focusable="False" FocusVisualStyle="{x:Null}"/>
                              </Grid>
 
                             <!-- Queue body: collapsible -->

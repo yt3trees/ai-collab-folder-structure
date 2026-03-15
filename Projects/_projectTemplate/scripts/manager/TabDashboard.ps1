@@ -597,7 +597,7 @@ function Start-DashboardAutoRefreshTimer {
 # ---- Today Queue Snooze ----
 
 $script:TodayQueueSnooze = @{}
-$script:DashboardTodayQueueViewMode = "Detail"
+$script:DashboardTodayQueueViewMode = "Action"
 $script:DashboardTodayQueueListMaxItems = 300
 
 function Get-SnoozeFilePath {
@@ -1106,15 +1106,15 @@ function Update-DashboardTodayQueueModeButton {
     if ($null -eq $btn) { return }
 
     $isList = ([string]$script:DashboardTodayQueueViewMode -eq "List")
-    $btn.Content = if ($isList) { "List" } else { "Detail" }
-    $btn.ToolTip = if ($isList) { "Switch to Detail view" } else { "Switch to List view" }
+    $btn.Content = if ($isList) { "$([char]0x2630)" } else { "$([char]0x25EB)" }
+    $btn.ToolTip = if ($isList) { "List view (switch to Action)" } else { "Action view (switch to List)" }
 }
 
 function Toggle-DashboardTodayQueueViewMode {
     param([System.Windows.Window]$Window)
 
     if ([string]$script:DashboardTodayQueueViewMode -eq "List") {
-        $script:DashboardTodayQueueViewMode = "Detail"
+        $script:DashboardTodayQueueViewMode = "Action"
     }
     else {
         $script:DashboardTodayQueueViewMode = "List"
