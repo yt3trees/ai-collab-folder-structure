@@ -550,7 +550,7 @@ function Build-MainWindowXaml {
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
 
-                                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="360">
+                                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
                                     <StackPanel Margin="16">
                                         <Label Content="Project Name (required)"/>
                                         <ComboBox x:Name="setupProjectName" IsEditable="True"/>
