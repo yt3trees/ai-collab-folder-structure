@@ -7,7 +7,7 @@ function Build-MainWindowXaml {
     $styles = Get-ThemeResourcesXaml -ThemeName $ThemeName
     $c = Get-ThemeColors -ThemeName $ThemeName
 
-    # Tab indices: 0=Dashboard, 1=Editor, 2=Timeline, 3=Setup, 4=AI Context, 5=Check, 6=Archive, 7=Convert, 8=Asana Sync, 9=Settings
+    # Tab indices: 0=Dashboard, 1=Editor, 2=Timeline, 3=Setup, 4=Check, 5=Archive, 6=Convert, 7=Asana Sync, 8=Settings
     $xamlTemplate = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -131,6 +131,7 @@ function Build-MainWindowXaml {
                                          FontFamily="Consolas" FontSize="12"
                                          BorderThickness="0" Background="Transparent"
                                          Foreground="{{Text}}" MaxHeight="170"
+                                         Padding="2,0,0,0"
                                          HorizontalContentAlignment="Stretch">
                                     <ListBox.ItemContainerStyle>
                                         <Style TargetType="ListBoxItem">
@@ -411,6 +412,9 @@ function Build-MainWindowXaml {
                                 <CheckBox x:Name="setupAlsoContextLayer"
                                           Content="Also run AI Context Setup"
                                           IsChecked="True" Foreground="{{Subtext0}}" Margin="0,4,0,0"/>
+                                <CheckBox x:Name="setupForce"
+                                          Content="Overwrite existing skills (-Force)"
+                                          Margin="20,4,0,0" Foreground="{{Subtext0}}"/>
                                 <Button x:Name="btnSetup" Content="Run Setup"
                                         Style="{StaticResource RunButton}"/>
                             </StackPanel>
@@ -435,50 +439,7 @@ function Build-MainWindowXaml {
                     </Grid>
                 </TabItem>
 
-                <!-- Tab 4: AI Context -->
-                <TabItem Header="AI Context">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="200">
-                            <StackPanel Margin="16">
-                                <Label Content="Project Name (optional - blank for workspace-only)"/>
-                                <ComboBox x:Name="ctxProjectCombo" IsEditable="True"/>
-                                <CheckBox x:Name="ctxMini" Content="Mini tier project (-Mini)"
-                                          Margin="0,10,0,0"/>
-                                <CheckBox x:Name="ctxDomain" Content="Domain project (-Category domain)"
-                                          Margin="0,6,0,0"/>
-                                <CheckBox x:Name="ctxForce" Content="Overwrite existing skills (-Force)"
-                                          Margin="0,6,0,0"/>
-                                <Button x:Name="btnCtxLayer" Content="Run Context Layer Setup"
-                                        Style="{StaticResource RunButton}"/>
-                            </StackPanel>
-                        </ScrollViewer>
-
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
-                            <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
-                                       VerticalAlignment="Center"/>
-                            <Button x:Name="btnCtxClear" Content="Clear"
-                                    Margin="10,0,0,0" Padding="8,3"
-                                    Background="Transparent" Foreground="{{Overlay0}}"
-                                    BorderBrush="{{Surface1}}" BorderThickness="1"
-                                    Cursor="Hand" FontSize="11"/>
-                        </StackPanel>
-                        <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
-                                BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
-                            <TextBox x:Name="txtCtxOutput" IsReadOnly="True" TextWrapping="Wrap"
-                                     VerticalScrollBarVisibility="Auto" Background="Transparent"
-                                     Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
-                                     BorderThickness="0" Padding="10" AcceptsReturn="True"/>
-                        </Border>
-                    </Grid>
-                </TabItem>
-
-                <!-- Tab 5: Check -->
+                <!-- Tab 4: Check -->
                 <TabItem Header="Check">
                     <Grid>
                         <Grid.RowDefinitions>

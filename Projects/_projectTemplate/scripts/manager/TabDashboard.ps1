@@ -1129,7 +1129,9 @@ function New-DashboardQueueShowMoreItem {
     param(
         [System.Windows.Window]$Window,
         [array]$Tasks,
-        [int]$LastBucketGroup
+        [int]$LastBucketGroup,
+        [int]$TotalVisible,
+        [int]$SnoozeCount
     )
     $tc = Get-ThemeColors -ThemeName $script:AppState.Theme
     $btn = New-Object System.Windows.Controls.Button
@@ -1150,7 +1152,7 @@ function New-DashboardQueueShowMoreItem {
     $btn.Cursor = [System.Windows.Input.Cursors]::Hand
     $btn.Focusable = $false
     $btn.FocusVisualStyle = $null
-    $btn.Tag = @{ Window = $Window; Tasks = $Tasks; LastBucketGroup = $LastBucketGroup }
+    $btn.Tag = @{ Window = $Window; Tasks = $Tasks; LastBucketGroup = $LastBucketGroup; TotalVisible = $TotalVisible; SnoozeCount = $SnoozeCount }
     $btn.Add_Click({
         param($sender, $e)
         try {
@@ -1174,6 +1176,12 @@ function New-DashboardQueueShowMoreItem {
                     $lastBucket = $bg
                 }
                 [void]$lst.Items.Add((New-DashboardTodayQueueListItem -Task $t -Window $d.Window))
+            }
+            $lbl = $d.Window.FindName("lblDashTodayQueueStatus")
+            if ($null -ne $lbl) {
+                $msg = "Dashboard Queue: $($d.TotalVisible) tasks (showing $($d.TotalVisible))"
+                if ($d.SnoozeCount -gt 0) { $msg += ", $($d.SnoozeCount) snoozed" }
+                $lbl.Text = $msg
             }
         } catch {
             [System.Windows.MessageBox]::Show($_.Exception.Message, "Error") | Out-Null
@@ -1201,7 +1209,7 @@ function New-DashboardTodayQueueListItem {
     $c1 = New-Object System.Windows.Controls.ColumnDefinition
     $c1.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
     $c2 = New-Object System.Windows.Controls.ColumnDefinition
-    $c2.Width = [System.Windows.GridLength]::new(80)
+    $c2.Width = [System.Windows.GridLength]::new(96)
     $c3 = New-Object System.Windows.Controls.ColumnDefinition
     $c3.Width = [System.Windows.GridLength]::Auto
     $c4 = New-Object System.Windows.Controls.ColumnDefinition
@@ -1233,12 +1241,26 @@ function New-DashboardTodayQueueListItem {
     $taskTitleForDisplay = $taskTitleForDisplay.Trim()
 
     $title = New-Object System.Windows.Controls.TextBlock
-    $title.Text = $taskTitleForDisplay
     $title.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
     $title.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
     $title.LineStackingStrategy = [System.Windows.LineStackingStrategy]::BlockLineHeight
     $title.LineHeight = 18
     $title.Margin = New-Object System.Windows.Thickness(0, 0, 0, 0)
+
+    $isSubtask = ($Task.ContainsKey('IsSubtask') -and [bool]$Task.IsSubtask)
+    $parentTitle = if ($Task.ContainsKey('ParentTitle')) { [string]$Task.ParentTitle } else { '' }
+    if ($isSubtask -and -not [string]::IsNullOrWhiteSpace($parentTitle)) {
+        $parentDisplay = ($parentTitle -replace '^\[[^\]]+\]\s*', '').Trim()
+        $runMain = New-Object System.Windows.Documents.Run($taskTitleForDisplay)
+        $title.Inlines.Add($runMain) | Out-Null
+        $runParent = New-Object System.Windows.Documents.Run("  < $parentDisplay")
+        $runParent.Foreground = New-ColorBrush $tc.Overlay0
+        $runParent.FontSize = 10
+        $title.Inlines.Add($runParent) | Out-Null
+    } else {
+        $title.Text = $taskTitleForDisplay
+    }
+
     [System.Windows.Controls.Grid]::SetColumn($title, 1)
     $row.Children.Add($title) | Out-Null
 
@@ -1628,7 +1650,7 @@ function Update-DashboardTodayQueueWidget {
 
         $remaining = $totalVisible - $showCount
         if ($remaining -gt 0) {
-            [void]$list.Items.Add((New-DashboardQueueShowMoreItem -Window $Window -Tasks @($visibleTasks[$showCount..($totalVisible - 1)]) -LastBucketGroup $lastBucketGroup))
+            [void]$list.Items.Add((New-DashboardQueueShowMoreItem -Window $Window -Tasks @($visibleTasks[$showCount..($totalVisible - 1)]) -LastBucketGroup $lastBucketGroup -TotalVisible $totalVisible -SnoozeCount $snoozeCount))
         }
 
         $statusMsg = "Dashboard Queue: $totalVisible tasks (showing $showCount)"

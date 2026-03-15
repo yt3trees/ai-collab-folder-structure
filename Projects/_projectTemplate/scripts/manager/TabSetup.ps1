@@ -11,6 +11,21 @@ function Initialize-TabSetup {
     $btnSetup = $Window.FindName("btnSetup")
     $btnSetupClear = $Window.FindName("btnSetupClear")
     $btnSetupBrowse = $Window.FindName("btnSetupBrowseExternalShared")
+    $setupAlsoContextLayer = $Window.FindName("setupAlsoContextLayer")
+    $setupForce = $Window.FindName("setupForce")
+
+    # Enable/disable setupForce based on setupAlsoContextLayer state
+    if ($null -ne $setupAlsoContextLayer -and $null -ne $setupForce) {
+        $setupAlsoContextLayer.Add_Checked({
+            $sf = $Window.FindName("setupForce")
+            if ($null -ne $sf) { $sf.IsEnabled = $true }
+        }).GetNewClosure()
+        $setupAlsoContextLayer.Add_Unchecked({
+            $sf = $Window.FindName("setupForce")
+            if ($null -ne $sf) { $sf.IsEnabled = $false }
+        }).GetNewClosure()
+        $setupForce.IsEnabled = ($setupAlsoContextLayer.IsChecked -eq $true)
+    }
 
     # Populate project dropdown
     foreach ($p in $ProjectList) {
@@ -140,6 +155,8 @@ function Initialize-TabSetup {
                     $ctxArgStr = "-ProjectName '$safeName'"
                     if ($params.IsMini) { $ctxArgStr += " -Mini" }
                     if ($params.IsDomain) { $ctxArgStr += " -Category domain" }
+                    $chkForce = $Window.FindName("setupForce")
+                    if ($null -ne $chkForce -and $chkForce.IsChecked -eq $true) { $ctxArgStr += " -Force" }
                     Invoke-ScriptWithOutput -ScriptPath $ctxScriptPath -ArgumentString $ctxArgStr `
                         -OutputBox $outputBox -WindowRef $Window
                 }
@@ -152,7 +169,7 @@ function Initialize-TabSetup {
             elseif ($params.IsMini) { $plainName = "$($params.Name) [Mini]" }
 
             $allCombos = @("setupProjectName", "checkProjectCombo", "archiveProjectCombo",
-                           "ctxProjectCombo", "convertProjectCombo", "editorProjectCombo",
+                           "convertProjectCombo", "editorProjectCombo",
                            "timelineProjectCombo")
             foreach ($comboName in $allCombos) {
                 $comboCtrl = $Window.FindName($comboName)

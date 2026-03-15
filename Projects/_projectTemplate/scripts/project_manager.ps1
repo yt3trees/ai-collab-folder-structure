@@ -69,7 +69,6 @@ else {
 . "$managerDir\TabSetup.ps1"
 . "$managerDir\TabCheck.ps1"
 . "$managerDir\TabArchive.ps1"
-. "$managerDir\TabContextSetup.ps1"
 . "$managerDir\TabConvert.ps1"
 . "$managerDir\TabAsanaSync.ps1"
 . "$managerDir\TabSettings.ps1"
@@ -276,7 +275,6 @@ Initialize-TabEditor       -Window $window
 Initialize-TabSetup        -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabCheck        -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabArchive      -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
-Initialize-TabContextSetup -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabConvert      -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabAsanaSync  -Window $window -ScriptDir $scriptDir
 Initialize-TabSettings     -Window $window -ScriptDir $scriptDir

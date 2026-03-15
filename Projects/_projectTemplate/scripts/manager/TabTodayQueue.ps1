@@ -153,52 +153,102 @@ function Get-TodayQueueTasksFromProject {
     $projectDisplay = Get-TodayQueueProjectDisplayName -ProjectInfo $ProjectInfo
     $tasks = [System.Collections.Generic.List[hashtable]]::new()
     $inProgress = $false
+    $currentParent = $null
 
     foreach ($line in $lines) {
         if ($line -match '^###\s*進行中') {
             $inProgress = $true
+            $currentParent = $null
             continue
         }
         if ($line -match '^###\s*完了') {
             $inProgress = $false
+            $currentParent = $null
             continue
         }
         if (-not $inProgress) { continue }
 
-        # Top-level unchecked task only.
-        if ($line -notmatch '^\s{0,2}-\s+\[\s\]\s+(.+)$') { continue }
-        $body = $Matches[1].Trim()
-        if ([string]::IsNullOrWhiteSpace($body)) { continue }
-        if ($body -match '^<!--\s*Memo area') { continue }
+        # ---- Branch 1: top-level task (checked OR unchecked) ----
+        if ($line -match '^\s{0,2}-\s+\[[\sx]\]\s+(.+)$') {
+            $body = $Matches[1].Trim()
+            if ([string]::IsNullOrWhiteSpace($body)) { continue }
+            if ($body -match '^<!--\s*Memo area') { $currentParent = $null; continue }
 
-        $dueDate = $null
-        if ($body -match '\(Due:\s*(\d{4}-\d{2}-\d{2})\)') {
-            try { $dueDate = [datetime]::ParseExact($Matches[1], "yyyy-MM-dd", $null) } catch { $dueDate = $null }
-        }
-
-        $asanaUrl = $null
-        $asanaTaskGid = $null
-        if ($body -match '\[\[Asana\]\((https?://[^)]+)\)\]\s*$') {
-            $asanaUrl = [string]$Matches[1]
-            $urlWithoutQuery = ($asanaUrl -split '\?')[0].TrimEnd('/')
-            if ($urlWithoutQuery -match '/(\d+)$') {
-                $asanaTaskGid = [string]$Matches[1]
+            $dueDate = $null
+            if ($body -match '\(Due:\s*(\d{4}-\d{2}-\d{2})\)') {
+                try { $dueDate = [datetime]::ParseExact($Matches[1], "yyyy-MM-dd", $null) } catch { $dueDate = $null }
             }
-        }
 
-        $title = $body -replace '\s+\[\[Asana\]\([^)]+\)\]\s*$', ''
-        $title = $title -replace '\s+\(Due:\s*\d{4}-\d{2}-\d{2}\)\s*$', ''
-        $title = $title -replace '^\[(担当|コラボ|他)\]\s*', ''
-        if ([string]::IsNullOrWhiteSpace($title)) { $title = "(untitled task)" }
+            $asanaUrl = $null
+            $asanaTaskGid = $null
+            if ($body -match '\[\[Asana\]\((https?://[^)]+)\)\]\s*$') {
+                $asanaUrl = [string]$Matches[1]
+                $urlWithoutQuery = ($asanaUrl -split '\?')[0].TrimEnd('/')
+                if ($urlWithoutQuery -match '/(\d+)$') {
+                    $asanaTaskGid = [string]$Matches[1]
+                }
+            }
 
-        $tasks.Add(@{
+            $title = $body -replace '\s+\[\[Asana\]\([^)]+\)\]\s*$', ''
+            $title = $title -replace '\s+\(Due:\s*\d{4}-\d{2}-\d{2}\)\s*$', ''
+            $title = $title -replace '^\[(担当|コラボ|他)\]\s*', ''
+            if ([string]::IsNullOrWhiteSpace($title)) { $title = "(untitled task)" }
+
+            $taskObj = @{
                 ProjectDisplayName = $projectDisplay
                 Title              = $title
                 DueDate            = $dueDate
                 StartFile          = $sourceFile
                 AsanaUrl           = $asanaUrl
                 AsanaTaskGid       = $asanaTaskGid
+                IsSubtask          = $false
+            }
+            $currentParent = $taskObj
+
+            $isUnchecked = ($line -match '^\s{0,2}-\s+\[\s\]\s+')
+            if ($isUnchecked) { $tasks.Add($taskObj) | Out-Null }
+            continue
+        }
+
+        # ---- Branch 2: unchecked subtask (4-space indent) ----
+        if ($null -ne $currentParent -and $line -match '^\s{4}-\s+\[\s\]\s+(.+)$') {
+            $body = $Matches[1].Trim()
+            if ([string]::IsNullOrWhiteSpace($body)) { continue }
+            if ($body -match '^<!--') { continue }
+
+            $subDueDate = $null
+            if ($body -match '\(Due:\s*(\d{4}-\d{2}-\d{2})\)') {
+                try { $subDueDate = [datetime]::ParseExact($Matches[1], "yyyy-MM-dd", $null) } catch { $subDueDate = $null }
+            }
+            if ($null -eq $subDueDate) { $subDueDate = $currentParent.DueDate }
+
+            $subAsanaUrl = $null
+            $subAsanaTaskGid = $null
+            if ($body -match '\[\[Asana\]\((https?://[^)]+)\)\]\s*$') {
+                $subAsanaUrl = [string]$Matches[1]
+                $urlWithoutQuery = ($subAsanaUrl -split '\?')[0].TrimEnd('/')
+                if ($urlWithoutQuery -match '/(\d+)$') {
+                    $subAsanaTaskGid = [string]$Matches[1]
+                }
+            }
+
+            $subTitle = $body -replace '\s+\[\[Asana\]\([^)]+\)\]\s*$', ''
+            $subTitle = $subTitle -replace '\s+\(Due:\s*\d{4}-\d{2}-\d{2}\)\s*$', ''
+            if ([string]::IsNullOrWhiteSpace($subTitle)) { $subTitle = "(untitled subtask)" }
+
+            $tasks.Add(@{
+                ProjectDisplayName = $currentParent.ProjectDisplayName
+                Title              = $subTitle
+                DueDate            = $subDueDate
+                StartFile          = $currentParent.StartFile
+                AsanaUrl           = $subAsanaUrl
+                AsanaTaskGid       = $subAsanaTaskGid
+                IsSubtask          = $true
+                ParentTitle        = $currentParent.Title
             }) | Out-Null
+            continue
+        }
+        # Other lines (blockquote >, blank lines, etc.) are skipped
     }
 
     return $tasks
