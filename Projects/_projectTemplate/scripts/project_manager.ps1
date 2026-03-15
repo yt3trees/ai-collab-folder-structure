@@ -71,6 +71,7 @@ else {
 . "$managerDir\TabArchive.ps1"
 . "$managerDir\TabConvert.ps1"
 . "$managerDir\TabAsanaSync.ps1"
+. "$managerDir\TabGitRepos.ps1"
 . "$managerDir\TabSettings.ps1"
 . "$managerDir\TabTimeline.ps1"
 . "$managerDir\TabTodayQueue.ps1"
@@ -274,6 +275,7 @@ Initialize-TabDashboard    -Window $window -ScriptDir $scriptDir
 Initialize-TabEditor       -Window $window
 Initialize-TabSetup        -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabAsanaSync  -Window $window -ScriptDir $scriptDir
+Initialize-TabGitRepos   -Window $window
 Initialize-TabSettings     -Window $window -ScriptDir $scriptDir
 Initialize-TabTimeline     -Window $window
 Initialize-CommandPalette  -Window $window
