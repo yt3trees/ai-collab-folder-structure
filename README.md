@@ -169,7 +169,7 @@ After BOX sync completes, just re-run setup from the Setup tab to recreate junct
 
 | Tab | Function |
 |-----|----------|
-| Dashboard | Project overview + 30-day Activity Bar |
+| Dashboard | Project overview + 30-day Activity Bar + Today Queue (Asana Done) |
 | Timeline | Chronological activity history from focus_history / decision_log |
 | Editor | Quick access to AI context files and Asana tasks, Markdown editing |
 | Asana Sync | Sync Asana tasks to Markdown (manual / scheduled auto-sync) |
