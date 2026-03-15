@@ -154,7 +154,7 @@ function Build-CommandList {
                 Action   = {
                     param($w)
                     $tabMain = $w.FindName("tabMain")
-                    $tabMain.SelectedIndex = 5
+                    $tabMain.SelectedIndex = 3
                     $combo = $w.FindName("checkProjectCombo")
                     $combo.Text = $displayName
                     $w.FindName("checkMini").IsChecked = $localIsMini

@@ -7,7 +7,7 @@ function Build-MainWindowXaml {
     $styles = Get-ThemeResourcesXaml -ThemeName $ThemeName
     $c = Get-ThemeColors -ThemeName $ThemeName
 
-    # Tab indices: 0=Dashboard, 1=Editor, 2=Timeline, 3=Setup, 4=Asana Sync, 5=Git Repos, 6=Settings
+    # Tab indices: 0=Dashboard, 1=Editor, 2=Timeline, 3=Git Repos, 4=Asana Sync, 5=Setup, 6=Settings
     $xamlTemplate = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -374,7 +374,170 @@ function Build-MainWindowXaml {
                     </Grid>
                 </TabItem>
 
-                <!-- Tab 3: Setup (contains sub-tabs: New / Check / Archive / Convert) -->
+                <!-- Tab 3: Git Repos -->
+                <TabItem Header="Git Repos">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Toolbar -->
+                        <Grid Grid.Row="0" Margin="12,10,12,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Project:" VerticalAlignment="Center"
+                                       Foreground="{{Subtext0}}" Margin="0,0,8,0" FontSize="12"/>
+                            <ComboBox x:Name="gitReposProjectCombo" Grid.Column="1"
+                                      FontSize="12" Padding="6,4" Margin="0,0,8,0"/>
+                            <Button x:Name="gitReposScanBtn" Grid.Column="2"
+                                    Content="Scan" Style="{StaticResource SmallButton}" Margin="0,0,6,0"/>
+                            <Button x:Name="gitReposSaveBtn" Grid.Column="3"
+                                    Content="Save to BOX" Style="{StaticResource SmallButton}"
+                                    IsEnabled="False" Margin="0,0,6,0"/>
+                            <Button x:Name="gitReposCopyCloneBtn" Grid.Column="4"
+                                    Content="Copy Clone Script" Style="{StaticResource SmallButton}"
+                                    IsEnabled="False" Margin="0,0,6,0"/>
+                            <Button x:Name="gitReposLoadBoxBtn" Grid.Column="5"
+                                    Content="Load from BOX" Style="{StaticResource SmallButton}"
+                                    Margin="0,0,6,0"/>
+                        </Grid>
+
+                        <!-- Column headers -->
+                        <Grid Grid.Row="1" Margin="20,0,20,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="160"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Project" Foreground="{{Subtext0}}"
+                                       FontSize="11" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Column="1" Text="Repository" Foreground="{{Subtext0}}"
+                                       FontSize="11" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Column="2" Text="Remote URL" Foreground="{{Subtext0}}"
+                                       FontSize="11" FontWeight="SemiBold" Margin="8,0,0,0"/>
+                            <TextBlock Grid.Column="3" Text="Branch" Foreground="{{Subtext0}}"
+                                       FontSize="11" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Column="4" Text="Last Commit" Foreground="{{Subtext0}}"
+                                       FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                        </Grid>
+
+                        <!-- Repo list -->
+                        <ScrollViewer Grid.Row="2" Margin="12,0,12,4"
+                                      VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="gitReposEntriesPanel" Orientation="Vertical"/>
+                        </ScrollViewer>
+
+                        <!-- Status bar -->
+                        <TextBlock x:Name="gitReposStatus" Grid.Row="3"
+                                   Foreground="{{Subtext1}}" FontSize="11"
+                                   Margin="12,4,12,8"/>
+                    </Grid>
+                </TabItem>
+
+                <!-- Tab 4: Asana Sync -->
+                <TabItem Header="Asana Sync">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="420">
+                            <StackPanel Margin="16">
+                                <TextBlock Text="Manual Execution" Foreground="{{Mauve}}" FontSize="15"
+                                           FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <Button x:Name="btnAsanaSync" Content="Run Sync Now"
+                                        Style="{StaticResource RunButton}"/>
+
+                                <TextBlock Text="Scheduled Execution" Foreground="{{Mauve}}" FontSize="15"
+                                           FontWeight="SemiBold" Margin="0,20,0,8"/>
+                                <CheckBox x:Name="chkAsanaSchedule"
+                                          Content="Enable scheduled sync"
+                                          Margin="0,0,0,8"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="Interval (min): " Foreground="{{Subtext0}}" FontSize="13"
+                                               VerticalAlignment="Center"/>
+                                    <TextBox x:Name="txtAsanaInterval" Text="60" Width="80"
+                                             HorizontalAlignment="Left"/>
+                                </StackPanel>
+
+                                <Button x:Name="btnAsanaSaveSchedule" Content="Save Schedule"
+                                        Padding="12,4" Background="{{Surface1}}" Foreground="{{Text}}"
+                                        BorderBrush="{{Surface2}}" BorderThickness="1" Cursor="Hand"
+                                        FontSize="12" HorizontalAlignment="Left" Margin="0,0,0,12"/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBlock Text="Last Sync: " Foreground="{{Subtext0}}" FontSize="13"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="lblAsanaLastSync" Text="---" Foreground="{{Green}}"
+                                               FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <!-- asana_config.json editor -->
+                                <TextBlock Text="Project asana_config.json" Foreground="{{Mauve}}" FontSize="15"
+                                           FontWeight="SemiBold" Margin="0,20,0,8"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <ComboBox x:Name="cmbAsanaConfigProject" Width="260" HorizontalAlignment="Left"/>
+                                    <Button x:Name="btnAsanaConfigLoad" Content="Load"
+                                            Margin="8,0,0,0" Padding="10,4"
+                                            Background="{{Surface1}}" Foreground="{{Text}}"
+                                            BorderBrush="{{Surface2}}" BorderThickness="1"
+                                            Cursor="Hand" FontSize="12"/>
+                                </StackPanel>
+                                <TextBlock Text="Asana Project GIDs (one per line):" Foreground="{{Subtext0}}"
+                                           FontSize="12" Margin="0,0,0,3"/>
+                                <TextBox x:Name="txtAsanaConfigGids" Height="64" AcceptsReturn="True"
+                                         TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto"
+                                         FontFamily="Consolas" FontSize="12" Padding="6,4" Margin="0,0,0,8"/>
+                                <TextBlock Text="Anken Aliases (optional, one per line):" Foreground="{{Subtext0}}"
+                                           FontSize="12" Margin="0,0,0,3"/>
+                                <TextBox x:Name="txtAsanaConfigAliases" Height="48" AcceptsReturn="True"
+                                         TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto"
+                                         FontFamily="Consolas" FontSize="12" Padding="6,4" Margin="0,0,0,8"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <Button x:Name="btnAsanaConfigSave" Content="Save Config"
+                                            Padding="12,4" Background="{{Surface1}}" Foreground="{{Text}}"
+                                            BorderBrush="{{Surface2}}" BorderThickness="1"
+                                            Cursor="Hand" FontSize="12" HorizontalAlignment="Left"/>
+                                    <TextBlock x:Name="lblAsanaConfigStatus" Text="" Foreground="{{Green}}"
+                                               FontSize="12" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
+                            <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
+                                       VerticalAlignment="Center"/>
+                            <Button x:Name="btnAsanaClear" Content="Clear"
+                                    Margin="10,0,0,0" Padding="8,3"
+                                    Background="Transparent" Foreground="{{Overlay0}}"
+                                    BorderBrush="{{Surface1}}" BorderThickness="1"
+                                    Cursor="Hand" FontSize="11"/>
+                        </StackPanel>
+                        <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
+                                BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
+                            <TextBox x:Name="txtAsanaOutput" IsReadOnly="True" TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto" Background="Transparent"
+                                     Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
+                                     BorderThickness="0" Padding="10" AcceptsReturn="True"/>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+                <!-- Tab 5: Setup (contains sub-tabs: New / Check / Archive / Convert) -->
                 <TabItem Header="Setup">
                     <TabControl BorderBrush="{{Surface1}}" Margin="0,4,0,0">
 
@@ -577,170 +740,7 @@ function Build-MainWindowXaml {
                     </TabControl>
                 </TabItem>
 
-                <!-- Tab 8: Asana Sync -->
-                <TabItem Header="Asana Sync">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="420">
-                            <StackPanel Margin="16">
-                                <TextBlock Text="Manual Execution" Foreground="{{Mauve}}" FontSize="15"
-                                           FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                <Button x:Name="btnAsanaSync" Content="Run Sync Now"
-                                        Style="{StaticResource RunButton}"/>
-
-                                <TextBlock Text="Scheduled Execution" Foreground="{{Mauve}}" FontSize="15"
-                                           FontWeight="SemiBold" Margin="0,20,0,8"/>
-                                <CheckBox x:Name="chkAsanaSchedule"
-                                          Content="Enable scheduled sync"
-                                          Margin="0,0,0,8"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <TextBlock Text="Interval (min): " Foreground="{{Subtext0}}" FontSize="13"
-                                               VerticalAlignment="Center"/>
-                                    <TextBox x:Name="txtAsanaInterval" Text="60" Width="80"
-                                             HorizontalAlignment="Left"/>
-                                </StackPanel>
-
-                                <Button x:Name="btnAsanaSaveSchedule" Content="Save Schedule"
-                                        Padding="12,4" Background="{{Surface1}}" Foreground="{{Text}}"
-                                        BorderBrush="{{Surface2}}" BorderThickness="1" Cursor="Hand"
-                                        FontSize="12" HorizontalAlignment="Left" Margin="0,0,0,12"/>
-
-                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                    <TextBlock Text="Last Sync: " Foreground="{{Subtext0}}" FontSize="13"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock x:Name="lblAsanaLastSync" Text="---" Foreground="{{Green}}"
-                                               FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                </StackPanel>
-
-                                <!-- asana_config.json editor -->
-                                <TextBlock Text="Project asana_config.json" Foreground="{{Mauve}}" FontSize="15"
-                                           FontWeight="SemiBold" Margin="0,20,0,8"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <ComboBox x:Name="cmbAsanaConfigProject" Width="260" HorizontalAlignment="Left"/>
-                                    <Button x:Name="btnAsanaConfigLoad" Content="Load"
-                                            Margin="8,0,0,0" Padding="10,4"
-                                            Background="{{Surface1}}" Foreground="{{Text}}"
-                                            BorderBrush="{{Surface2}}" BorderThickness="1"
-                                            Cursor="Hand" FontSize="12"/>
-                                </StackPanel>
-                                <TextBlock Text="Asana Project GIDs (one per line):" Foreground="{{Subtext0}}"
-                                           FontSize="12" Margin="0,0,0,3"/>
-                                <TextBox x:Name="txtAsanaConfigGids" Height="64" AcceptsReturn="True"
-                                         TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto"
-                                         FontFamily="Consolas" FontSize="12" Padding="6,4" Margin="0,0,0,8"/>
-                                <TextBlock Text="Anken Aliases (optional, one per line):" Foreground="{{Subtext0}}"
-                                           FontSize="12" Margin="0,0,0,3"/>
-                                <TextBox x:Name="txtAsanaConfigAliases" Height="48" AcceptsReturn="True"
-                                         TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto"
-                                         FontFamily="Consolas" FontSize="12" Padding="6,4" Margin="0,0,0,8"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                    <Button x:Name="btnAsanaConfigSave" Content="Save Config"
-                                            Padding="12,4" Background="{{Surface1}}" Foreground="{{Text}}"
-                                            BorderBrush="{{Surface2}}" BorderThickness="1"
-                                            Cursor="Hand" FontSize="12" HorizontalAlignment="Left"/>
-                                    <TextBlock x:Name="lblAsanaConfigStatus" Text="" Foreground="{{Green}}"
-                                               FontSize="12" VerticalAlignment="Center" Margin="12,0,0,0"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </ScrollViewer>
-
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
-                            <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
-                                       VerticalAlignment="Center"/>
-                            <Button x:Name="btnAsanaClear" Content="Clear"
-                                    Margin="10,0,0,0" Padding="8,3"
-                                    Background="Transparent" Foreground="{{Overlay0}}"
-                                    BorderBrush="{{Surface1}}" BorderThickness="1"
-                                    Cursor="Hand" FontSize="11"/>
-                        </StackPanel>
-                        <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
-                                BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
-                            <TextBox x:Name="txtAsanaOutput" IsReadOnly="True" TextWrapping="Wrap"
-                                     VerticalScrollBarVisibility="Auto" Background="Transparent"
-                                     Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
-                                     BorderThickness="0" Padding="10" AcceptsReturn="True"/>
-                        </Border>
-                    </Grid>
-                </TabItem>
-
-                <!-- Tab 5: Git Repos -->
-                <TabItem Header="Git Repos">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <!-- Toolbar -->
-                        <Grid Grid.Row="0" Margin="12,10,12,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="220"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Project:" VerticalAlignment="Center"
-                                       Foreground="{{Subtext0}}" Margin="0,0,8,0" FontSize="12"/>
-                            <ComboBox x:Name="gitReposProjectCombo" Grid.Column="1"
-                                      FontSize="12" Padding="6,4" Margin="0,0,8,0"/>
-                            <Button x:Name="gitReposScanBtn" Grid.Column="2"
-                                    Content="Scan" Style="{StaticResource SmallButton}" Margin="0,0,6,0"/>
-                            <Button x:Name="gitReposSaveBtn" Grid.Column="3"
-                                    Content="Save to BOX" Style="{StaticResource SmallButton}"
-                                    IsEnabled="False" Margin="0,0,6,0"/>
-                            <Button x:Name="gitReposCopyCloneBtn" Grid.Column="4"
-                                    Content="Copy Clone Script" Style="{StaticResource SmallButton}"
-                                    IsEnabled="False" Margin="0,0,6,0"/>
-                            <Button x:Name="gitReposLoadBoxBtn" Grid.Column="5"
-                                    Content="Load from BOX" Style="{StaticResource SmallButton}"
-                                    Margin="0,0,6,0"/>
-                        </Grid>
-
-                        <!-- Column headers -->
-                        <Grid Grid.Row="1" Margin="20,0,20,2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="120"/>
-                                <ColumnDefinition Width="160"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="110"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Project" Foreground="{{Subtext0}}"
-                                       FontSize="11" FontWeight="SemiBold"/>
-                            <TextBlock Grid.Column="1" Text="Repository" Foreground="{{Subtext0}}"
-                                       FontSize="11" FontWeight="SemiBold"/>
-                            <TextBlock Grid.Column="2" Text="Remote URL" Foreground="{{Subtext0}}"
-                                       FontSize="11" FontWeight="SemiBold" Margin="8,0,0,0"/>
-                            <TextBlock Grid.Column="3" Text="Branch" Foreground="{{Subtext0}}"
-                                       FontSize="11" FontWeight="SemiBold"/>
-                            <TextBlock Grid.Column="4" Text="Last Commit" Foreground="{{Subtext0}}"
-                                       FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right"/>
-                        </Grid>
-
-                        <!-- Repo list -->
-                        <ScrollViewer Grid.Row="2" Margin="12,0,12,4"
-                                      VerticalScrollBarVisibility="Auto">
-                            <StackPanel x:Name="gitReposEntriesPanel" Orientation="Vertical"/>
-                        </ScrollViewer>
-
-                        <!-- Status bar -->
-                        <TextBlock x:Name="gitReposStatus" Grid.Row="3"
-                                   Foreground="{{Subtext1}}" FontSize="11"
-                                   Margin="12,4,12,8"/>
-                    </Grid>
-                </TabItem>
-
-                <!-- Tab 6 (was 9): Settings -->
+                <!-- Tab 6: Settings -->
                 <TabItem Header="Settings">
                     <Grid>
                         <Grid.RowDefinitions>

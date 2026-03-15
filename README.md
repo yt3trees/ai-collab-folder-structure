@@ -155,7 +155,7 @@ mini tier omits `_ai-workspace/` for a lighter footprint.
 
 ### 2. Launch the GUI Manager
 
-Double-click `exec_project_manager.cmd`, or use the global hotkey to show the window.
+Double-click `_exec_project_manager.cmd`, or use the global hotkey to show the window.
 
 ### 3. Create a project
 
@@ -170,14 +170,11 @@ After BOX sync completes, just re-run setup from the Setup tab to recreate junct
 | Tab | Function |
 |-----|----------|
 | Dashboard | Project overview + 30-day Activity Bar + Today Queue (Asana Done) |
-| Timeline | Chronological activity history from focus_history / decision_log |
 | Editor | Quick access to AI context files and Asana tasks, Markdown editing |
+| Timeline | Chronological activity history from focus_history / decision_log |
+| Git Repos | List and manage Git repositories per project |
 | Asana Sync | Sync Asana tasks to Markdown (manual / scheduled auto-sync) |
-| Setup | Create project (select Tier) |
-| Convert | Convert between tiers (full <-> mini) |
-| AI Context | Set up Context Compression Layer |
-| Check | Health check for existing projects |
-| Archive | Archive with DryRun preview (moves all 3 layers to `_archive/`) |
+| Setup | Create project / health check / archive / tier conversion (sub-tabs: New, Check, Archive, Convert) |
 | Settings | Configure hotkey, Windows startup registration |
 
 System tray resident / Global hotkey / Catppuccin Mocha dark theme
