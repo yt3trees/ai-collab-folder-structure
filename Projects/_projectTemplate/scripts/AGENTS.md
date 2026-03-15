@@ -120,7 +120,8 @@ FeatureMorningBriefing.ps1 -> Invoke-MorningBriefing
 `TabTodayQueue.ps1` provides the Today Queue widget embedded in the Dashboard tab (not a standalone tab). Key exports: `Get-TodayQueueTasksFromProject`, `Get-TodayQueuePriority`, `Invoke-TodayQueueCompleteAsanaTask`, `Select-TodayQueueProjectInEditor`. These are called cross-module from `TabDashboard.ps1`; guarded with `Get-Command` checks.
 
 Tab index mapping — source of truth is the comment at the top of `XamlBuilder.ps1`:
-- 0=Dashboard, 1=Editor, 2=Timeline, 3=Setup, 4=AI Context, 5=Check, 6=Archive, 7=Convert, 8=Asana Sync, 9=Settings
+- 0=Dashboard, 1=Editor, 2=Timeline, 3=Setup, 4=Asana Sync, 5=Settings
+- Setup tab contains internal sub-tabs: 0=New, 1=Check, 2=Archive, 3=Convert
 
 ## AppState
 

@@ -198,4 +198,9 @@ function Initialize-TabSetup {
             $script:ProjectInfoCache = $null
             $script:ProjectInfoCacheTime = [datetime]::MinValue
         }).GetNewClosure()
+
+    # Initialize sub-tab modules (Check / Archive / Convert live inside the Setup TabControl)
+    Initialize-TabCheck   -Window $Window -ScriptDir $ScriptDir -ProjectList $ProjectList
+    Initialize-TabArchive -Window $Window -ScriptDir $ScriptDir -ProjectList $ProjectList
+    Initialize-TabConvert -Window $Window -ScriptDir $ScriptDir -ProjectList $ProjectList
 }

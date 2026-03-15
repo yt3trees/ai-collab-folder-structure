@@ -273,9 +273,6 @@ $window.Add_Closed({
 Initialize-TabDashboard    -Window $window -ScriptDir $scriptDir
 Initialize-TabEditor       -Window $window
 Initialize-TabSetup        -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
-Initialize-TabCheck        -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
-Initialize-TabArchive      -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
-Initialize-TabConvert      -Window $window -ScriptDir $scriptDir -ProjectList $projectNameList
 Initialize-TabAsanaSync  -Window $window -ScriptDir $scriptDir
 Initialize-TabSettings     -Window $window -ScriptDir $scriptDir
 Initialize-TabTimeline     -Window $window

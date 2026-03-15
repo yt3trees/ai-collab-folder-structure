@@ -7,7 +7,7 @@ function Build-MainWindowXaml {
     $styles = Get-ThemeResourcesXaml -ThemeName $ThemeName
     $c = Get-ThemeColors -ThemeName $ThemeName
 
-    # Tab indices: 0=Dashboard, 1=Editor, 2=Timeline, 3=Setup, 4=Check, 5=Archive, 6=Convert, 7=Asana Sync, 8=Settings
+    # Tab indices: 0=Dashboard, 1=Editor, 2=Timeline, 3=Setup, 4=Asana Sync, 5=Settings
     $xamlTemplate = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -374,200 +374,207 @@ function Build-MainWindowXaml {
                     </Grid>
                 </TabItem>
 
-                <!-- Tab 3: Setup -->
+                <!-- Tab 3: Setup (contains sub-tabs: New / Check / Archive / Convert) -->
                 <TabItem Header="Setup">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                    <TabControl BorderBrush="{{Surface1}}" Margin="0,4,0,0">
 
-                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="360">
-                            <StackPanel Margin="16">
-                                <Label Content="Project Name (required)"/>
-                                <ComboBox x:Name="setupProjectName" IsEditable="True"/>
+                        <!-- Sub-tab 0: New -->
+                        <TabItem Header="New">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
 
-                                <Label Content="Tier"/>
-                                <ComboBox x:Name="setupTier" SelectedIndex="0">
-                                    <ComboBoxItem Content="full"/>
-                                    <ComboBoxItem Content="mini"/>
-                                </ComboBox>
-                                <Label Content="Category"/>
-                                <ComboBox x:Name="setupCategory" SelectedIndex="0">
-                                    <ComboBoxItem Content="project"/>
-                                    <ComboBoxItem Content="domain"/>
-                                </ComboBox>
-                                <Label Content="External Shared Folders (Optional, one path per line)"/>
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBox x:Name="setupExternalShared" Grid.Column="0" Margin="0,0,8,0"
-                                             AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44" MaxHeight="88"
-                                             VerticalScrollBarVisibility="Auto"/>
-                                    <Button x:Name="btnSetupBrowseExternalShared" Grid.Column="1" Content="Add..." Width="40" Height="22" VerticalAlignment="Top" Background="{{Surface0}}" Foreground="{{Text}}" BorderBrush="{{Surface1}}"/>
-                                </Grid>
-                                <CheckBox x:Name="setupAlsoContextLayer"
-                                          Content="Also run AI Context Setup"
-                                          IsChecked="True" Foreground="{{Subtext0}}" Margin="0,4,0,0"/>
-                                <CheckBox x:Name="setupForce"
-                                          Content="Overwrite existing skills (-Force)"
-                                          Margin="20,4,0,0" Foreground="{{Subtext0}}"/>
-                                <Button x:Name="btnSetup" Content="Run Setup"
-                                        Style="{StaticResource RunButton}"/>
-                            </StackPanel>
-                        </ScrollViewer>
+                                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="360">
+                                    <StackPanel Margin="16">
+                                        <Label Content="Project Name (required)"/>
+                                        <ComboBox x:Name="setupProjectName" IsEditable="True"/>
 
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
-                            <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
-                                       VerticalAlignment="Center"/>
-                            <Button x:Name="btnSetupClear" Content="Clear"
-                                    Margin="10,0,0,0" Padding="8,3"
-                                    Background="Transparent" Foreground="{{Overlay0}}"
-                                    BorderBrush="{{Surface1}}" BorderThickness="1"
-                                    Cursor="Hand" FontSize="11"/>
-                        </StackPanel>
-                        <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
-                                BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
-                            <TextBox x:Name="txtSetupOutput" IsReadOnly="True" TextWrapping="Wrap"
-                                     VerticalScrollBarVisibility="Auto" Background="Transparent"
-                                     Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
-                                     BorderThickness="0" Padding="10" AcceptsReturn="True"/>
-                        </Border>
-                    </Grid>
-                </TabItem>
+                                        <Label Content="Tier"/>
+                                        <ComboBox x:Name="setupTier" SelectedIndex="0">
+                                            <ComboBoxItem Content="full"/>
+                                            <ComboBoxItem Content="mini"/>
+                                        </ComboBox>
+                                        <Label Content="Category"/>
+                                        <ComboBox x:Name="setupCategory" SelectedIndex="0">
+                                            <ComboBoxItem Content="project"/>
+                                            <ComboBoxItem Content="domain"/>
+                                        </ComboBox>
+                                        <Label Content="External Shared Folders (Optional, one path per line)"/>
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox x:Name="setupExternalShared" Grid.Column="0" Margin="0,0,8,0"
+                                                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44" MaxHeight="88"
+                                                     VerticalScrollBarVisibility="Auto"/>
+                                            <Button x:Name="btnSetupBrowseExternalShared" Grid.Column="1" Content="Add..." Width="40" Height="22" VerticalAlignment="Top" Background="{{Surface0}}" Foreground="{{Text}}" BorderBrush="{{Surface1}}"/>
+                                        </Grid>
+                                        <CheckBox x:Name="setupAlsoContextLayer"
+                                                  Content="Also run AI Context Setup"
+                                                  IsChecked="True" Foreground="{{Subtext0}}" Margin="0,4,0,0"/>
+                                        <CheckBox x:Name="setupForce"
+                                                  Content="Overwrite existing skills (-Force)"
+                                                  Margin="20,4,0,0" Foreground="{{Subtext0}}"/>
+                                        <Button x:Name="btnSetup" Content="Run Setup"
+                                                Style="{StaticResource RunButton}"/>
+                                    </StackPanel>
+                                </ScrollViewer>
 
-                <!-- Tab 4: Check -->
-                <TabItem Header="Check">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
+                                    <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="btnSetupClear" Content="Clear"
+                                            Margin="10,0,0,0" Padding="8,3"
+                                            Background="Transparent" Foreground="{{Overlay0}}"
+                                            BorderBrush="{{Surface1}}" BorderThickness="1"
+                                            Cursor="Hand" FontSize="11"/>
+                                </StackPanel>
+                                <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
+                                        BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
+                                    <TextBox x:Name="txtSetupOutput" IsReadOnly="True" TextWrapping="Wrap"
+                                             VerticalScrollBarVisibility="Auto" Background="Transparent"
+                                             Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
+                                             BorderThickness="0" Padding="10" AcceptsReturn="True"/>
+                                </Border>
+                            </Grid>
+                        </TabItem>
 
-                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="200">
-                            <StackPanel Margin="16">
-                                <Label Content="Project Name"/>
-                                <ComboBox x:Name="checkProjectCombo" IsEditable="True"/>
-                                <CheckBox x:Name="checkMini" Content="Mini tier project (-Mini)"
-                                          Margin="0,10,0,0"/>
-                                <CheckBox x:Name="checkDomain" Content="Domain project (-Category domain)"
-                                          Margin="0,6,0,0"/>
-                                <Button x:Name="btnCheck" Content="Run Check"
-                                        Style="{StaticResource RunButton}"/>
-                            </StackPanel>
-                        </ScrollViewer>
+                        <!-- Sub-tab 1: Check -->
+                        <TabItem Header="Check">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
 
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
-                            <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
-                                       VerticalAlignment="Center"/>
-                            <Button x:Name="btnCheckClear" Content="Clear"
-                                    Margin="10,0,0,0" Padding="8,3"
-                                    Background="Transparent" Foreground="{{Overlay0}}"
-                                    BorderBrush="{{Surface1}}" BorderThickness="1"
-                                    Cursor="Hand" FontSize="11"/>
-                        </StackPanel>
-                        <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
-                                BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
-                            <TextBox x:Name="txtCheckOutput" IsReadOnly="True" TextWrapping="Wrap"
-                                     VerticalScrollBarVisibility="Auto" Background="Transparent"
-                                     Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
-                                     BorderThickness="0" Padding="10" AcceptsReturn="True"/>
-                        </Border>
-                    </Grid>
-                </TabItem>
+                                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="200">
+                                    <StackPanel Margin="16">
+                                        <Label Content="Project Name"/>
+                                        <ComboBox x:Name="checkProjectCombo" IsEditable="True"/>
+                                        <CheckBox x:Name="checkMini" Content="Mini tier project (-Mini)"
+                                                  Margin="0,10,0,0"/>
+                                        <CheckBox x:Name="checkDomain" Content="Domain project (-Category domain)"
+                                                  Margin="0,6,0,0"/>
+                                        <Button x:Name="btnCheck" Content="Run Check"
+                                                Style="{StaticResource RunButton}"/>
+                                    </StackPanel>
+                                </ScrollViewer>
 
-                <!-- Tab 6: Archive -->
-                <TabItem Header="Archive">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
+                                    <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="btnCheckClear" Content="Clear"
+                                            Margin="10,0,0,0" Padding="8,3"
+                                            Background="Transparent" Foreground="{{Overlay0}}"
+                                            BorderBrush="{{Surface1}}" BorderThickness="1"
+                                            Cursor="Hand" FontSize="11"/>
+                                </StackPanel>
+                                <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
+                                        BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
+                                    <TextBox x:Name="txtCheckOutput" IsReadOnly="True" TextWrapping="Wrap"
+                                             VerticalScrollBarVisibility="Auto" Background="Transparent"
+                                             Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
+                                             BorderThickness="0" Padding="10" AcceptsReturn="True"/>
+                                </Border>
+                            </Grid>
+                        </TabItem>
 
-                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="240">
-                            <StackPanel Margin="16">
-                                <Label Content="Project Name"/>
-                                <ComboBox x:Name="archiveProjectCombo" IsEditable="True"/>
-                                <CheckBox x:Name="archiveMini" Content="Mini tier project (-Mini)"
-                                          Margin="0,10,0,0"/>
-                                <CheckBox x:Name="archiveDomain" Content="Domain project (-Category domain)"
-                                          Margin="0,6,0,0"/>
-                                <CheckBox x:Name="archiveDryRun"
-                                          Content="Dry Run (preview only, no changes)"
-                                          IsChecked="True" Margin="0,6,0,0"/>
-                                <Button x:Name="btnArchive" Content="Run Archive"
-                                        Style="{StaticResource DangerButton}"/>
-                            </StackPanel>
-                        </ScrollViewer>
+                        <!-- Sub-tab 2: Archive -->
+                        <TabItem Header="Archive">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
 
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
-                            <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
-                                       VerticalAlignment="Center"/>
-                            <Button x:Name="btnArchiveClear" Content="Clear"
-                                    Margin="10,0,0,0" Padding="8,3"
-                                    Background="Transparent" Foreground="{{Overlay0}}"
-                                    BorderBrush="{{Surface1}}" BorderThickness="1"
-                                    Cursor="Hand" FontSize="11"/>
-                        </StackPanel>
-                        <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
-                                BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
-                            <TextBox x:Name="txtArchiveOutput" IsReadOnly="True" TextWrapping="Wrap"
-                                     VerticalScrollBarVisibility="Auto" Background="Transparent"
-                                     Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
-                                     BorderThickness="0" Padding="10" AcceptsReturn="True"/>
-                        </Border>
-                    </Grid>
-                </TabItem>
+                                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="240">
+                                    <StackPanel Margin="16">
+                                        <Label Content="Project Name"/>
+                                        <ComboBox x:Name="archiveProjectCombo" IsEditable="True"/>
+                                        <CheckBox x:Name="archiveMini" Content="Mini tier project (-Mini)"
+                                                  Margin="0,10,0,0"/>
+                                        <CheckBox x:Name="archiveDomain" Content="Domain project (-Category domain)"
+                                                  Margin="0,6,0,0"/>
+                                        <CheckBox x:Name="archiveDryRun"
+                                                  Content="Dry Run (preview only, no changes)"
+                                                  IsChecked="True" Margin="0,6,0,0"/>
+                                        <Button x:Name="btnArchive" Content="Run Archive"
+                                                Style="{StaticResource DangerButton}"/>
+                                    </StackPanel>
+                                </ScrollViewer>
 
-                <!-- Tab 7: Convert Tier -->
-                <TabItem Header="Convert">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
+                                    <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="btnArchiveClear" Content="Clear"
+                                            Margin="10,0,0,0" Padding="8,3"
+                                            Background="Transparent" Foreground="{{Overlay0}}"
+                                            BorderBrush="{{Surface1}}" BorderThickness="1"
+                                            Cursor="Hand" FontSize="11"/>
+                                </StackPanel>
+                                <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
+                                        BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
+                                    <TextBox x:Name="txtArchiveOutput" IsReadOnly="True" TextWrapping="Wrap"
+                                             VerticalScrollBarVisibility="Auto" Background="Transparent"
+                                             Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
+                                             BorderThickness="0" Padding="10" AcceptsReturn="True"/>
+                                </Border>
+                            </Grid>
+                        </TabItem>
 
-                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="280">
-                            <StackPanel Margin="16">
-                                <Label Content="Project Name"/>
-                                <ComboBox x:Name="convertProjectCombo" IsEditable="True"/>
-                                <Label Content="Convert To"/>
-                                <ComboBox x:Name="convertToTier" SelectedIndex="0">
-                                    <ComboBoxItem Content="full"/>
-                                    <ComboBoxItem Content="mini"/>
-                                </ComboBox>
+                        <!-- Sub-tab 3: Convert Tier -->
+                        <TabItem Header="Convert">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
 
-                                <CheckBox x:Name="convertDryRun"
-                                          Content="Dry Run (preview only, no changes)"
-                                          IsChecked="True" Margin="0,10,0,0"/>
-                                <Button x:Name="btnConvert" Content="Run Convert"
-                                        Style="{StaticResource DangerButton}"/>
-                            </StackPanel>
-                        </ScrollViewer>
+                                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" MaxHeight="280">
+                                    <StackPanel Margin="16">
+                                        <Label Content="Project Name"/>
+                                        <ComboBox x:Name="convertProjectCombo" IsEditable="True"/>
+                                        <Label Content="Convert To"/>
+                                        <ComboBox x:Name="convertToTier" SelectedIndex="0">
+                                            <ComboBoxItem Content="full"/>
+                                            <ComboBoxItem Content="mini"/>
+                                        </ComboBox>
 
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
-                            <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
-                                       VerticalAlignment="Center"/>
-                            <Button x:Name="btnConvertClear" Content="Clear"
-                                    Margin="10,0,0,0" Padding="8,3"
-                                    Background="Transparent" Foreground="{{Overlay0}}"
-                                    BorderBrush="{{Surface1}}" BorderThickness="1"
-                                    Cursor="Hand" FontSize="11"/>
-                        </StackPanel>
-                        <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
-                                BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
-                            <TextBox x:Name="txtConvertOutput" IsReadOnly="True" TextWrapping="Wrap"
-                                     VerticalScrollBarVisibility="Auto" Background="Transparent"
-                                     Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
-                                     BorderThickness="0" Padding="10" AcceptsReturn="True"/>
-                        </Border>
-                    </Grid>
+                                        <CheckBox x:Name="convertDryRun"
+                                                  Content="Dry Run (preview only, no changes)"
+                                                  IsChecked="True" Margin="0,10,0,0"/>
+                                        <Button x:Name="btnConvert" Content="Run Convert"
+                                                Style="{StaticResource DangerButton}"/>
+                                    </StackPanel>
+                                </ScrollViewer>
+
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,8,16,4">
+                                    <TextBlock Text="Output" FontSize="12" Foreground="{{Subtext0}}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="btnConvertClear" Content="Clear"
+                                            Margin="10,0,0,0" Padding="8,3"
+                                            Background="Transparent" Foreground="{{Overlay0}}"
+                                            BorderBrush="{{Surface1}}" BorderThickness="1"
+                                            Cursor="Hand" FontSize="11"/>
+                                </StackPanel>
+                                <Border Grid.Row="2" Background="{{Mantle}}" CornerRadius="6"
+                                        BorderBrush="{{Surface0}}" BorderThickness="1" Margin="16,0,16,16">
+                                    <TextBox x:Name="txtConvertOutput" IsReadOnly="True" TextWrapping="Wrap"
+                                             VerticalScrollBarVisibility="Auto" Background="Transparent"
+                                             Foreground="{{Green}}" FontFamily="Consolas" FontSize="12"
+                                             BorderThickness="0" Padding="10" AcceptsReturn="True"/>
+                                </Border>
+                            </Grid>
+                        </TabItem>
+
+                    </TabControl>
                 </TabItem>
 
                 <!-- Tab 8: Asana Sync -->
