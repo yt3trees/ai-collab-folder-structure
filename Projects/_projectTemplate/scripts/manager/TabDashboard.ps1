@@ -1275,89 +1275,6 @@ function New-DashboardTodayQueueListItem {
     [System.Windows.Controls.Grid]::SetColumn($due, 2)
     $row.Children.Add($due) | Out-Null
 
-    $btn = New-Object System.Windows.Controls.Button
-    $btn.Content = ">"
-    $baseBtnStyle = $Window.TryFindResource("CardButton")
-    if ($null -eq $baseBtnStyle) {
-        $baseBtnStyle = $Window.TryFindResource("SmallButton")
-    }
-
-    if ($null -ne $baseBtnStyle) {
-        $btnStyle = New-Object System.Windows.Style([System.Windows.Controls.Button], $baseBtnStyle)
-
-        $rel = New-Object System.Windows.Data.RelativeSource([System.Windows.Data.RelativeSourceMode]::FindAncestor)
-        $rel.AncestorType = [System.Windows.Controls.ListBoxItem]
-        $rel.AncestorLevel = 1
-
-        $selBinding = New-Object System.Windows.Data.Binding
-        $selBinding.RelativeSource = $rel
-        $selBinding.Path = New-Object System.Windows.PropertyPath("IsSelected")
-
-        $selTrigger = New-Object System.Windows.DataTrigger
-        $selTrigger.Binding = $selBinding
-        $selTrigger.Value = $true
-        $selTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BackgroundProperty, (New-ColorBrush $tc.Surface2)))) | Out-Null
-        $selTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderBrushProperty, (New-ColorBrush $tc.Overlay0)))) | Out-Null
-        $selTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderThicknessProperty, (New-Object System.Windows.Thickness(1))))) | Out-Null
-        $btnStyle.Triggers.Add($selTrigger) | Out-Null
-
-        $hoverBinding = New-Object System.Windows.Data.Binding
-        $hoverBinding.RelativeSource = $rel
-        $hoverBinding.Path = New-Object System.Windows.PropertyPath("IsMouseOver")
-
-        $hoverTrigger = New-Object System.Windows.DataTrigger
-        $hoverTrigger.Binding = $hoverBinding
-        $hoverTrigger.Value = $true
-        $hoverTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BackgroundProperty, (New-ColorBrush $tc.Surface2)))) | Out-Null
-        $hoverTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderBrushProperty, (New-ColorBrush $tc.Overlay0)))) | Out-Null
-        $hoverTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderThicknessProperty, (New-Object System.Windows.Thickness(1))))) | Out-Null
-        $btnStyle.Triggers.Add($hoverTrigger) | Out-Null
-
-        $focusBinding = New-Object System.Windows.Data.Binding
-        $focusBinding.RelativeSource = $rel
-        $focusBinding.Path = New-Object System.Windows.PropertyPath("IsKeyboardFocusWithin")
-
-        $focusTrigger = New-Object System.Windows.DataTrigger
-        $focusTrigger.Binding = $focusBinding
-        $focusTrigger.Value = $true
-        $focusTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BackgroundProperty, (New-ColorBrush $tc.Surface2)))) | Out-Null
-        $focusTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderBrushProperty, (New-ColorBrush $tc.Overlay0)))) | Out-Null
-        $focusTrigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderThicknessProperty, (New-Object System.Windows.Thickness(1))))) | Out-Null
-        $btnStyle.Triggers.Add($focusTrigger) | Out-Null
-
-        $btn.Style = $btnStyle
-    }
-    else {
-        $btn.Background = New-ColorBrush $tc.Surface1
-        $btn.Foreground = New-ColorBrush $tc.Text
-        $btn.BorderThickness = New-Object System.Windows.Thickness(0)
-    }
-    $btn.Width = 30
-    $btn.Height = 30
-    $btn.MinWidth = 30
-    $btn.Padding = New-Object System.Windows.Thickness(0)
-    $btn.HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Center
-    $btn.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
-    $btn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-    $btn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-    $btn.Margin = New-Object System.Windows.Thickness(0, 1, 0, 0)
-    $btn.ToolTip = "Start task"
-    $btn.Tag = @{
-        Window      = $Window
-        ProjectName = $Task.ProjectDisplayName
-        StartFile   = $Task.StartFile
-    }
-    $btn.Add_Click({
-            param($sender, $e)
-            $d = $sender.Tag
-            Select-TodayQueueProjectInEditor -Window $d.Window -ProjectDisplayName $d.ProjectName
-            if (-not [string]::IsNullOrWhiteSpace([string]$d.StartFile) -and (Test-Path $d.StartFile)) {
-                Open-FileInEditor -FilePath $d.StartFile -Window $d.Window
-            }
-        })
-    [System.Windows.Controls.Grid]::SetColumn($btn, 3)
-    $row.Children.Add($btn) | Out-Null
-
     $doneBtn = New-Object System.Windows.Controls.Button
     $doneBtn.Content = [string][char]0x2713
     $baseDoneBtnStyle = $Window.TryFindResource("CardButton")
@@ -1500,6 +1417,65 @@ function New-DashboardTodayQueueListItem {
     })
     [System.Windows.Controls.Grid]::SetColumn($doneBtn, 5)
     $row.Children.Add($doneBtn) | Out-Null
+
+    # Open in Asana button
+    $openBtn = New-Object System.Windows.Controls.Button
+    $openBtn.Content = [string][char]0x2197
+    $baseOpenStyle = $Window.TryFindResource("CardButton")
+    if ($null -eq $baseOpenStyle) { $baseOpenStyle = $Window.TryFindResource("SmallButton") }
+
+    if ($null -ne $baseOpenStyle) {
+        $openBtnStyle = New-Object System.Windows.Style([System.Windows.Controls.Button], $baseOpenStyle)
+
+        $openRel = New-Object System.Windows.Data.RelativeSource([System.Windows.Data.RelativeSourceMode]::FindAncestor)
+        $openRel.AncestorType = [System.Windows.Controls.ListBoxItem]
+        $openRel.AncestorLevel = 1
+
+        foreach ($prop in @("IsSelected", "IsMouseOver", "IsKeyboardFocusWithin")) {
+            $binding = New-Object System.Windows.Data.Binding
+            $binding.RelativeSource = $openRel
+            $binding.Path = New-Object System.Windows.PropertyPath($prop)
+            $trigger = New-Object System.Windows.DataTrigger
+            $trigger.Binding = $binding
+            $trigger.Value = $true
+            $trigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BackgroundProperty,    (New-ColorBrush $tc.Surface2)))) | Out-Null
+            $trigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderBrushProperty,    (New-ColorBrush $tc.Overlay0)))) | Out-Null
+            $trigger.Setters.Add((New-Object System.Windows.Setter([System.Windows.Controls.Control]::BorderThicknessProperty, (New-Object System.Windows.Thickness(1))))) | Out-Null
+            $openBtnStyle.Triggers.Add($trigger) | Out-Null
+        }
+        $openBtn.Style = $openBtnStyle
+    }
+    $openBtn.Width = 30
+    $openBtn.Height = 30
+    $openBtn.MinWidth = 30
+    $openBtn.Padding = New-Object System.Windows.Thickness(0)
+    $openBtn.HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Center
+    $openBtn.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
+    $openBtn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+    $openBtn.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $openBtn.Margin = New-Object System.Windows.Thickness(4, 1, 0, 0)
+    $openBtn.ToolTip = "Open in Asana"
+    if ([string]::IsNullOrWhiteSpace([string]$Task.AsanaUrl)) {
+        $openBtn.Visibility = [System.Windows.Visibility]::Collapsed
+    }
+    else {
+        $openBtn.Visibility = [System.Windows.Visibility]::Visible
+    }
+    $openBtn.Tag = @{ AsanaUrl = $Task.AsanaUrl }
+    $openBtn.Add_Click({
+        param($sender, $e)
+        try {
+            $url = [string]$sender.Tag.AsanaUrl
+            if (-not [string]::IsNullOrWhiteSpace($url)) {
+                Start-Process $url
+            }
+        }
+        catch {
+            [System.Windows.MessageBox]::Show($_.Exception.Message, "Error") | Out-Null
+        }
+    })
+    [System.Windows.Controls.Grid]::SetColumn($openBtn, 3)
+    $row.Children.Add($openBtn) | Out-Null
 
     # Snooze button
     $snoozeBtn = New-Object System.Windows.Controls.Button

@@ -316,27 +316,6 @@ function New-TodayQueueListItem {
     [System.Windows.Controls.Grid]::SetColumn($label, 0)
     $row.Children.Add($label) | Out-Null
 
-    $btn = New-Object System.Windows.Controls.Button
-    $btn.Content = "Start"
-    $btn.Style = $Window.TryFindResource("SmallButton")
-    $btn.Margin = New-Object System.Windows.Thickness(8, 0, 0, 0)
-    $btn.Tag = @{
-        Window      = $Window
-        ProjectName = $Task.ProjectDisplayName
-        StartFile   = $Task.StartFile
-    }
-    $btn.Add_Click({
-            param($sender, $e)
-            $d = $sender.Tag
-            Select-TodayQueueProjectInEditor -Window $d.Window -ProjectDisplayName $d.ProjectName
-            if (-not [string]::IsNullOrWhiteSpace([string]$d.StartFile) -and (Test-Path $d.StartFile)) {
-                Open-FileInEditor -FilePath $d.StartFile -Window $d.Window
-            }
-        })
-
-    [System.Windows.Controls.Grid]::SetColumn($btn, 1)
-    $row.Children.Add($btn) | Out-Null
-
     $doneBtn = New-Object System.Windows.Controls.Button
     $doneBtn.Content = "Done"
     $doneBtn.Style = $Window.TryFindResource("SmallButton")
@@ -416,6 +395,33 @@ function New-TodayQueueListItem {
 
     [System.Windows.Controls.Grid]::SetColumn($doneBtn, 2)
     $row.Children.Add($doneBtn) | Out-Null
+
+    $openBtn = New-Object System.Windows.Controls.Button
+    $openBtn.Content = [string][char]0x2197
+    $openBtn.Style = $Window.TryFindResource("SmallButton")
+    $openBtn.Margin = New-Object System.Windows.Thickness(6, 0, 0, 0)
+    $openBtn.ToolTip = "Open in Asana"
+    if ([string]::IsNullOrWhiteSpace([string]$Task.AsanaUrl)) {
+        $openBtn.Visibility = [System.Windows.Visibility]::Collapsed
+    }
+    else {
+        $openBtn.Visibility = [System.Windows.Visibility]::Visible
+    }
+    $openBtn.Tag = @{ AsanaUrl = $Task.AsanaUrl }
+    $openBtn.Add_Click({
+        param($sender, $e)
+        try {
+            $url = [string]$sender.Tag.AsanaUrl
+            if (-not [string]::IsNullOrWhiteSpace($url)) {
+                Start-Process $url
+            }
+        }
+        catch {
+            [System.Windows.MessageBox]::Show($_.Exception.Message, "Error") | Out-Null
+        }
+    })
+    [System.Windows.Controls.Grid]::SetColumn($openBtn, 1)
+    $row.Children.Add($openBtn) | Out-Null
 
     return $row
 }
