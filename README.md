@@ -169,15 +169,23 @@ After BOX sync completes, just re-run setup from the Setup tab to recreate junct
 
 | Tab | Function |
 |-----|----------|
-| Dashboard | Project overview + 30-day Activity Bar + Today Queue (Asana Done) |
-| Editor | Quick access to AI context files and Asana tasks, Markdown editing |
+| Dashboard | Project overview + 30-day Activity Bar + Today Queue (collapsible, Asana Done integration) |
+| Editor | Multi-file Markdown editor (AvalonEdit, syntax highlighting, encoding auto-detection) |
 | Timeline | Chronological activity history from focus_history / decision_log |
-| Git Repos | List and manage Git repositories per project |
+| Git Repos | List and manage Git repositories per project (branch, remote, last commit) |
 | Asana Sync | Sync Asana tasks to Markdown (manual / scheduled auto-sync) |
 | Setup | Create project / health check / archive / tier conversion (sub-tabs: New, Check, Archive, Convert) |
-| Settings | Configure hotkey, Windows startup registration |
+| Settings | Theme selection, hotkey config, Windows startup registration, Dashboard preferences (Today Queue visibility / task limit / auto-refresh interval) |
 
-System tray resident / Global hotkey / Catppuccin Mocha dark theme
+System tray resident / Global hotkey / Catppuccin Mocha & GitHub Dark themes / Command Palette (Ctrl+K)
+
+### Command Palette (Ctrl+K)
+
+VS Code-style quick access to all operations. Supports tab switching (`0`–`9`), per-project actions (`check`, `edit`, `term`, `dir`, `timeline`, `resume`), editor shortcuts (`@ProjectName`), and the Morning Briefing command (`briefing`).
+
+### Morning Briefing
+
+Generates a 72-hour cross-project summary (completed Asana tasks, focus file updates, decision logs) as a dated Markdown file in `_ai-workspace/briefings/`. Invoked via the command palette with `briefing`.
 
 ## Key Scripts
 
