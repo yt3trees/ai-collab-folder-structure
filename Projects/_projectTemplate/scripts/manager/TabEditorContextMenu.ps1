@@ -158,7 +158,7 @@ function Add-ContextMenuToTreeItem {
                             $selText = if ($null -ne $combo.SelectedItem) { $combo.SelectedItem.ToString() } else { "" }
                             $proj = Get-SelectedEditorProject -ComboText $selText
                             if ($null -ne $proj) {
-                                Populate-FileTree `
+                                Update-FileTree `
                                     -Tree            $Window.FindName("editorFileTree") `
                                     -WorkspaceTree   $Window.FindName("editorWorkspaceTree") `
                                     -ProjectInfo     $proj `

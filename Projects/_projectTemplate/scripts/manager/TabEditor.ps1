@@ -853,7 +853,7 @@ function Initialize-TabEditor {
             # Refresh tree so focus_history snapshots appear immediately after save
             $proj = $script:AppState.SelectedProject
             if ($null -ne $proj) {
-                Populate-FileTree `
+                Update-FileTree `
                     -Tree          $Window.FindName("editorFileTree") `
                     -WorkspaceTree $Window.FindName("editorWorkspaceTree") `
                     -ProjectInfo   $proj `
@@ -884,7 +884,7 @@ function Initialize-TabEditor {
             # Refresh tree to reflect any filesystem changes
             $proj = $script:AppState.SelectedProject
             if ($null -ne $proj) {
-                Populate-FileTree `
+                Update-FileTree `
                     -Tree          $Window.FindName("editorFileTree") `
                     -WorkspaceTree $Window.FindName("editorWorkspaceTree") `
                     -ProjectInfo   $proj `
@@ -1007,7 +1007,7 @@ function Initialize-TabEditor {
             $newFile = New-DecisionLog -AiContextPath $proj.AiContextPath -Window $Window
             if ($null -ne $newFile) {
                 # Refresh tree and open new file
-                Populate-FileTree `
+                Update-FileTree `
                     -Tree            $Window.FindName("editorFileTree") `
                     -WorkspaceTree   $Window.FindName("editorWorkspaceTree") `
                     -ProjectInfo     $proj `
