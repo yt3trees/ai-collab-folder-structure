@@ -1,3 +1,6 @@
 ﻿{
+    "DashboardAutoRefreshMinutes":  0,
+    "DashboardTodayQueueVisible":  true,
+    "DashboardTodayQueueLimit":  5,
     "Theme":  "Default"
 }
