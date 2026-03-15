@@ -597,6 +597,8 @@ function Start-DashboardAutoRefreshTimer {
 # ---- Today Queue Snooze ----
 
 $script:TodayQueueSnooze = @{}
+$script:DashboardTodayQueueViewMode = "Detail"
+$script:DashboardTodayQueueListMaxItems = 300
 
 function Get-SnoozeFilePath {
     return Join-Path (Join-Path $script:AppState.WorkspaceRoot "_config") "today_queue_snooze.json"
@@ -1097,6 +1099,31 @@ function Update-UnsnoozeButton {
     }
 }
 
+function Update-DashboardTodayQueueModeButton {
+    param([System.Windows.Window]$Window)
+
+    $btn = $Window.FindName("btnDashTodayQueueViewMode")
+    if ($null -eq $btn) { return }
+
+    $isList = ([string]$script:DashboardTodayQueueViewMode -eq "List")
+    $btn.Content = if ($isList) { "List" } else { "Detail" }
+    $btn.ToolTip = if ($isList) { "Switch to Detail view" } else { "Switch to List view" }
+}
+
+function Toggle-DashboardTodayQueueViewMode {
+    param([System.Windows.Window]$Window)
+
+    if ([string]$script:DashboardTodayQueueViewMode -eq "List") {
+        $script:DashboardTodayQueueViewMode = "Detail"
+    }
+    else {
+        $script:DashboardTodayQueueViewMode = "List"
+    }
+
+    Update-DashboardTodayQueueModeButton -Window $Window
+    Update-DashboardTodayQueueWidget -Window $Window
+}
+
 function New-DashboardQueueSectionHeader {
     param([string]$Label)
     $tc = Get-ThemeColors -ThemeName $script:AppState.Theme
@@ -1188,6 +1215,22 @@ function New-DashboardQueueShowMoreItem {
         }
     })
     return $btn
+}
+
+function New-DashboardTodayQueueCompactListItem {
+    param([hashtable]$Task)
+
+    $projectNameForDisplay = ([string]$Task.ProjectDisplayName) -replace '\s*\[(?:Domain|Mini)\]', ''
+    $projectNameForDisplay = $projectNameForDisplay.Trim()
+    $taskTitleForDisplay = ([string]$Task.Title) -replace '^\[[^\]]+\]\s*', ''
+    $taskTitleForDisplay = $taskTitleForDisplay.Trim()
+
+    $label = New-Object System.Windows.Controls.TextBlock
+    $label.Text = "[$projectNameForDisplay] $taskTitleForDisplay | $($Task.DueText)"
+    $label.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+    $label.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+    $label.Margin = New-Object System.Windows.Thickness(2, 1, 2, 1)
+    return $label
 }
 
 function New-DashboardTodayQueueListItem {
@@ -1546,7 +1589,8 @@ function Update-DashboardTodayQueueWidget {
     $list = $Window.FindName("lstDashTodayQueue")
     $status = $Window.FindName("lblDashTodayQueueStatus")
     if ($null -eq $list -or $null -eq $status) { return }
-    $list.MaxHeight = 170
+    $isListMode = ([string]$script:DashboardTodayQueueViewMode -eq "List")
+    $list.MaxHeight = if ($isListMode) { 420 } else { 170 }
 
     $list.Items.Clear()
     $status.Text = "Dashboard Queue: Loading..."
@@ -1602,36 +1646,49 @@ function Update-DashboardTodayQueueWidget {
             return
         }
 
-        $queueLimit = [int]$script:AppState.DashboardTodayQueueLimit
-        $showCount = [Math]::Min($queueLimit, $totalVisible)
-        $lastBucketGroup = -1
-
-        for ($i = 0; $i -lt $showCount; $i++) {
-            $t = $visibleTasks[$i]
-            $bucket = [int]$t.SortBucket
-            $bucketGroup = if ($bucket -le 1) { $bucket } elseif ($bucket -le 3) { 2 } elseif ($bucket -eq 4) { 3 } else { 4 }
-            if ($bucketGroup -ne $lastBucketGroup) {
-                $sectionLabel = switch ($bucketGroup) {
-                    0 { "Overdue" }
-                    1 { "Today" }
-                    2 { "This Week" }
-                    3 { "Later" }
-                    default { "No Due" }
-                }
-                [void]$list.Items.Add((New-DashboardQueueSectionHeader -Label $sectionLabel))
-                $lastBucketGroup = $bucketGroup
+        if ($isListMode) {
+            $listMax = [int]$script:DashboardTodayQueueListMaxItems
+            if ($listMax -lt 1) { $listMax = 300 }
+            $showCount = [Math]::Min($listMax, $totalVisible)
+            for ($i = 0; $i -lt $showCount; $i++) {
+                [void]$list.Items.Add((New-DashboardTodayQueueCompactListItem -Task $visibleTasks[$i]))
             }
-            [void]$list.Items.Add((New-DashboardTodayQueueListItem -Task $t -Window $Window))
+            $statusMsg = "Dashboard Queue (List): $totalVisible tasks (showing $showCount)"
+            if ($snoozeCount -gt 0) { $statusMsg += ", $snoozeCount snoozed" }
+            $status.Text = $statusMsg
         }
+        else {
+            $queueLimit = [int]$script:AppState.DashboardTodayQueueLimit
+            $showCount = [Math]::Min($queueLimit, $totalVisible)
+            $lastBucketGroup = -1
 
-        $remaining = $totalVisible - $showCount
-        if ($remaining -gt 0) {
-            [void]$list.Items.Add((New-DashboardQueueShowMoreItem -Window $Window -Tasks @($visibleTasks[$showCount..($totalVisible - 1)]) -LastBucketGroup $lastBucketGroup -TotalVisible $totalVisible -SnoozeCount $snoozeCount))
+            for ($i = 0; $i -lt $showCount; $i++) {
+                $t = $visibleTasks[$i]
+                $bucket = [int]$t.SortBucket
+                $bucketGroup = if ($bucket -le 1) { $bucket } elseif ($bucket -le 3) { 2 } elseif ($bucket -eq 4) { 3 } else { 4 }
+                if ($bucketGroup -ne $lastBucketGroup) {
+                    $sectionLabel = switch ($bucketGroup) {
+                        0 { "Overdue" }
+                        1 { "Today" }
+                        2 { "This Week" }
+                        3 { "Later" }
+                        default { "No Due" }
+                    }
+                    [void]$list.Items.Add((New-DashboardQueueSectionHeader -Label $sectionLabel))
+                    $lastBucketGroup = $bucketGroup
+                }
+                [void]$list.Items.Add((New-DashboardTodayQueueListItem -Task $t -Window $Window))
+            }
+
+            $remaining = $totalVisible - $showCount
+            if ($remaining -gt 0) {
+                [void]$list.Items.Add((New-DashboardQueueShowMoreItem -Window $Window -Tasks @($visibleTasks[$showCount..($totalVisible - 1)]) -LastBucketGroup $lastBucketGroup -TotalVisible $totalVisible -SnoozeCount $snoozeCount))
+            }
+
+            $statusMsg = "Dashboard Queue: $totalVisible tasks (showing $showCount)"
+            if ($snoozeCount -gt 0) { $statusMsg += ", $snoozeCount snoozed" }
+            $status.Text = $statusMsg
         }
-
-        $statusMsg = "Dashboard Queue: $totalVisible tasks (showing $showCount)"
-        if ($snoozeCount -gt 0) { $statusMsg += ", $snoozeCount snoozed" }
-        $status.Text = $statusMsg
 
         Update-UnsnoozeButton -Window $Window -Count $snoozeCount
     }
@@ -1717,6 +1774,7 @@ function Initialize-TabDashboard {
     }
 
     Load-TodayQueueSnooze
+    Update-DashboardTodayQueueModeButton -Window $Window
 
     # Initial load: synchronous fast scan (no tokens) so cache contains plain Hashtables.
     # Must NOT use Start-DashboardAsyncRefresh here - runspace results are Deserialized.Hashtable
@@ -1773,6 +1831,13 @@ function Initialize-TabDashboard {
     if ($null -ne $btnDashQueueRefresh) {
         $btnDashQueueRefresh.Add_Click({
                 Update-DashboardTodayQueueWidget -Window $Window
+            }.GetNewClosure())
+    }
+
+    $btnDashQueueViewMode = $Window.FindName("btnDashTodayQueueViewMode")
+    if ($null -ne $btnDashQueueViewMode) {
+        $btnDashQueueViewMode.Add_Click({
+                Toggle-DashboardTodayQueueViewMode -Window $Window
             }.GetNewClosure())
     }
 

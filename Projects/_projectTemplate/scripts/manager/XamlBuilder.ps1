@@ -83,17 +83,18 @@ function Build-MainWindowXaml {
                         <!-- Today Queue section (header always visible, body collapsible) -->
                         <StackPanel Grid.Row="1" Margin="0,0,0,8">
                             <!-- Queue section header: always visible -->
-                            <Grid Margin="0,0,0,4">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <Button x:Name="btnDashToggleTodayQueue" Content="&#x25BE;"
-                                        Grid.Column="0" Margin="0,0,4,0"
-                                        Style="{StaticResource SmallButton}"
+                                 <Grid Margin="0,0,0,4">
+                                     <Grid.ColumnDefinitions>
+                                         <ColumnDefinition Width="Auto"/>
+                                         <ColumnDefinition Width="Auto"/>
+                                         <ColumnDefinition Width="*"/>
+                                         <ColumnDefinition Width="Auto"/>
+                                         <ColumnDefinition Width="Auto"/>
+                                         <ColumnDefinition Width="Auto"/>
+                                     </Grid.ColumnDefinitions>
+                                 <Button x:Name="btnDashToggleTodayQueue" Content="&#x25BE;"
+                                         Grid.Column="0" Margin="0,0,4,0"
+                                         Style="{StaticResource SmallButton}"
                                         Padding="6,2" FontSize="13" Cursor="Hand"
                                         Width="24" MinWidth="24" MaxWidth="24"
                                         HorizontalContentAlignment="Center"
@@ -101,17 +102,21 @@ function Build-MainWindowXaml {
                                         Background="Transparent" Foreground="{{Subtext0}}"
                                         BorderBrush="Transparent" BorderThickness="0"
                                         ToolTip="Toggle Today Queue"/>
-                                <TextBlock x:Name="lblDashQueueTitle" Grid.Column="1" Text="Today Queue"
-                                           Foreground="{{Mauve}}" FontWeight="SemiBold" FontSize="12"
-                                           VerticalAlignment="Center" Cursor="Hand"
-                                           ToolTip="Toggle Today Queue"/>
-                                <Button x:Name="btnDashUnsnooze" Grid.Column="3"
-                                        Style="{StaticResource SmallButton}" Margin="4,0,0,0"
-                                        Foreground="{{Subtext0}}" Visibility="Collapsed"
-                                        ToolTip="Clear all snoozes"/>
-                                <Button x:Name="btnDashTodayQueueRefresh" Content="Refresh"
-                                        Grid.Column="4" Style="{StaticResource SmallButton}" Margin="4,0,0,0"/>
-                            </Grid>
+                                 <TextBlock x:Name="lblDashQueueTitle" Grid.Column="1" Text="Today Queue"
+                                            Foreground="{{Mauve}}" FontWeight="SemiBold" FontSize="12"
+                                            VerticalAlignment="Center" Cursor="Hand"
+                                            ToolTip="Toggle Today Queue"/>
+                                 <Button x:Name="btnDashTodayQueueViewMode" Content="Detail"
+                                         Grid.Column="3" Style="{StaticResource SmallButton}" Margin="4,0,0,0"
+                                         Foreground="{{Subtext0}}" ToolTip="Toggle queue view mode"
+                                         Focusable="False" FocusVisualStyle="{x:Null}"/>
+                                 <Button x:Name="btnDashUnsnooze" Grid.Column="4"
+                                         Style="{StaticResource SmallButton}" Margin="4,0,0,0"
+                                         Foreground="{{Subtext0}}" Visibility="Collapsed"
+                                         ToolTip="Clear all snoozes"/>
+                                 <Button x:Name="btnDashTodayQueueRefresh" Content="Refresh"
+                                         Grid.Column="5" Style="{StaticResource SmallButton}" Margin="4,0,0,0"/>
+                             </Grid>
 
                             <!-- Queue body: collapsible -->
                             <Border x:Name="bdDashTodayQueue" Padding="8"
