@@ -132,7 +132,8 @@ function Build-MainWindowXaml {
                                          BorderThickness="0" Background="Transparent"
                                          Foreground="{{Text}}" MaxHeight="170"
                                          Padding="2,0,0,0"
-                                         HorizontalContentAlignment="Stretch">
+                                         HorizontalContentAlignment="Stretch"
+                                         VirtualizingPanel.IsVirtualizing="False">
                                     <ListBox.ItemContainerStyle>
                                         <Style TargetType="ListBoxItem">
                                             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
