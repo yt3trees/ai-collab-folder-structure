@@ -878,15 +878,16 @@ function Build-MainWindowXaml {
                                VerticalAlignment="Center" Visibility="Collapsed"/>
                     <TextBlock x:Name="statusFile" Grid.Column="1" Text=""
                                Foreground="{{Overlay0}}" FontSize="11" VerticalAlignment="Center"
-                               Margin="16,0"/>
+                               Margin="16,0" Visibility="Collapsed"/>
                     <TextBlock x:Name="statusHealth" Grid.Column="2" Text=""
                                Foreground="{{Overlay0}}" FontSize="11" VerticalAlignment="Center"
-                               Margin="0,0,16,0"/>
+                               Margin="0,0,16,0" Visibility="Collapsed"/>
                     <TextBlock x:Name="statusEncoding" Grid.Column="3" Text=""
                                Foreground="{{Overlay0}}" FontSize="11" VerticalAlignment="Center"
-                               Margin="0,0,16,0"/>
+                               Margin="0,0,16,0" Visibility="Collapsed"/>
                     <TextBlock x:Name="statusDirty" Grid.Column="4" Text=""
-                               Foreground="{{Yellow}}" FontSize="11" VerticalAlignment="Center"/>
+                               Foreground="{{Yellow}}" FontSize="11" VerticalAlignment="Center"
+                               Visibility="Collapsed"/>
                 </Grid>
             </Border>
 

@@ -116,7 +116,6 @@ function New-GitRepoRow {
     param($Repo, $Colors)
 
     $surface0 = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString($Colors.Surface0)
-    $surface1 = [System.Windows.Media.SolidColorBrush][System.Windows.Media.ColorConverter]::ConvertFromString($Colors.Surface1)
 
     $border = New-Object System.Windows.Controls.Border
     $border.Background   = $surface0
@@ -184,14 +183,6 @@ function New-GitRepoRow {
     $grid.Children.Add($tbDate) | Out-Null
 
     $border.Child = $grid
-
-    # Hover highlight
-    $border.Add_MouseEnter({
-        $this.Background = $surface1
-    })
-    $border.Add_MouseLeave({
-        $this.Background = $surface0
-    })
 
     return $border
 }

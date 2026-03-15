@@ -1829,7 +1829,13 @@ function Initialize-TabDashboard {
                 }
                 else {
                     if ($null -ne $statLbl) { $statLbl.Visibility = [System.Windows.Visibility]::Collapsed }
-                    if ($null -ne $statProject) { $statProject.Visibility = [System.Windows.Visibility]::Visible }
+                    if ($null -ne $statProject) { $statProject.Visibility = [System.Windows.Visibility]::Collapsed }
+                }
+                $isEditor = ($s.SelectedIndex -eq 1)
+                $editorVis = if ($isEditor) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+                foreach ($ctrlName in @("statusFile","statusHealth","statusEncoding","statusDirty")) {
+                    $ctrl = $win.FindName($ctrlName)
+                    if ($null -ne $ctrl) { $ctrl.Visibility = $editorVis }
                 }
                 if ($s.SelectedIndex -eq 0) {
                     & $ensureStatus $win
