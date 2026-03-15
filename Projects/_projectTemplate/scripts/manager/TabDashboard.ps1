@@ -1125,6 +1125,63 @@ function New-DashboardQueueSectionHeader {
     return $grid
 }
 
+function New-DashboardQueueShowMoreItem {
+    param(
+        [System.Windows.Window]$Window,
+        [array]$Tasks,
+        [int]$LastBucketGroup
+    )
+    $tc = Get-ThemeColors -ThemeName $script:AppState.Theme
+    $btn = New-Object System.Windows.Controls.Button
+    $smallStyle = $Window.TryFindResource("SmallButton")
+    if ($null -ne $smallStyle) { $btn.Style = $smallStyle }
+    $btn.Content = "+$($Tasks.Count) more..."
+    $btn.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Stretch
+    $btn.VerticalAlignment = [System.Windows.VerticalAlignment]::Stretch
+    $btn.HorizontalContentAlignment = [System.Windows.HorizontalAlignment]::Center
+    $btn.VerticalContentAlignment = [System.Windows.VerticalAlignment]::Center
+    $btn.MinHeight = 32
+    $btn.Margin = New-Object System.Windows.Thickness(-4, -2, -4, -2)
+    $btn.Background = [System.Windows.Media.Brushes]::Transparent
+    $btn.BorderThickness = New-Object System.Windows.Thickness(0)
+    $btn.Padding = New-Object System.Windows.Thickness(0)
+    $btn.Foreground = New-ColorBrush $tc.Subtext0
+    $btn.FontSize = 11
+    $btn.Cursor = [System.Windows.Input.Cursors]::Hand
+    $btn.Focusable = $false
+    $btn.FocusVisualStyle = $null
+    $btn.Tag = @{ Window = $Window; Tasks = $Tasks; LastBucketGroup = $LastBucketGroup }
+    $btn.Add_Click({
+        param($sender, $e)
+        try {
+            $d = $sender.Tag
+            $lst = $d.Window.FindName("lstDashTodayQueue")
+            if ($null -eq $lst) { return }
+            $lst.Items.RemoveAt($lst.Items.Count - 1)
+            $lastBucket = [int]$d.LastBucketGroup
+            foreach ($t in $d.Tasks) {
+                $bucket = [int]$t.SortBucket
+                $bg = if ($bucket -le 1) { $bucket } elseif ($bucket -le 3) { 2 } elseif ($bucket -eq 4) { 3 } else { 4 }
+                if ($bg -ne $lastBucket) {
+                    $label = switch ($bg) {
+                        0 { "Overdue" }
+                        1 { "Today" }
+                        2 { "This Week" }
+                        3 { "Later" }
+                        default { "No Due" }
+                    }
+                    [void]$lst.Items.Add((New-DashboardQueueSectionHeader -Label $label))
+                    $lastBucket = $bg
+                }
+                [void]$lst.Items.Add((New-DashboardTodayQueueListItem -Task $t -Window $d.Window))
+            }
+        } catch {
+            [System.Windows.MessageBox]::Show($_.Exception.Message, "Error") | Out-Null
+        }
+    })
+    return $btn
+}
+
 function New-DashboardTodayQueueListItem {
     param(
         [hashtable]$Task,
@@ -1491,6 +1548,7 @@ function Update-DashboardTodayQueueWidget {
     $list = $Window.FindName("lstDashTodayQueue")
     $status = $Window.FindName("lblDashTodayQueueStatus")
     if ($null -eq $list -or $null -eq $status) { return }
+    $list.MaxHeight = 170
 
     $list.Items.Clear()
     $status.Text = "Dashboard Queue: Loading..."
@@ -1566,6 +1624,11 @@ function Update-DashboardTodayQueueWidget {
                 $lastBucketGroup = $bucketGroup
             }
             [void]$list.Items.Add((New-DashboardTodayQueueListItem -Task $t -Window $Window))
+        }
+
+        $remaining = $totalVisible - $showCount
+        if ($remaining -gt 0) {
+            [void]$list.Items.Add((New-DashboardQueueShowMoreItem -Window $Window -Tasks @($visibleTasks[$showCount..($totalVisible - 1)]) -LastBucketGroup $lastBucketGroup))
         }
 
         $statusMsg = "Dashboard Queue: $totalVisible tasks (showing $showCount)"
