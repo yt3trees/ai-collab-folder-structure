@@ -354,7 +354,7 @@ function New-ProjectCard {
     }
     $activityGroup.Children.Add($barPanel) | Out-Null
 
-    $activityGroup.Add_MouseLeftButtonUp({
+    $activityGroup.Add_MouseLeftButtonDown({
             param($sender, $e)
             $targetName = $sender.Tag
             $tabMain = $Window.FindName("tabMain")
@@ -495,7 +495,18 @@ function New-ProjectCard {
                     $d = $s.Tag.CardData
                     $s.Tag.Popup.IsOpen = $false
                     Set-ProjectHidden -Info $d.Info -Hidden (-not $d.IsHidden)
-                    Update-Dashboard -Window $d.Window -ShowHidden ([bool]($d.Window.FindName("chkShowHidden").IsChecked)) -Force -ScriptDir $d.ScriptDir
+                    $panel      = $d.Window.FindName("dashboardCards")
+                    $showHidden = [bool]($d.Window.FindName("chkShowHidden").IsChecked)
+                    $filter     = [string]($d.Window.FindName("txtDashFilter").Text)
+                    if ($null -ne $panel -and $null -ne $script:ProjectInfoCache) {
+                        Invoke-RenderDashboardCards -CardsPanel $panel -Projects $script:ProjectInfoCache `
+                            -Window $d.Window -FilterText $filter -ShowHidden $showHidden -ScriptDir $d.ScriptDir
+                        $script:DashLastFilter     = $filter
+                        $script:DashLastShowHidden = $showHidden
+                        $script:DashLastBuildTime  = $script:ProjectInfoCacheTime
+                    } else {
+                        Update-Dashboard -Window $d.Window -ShowHidden $showHidden -ScriptDir $d.ScriptDir
+                    }
                 })
             $menuStack.Children.Add($menuItem) | Out-Null
             $sep = New-Object System.Windows.Controls.Border
