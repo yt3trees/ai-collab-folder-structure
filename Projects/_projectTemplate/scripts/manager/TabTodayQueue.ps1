@@ -51,9 +51,9 @@ function Get-TodayQueueAsanaToken {
     if (-not (Test-Path $configPath)) { return "" }
 
     $configObj = $null
-    foreach ($encName in @("utf-8", "cp932")) {
+    foreach ($enc in @([System.Text.Encoding]::UTF8, [System.Text.Encoding]::GetEncoding(932))) {
         try {
-            $raw = Get-Content -Path $configPath -Raw -Encoding $encName -ErrorAction Stop
+            $raw = [System.IO.File]::ReadAllText($configPath, $enc)
             $configObj = $raw | ConvertFrom-Json
             break
         }
