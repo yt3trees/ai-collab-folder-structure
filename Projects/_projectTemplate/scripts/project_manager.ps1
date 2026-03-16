@@ -289,6 +289,16 @@ $window.Add_Loaded({
         Register-GlobalHotkey -Window $window | Out-Null
         # Refresh BOX-only projects in background and update dropdowns + cache
         Start-BoxProjectsAsyncRefresh -Window $window
+
+        # Fit window height to screen work area (for small laptop screens)
+        $workArea = [System.Windows.SystemParameters]::WorkArea
+        $fitHeight = $workArea.Height - 20
+        if ($window.ActualHeight -gt $fitHeight) {
+            $newH = [Math]::Max($fitHeight, 600)
+            if ($window.MinHeight -gt $newH) { $window.MinHeight = $newH }
+            $window.Height = $newH
+            $window.Top = $workArea.Top + [Math]::Floor(($workArea.Height - $newH) / 2.0)
+        }
     })
 
 # --- WPF Application lifecycle for tray-resident mode ---
