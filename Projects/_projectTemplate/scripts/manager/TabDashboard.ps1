@@ -149,12 +149,12 @@ function New-ProjectCard {
     $card = New-Object System.Windows.Controls.Border
     $card.Width = 260
     $card.MinHeight = 150
-    $card.Margin = New-Object System.Windows.Thickness(0, 0, 8, 8)
+    $card.Margin = New-Object System.Windows.Thickness(0, 0, 6, 6)
     $card.Background = New-ColorBrush $c.Surface0
     $card.BorderBrush = New-ColorBrush $c.Surface1
     $card.BorderThickness = New-Object System.Windows.Thickness(1)
     $card.CornerRadius = New-Object System.Windows.CornerRadius(6)
-    $card.Padding = New-Object System.Windows.Thickness(12)
+    $card.Padding = New-Object System.Windows.Thickness(10)
     $card.Cursor = [System.Windows.Input.Cursors]::Arrow
     if ($IsHidden) { $card.Opacity = 0.45 }
 
@@ -375,7 +375,7 @@ function New-ProjectCard {
     # --- Action buttons ---
     $btnPanel = New-Object System.Windows.Controls.StackPanel
     $btnPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
-    $btnPanel.Margin = New-Object System.Windows.Thickness(0, 10, 0, 0)
+    $btnPanel.Margin = New-Object System.Windows.Thickness(0, 8, 0, 0)
 
     # Helper for card buttons to ensure theme consistency
     $createCardButton = {
