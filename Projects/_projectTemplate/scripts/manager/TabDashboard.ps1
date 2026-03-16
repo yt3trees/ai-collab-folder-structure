@@ -561,6 +561,10 @@ $script:DashRefreshRunning = $false
 $script:DashAutoRefreshTimer = $null
 $script:DashRefreshPollTimers = @{}
 
+$script:TodayQueueTaskCache = $null
+$script:TodayQueueCacheTime = [datetime]::MinValue
+$script:TodayQueueCacheTTL  = 3600
+
 function Set-AppStateProjectsSafe {
     param([object[]]$Projects)
     if ($script:AppState -is [hashtable]) {
@@ -1090,7 +1094,7 @@ function Start-DashboardRefreshAfterAsanaSync {
         $attempt++
         if (($script:AsanaSyncState.Running -eq $false) -or ($attempt -ge $maxAttempt)) {
             $capturedTimer.Stop()
-            try { Update-DashboardTodayQueueWidget -Window $targetWindow } catch {}
+            try { Update-DashboardTodayQueueWidget -Window $targetWindow -Force } catch {}
         }
     }).GetNewClosure())
 
@@ -1591,117 +1595,141 @@ function New-DashboardTodayQueueListItem {
     return $row
 }
 
+# Render Today Queue from an already-sorted task array (no I/O).
+# Called on the UI thread from both cache hit and async refresh completion.
+function Invoke-RenderTodayQueueFromCache {
+    param([System.Windows.Window]$Window, [object[]]$SortedTasks)
+
+    $list   = $Window.FindName("lstDashTodayQueue")
+    $status = $Window.FindName("lblDashTodayQueueStatus")
+    if ($null -eq $list -or $null -eq $status) { return }
+
+    $isListMode = ([string]$script:DashboardTodayQueueViewMode -eq "List")
+    $list.MaxHeight = if ($isListMode) { 420 } else { 170 }
+    $list.Items.Clear()
+
+    if ($null -eq $SortedTasks -or $SortedTasks.Count -eq 0) {
+        $status.Text = "Dashboard Queue: No in-progress tasks."
+        Update-UnsnoozeButton -Window $Window -Count 0
+        return
+    }
+
+    $visibleTasks = @($SortedTasks | Where-Object { -not (Test-TodayQueueSnoozed -Key (Get-TodayQueueSnoozeKey -Task $_)) })
+    $totalVisible = $visibleTasks.Count
+    $snoozeCount  = $SortedTasks.Count - $totalVisible
+
+    if ($totalVisible -eq 0) {
+        $msg = if ($snoozeCount -gt 0) { "Dashboard Queue: All tasks snoozed ($snoozeCount)." } else { "Dashboard Queue: No in-progress tasks." }
+        $status.Text = $msg
+        Update-UnsnoozeButton -Window $Window -Count $snoozeCount
+        return
+    }
+
+    if ($isListMode) {
+        $listMax = [int]$script:DashboardTodayQueueListMaxItems
+        if ($listMax -lt 1) { $listMax = 300 }
+        $showCount = [Math]::Min($listMax, $totalVisible)
+        for ($i = 0; $i -lt $showCount; $i++) {
+            [void]$list.Items.Add((New-DashboardTodayQueueCompactListItem -Task $visibleTasks[$i]))
+        }
+        $statusMsg = "Dashboard Queue (List): $totalVisible tasks (showing $showCount)"
+        if ($snoozeCount -gt 0) { $statusMsg += ", $snoozeCount snoozed" }
+        $status.Text = $statusMsg
+    }
+    else {
+        $queueLimit = [int]$script:AppState.DashboardTodayQueueLimit
+        $showCount = [Math]::Min($queueLimit, $totalVisible)
+        $lastBucketGroup = -1
+
+        for ($i = 0; $i -lt $showCount; $i++) {
+            $t = $visibleTasks[$i]
+            $bucket = [int]$t.SortBucket
+            $bucketGroup = if ($bucket -le 1) { $bucket } elseif ($bucket -le 3) { 2 } elseif ($bucket -eq 4) { 3 } else { 4 }
+            if ($bucketGroup -ne $lastBucketGroup) {
+                $sectionLabel = switch ($bucketGroup) {
+                    0 { "Overdue" }
+                    1 { "Today" }
+                    2 { "This Week" }
+                    3 { "Later" }
+                    default { "No Due" }
+                }
+                [void]$list.Items.Add((New-DashboardQueueSectionHeader -Label $sectionLabel))
+                $lastBucketGroup = $bucketGroup
+            }
+            [void]$list.Items.Add((New-DashboardTodayQueueListItem -Task $t -Window $Window))
+        }
+
+        $remaining = $totalVisible - $showCount
+        if ($remaining -gt 0) {
+            [void]$list.Items.Add((New-DashboardQueueShowMoreItem -Window $Window -Tasks @($visibleTasks[$showCount..($totalVisible - 1)]) -LastBucketGroup $lastBucketGroup -TotalVisible $totalVisible -SnoozeCount $snoozeCount))
+        }
+
+        $statusMsg = "Dashboard Queue: $totalVisible tasks (showing $showCount)"
+        if ($snoozeCount -gt 0) { $statusMsg += ", $snoozeCount snoozed" }
+        $status.Text = $statusMsg
+    }
+
+    Update-UnsnoozeButton -Window $Window -Count $snoozeCount
+}
+
+# Read task files and compute priorities in a background Runspace.
+# On completion: updates $script:TodayQueueTaskCache and re-renders.
 function Update-DashboardTodayQueueWidget {
-    param([System.Windows.Window]$Window)
+    param([System.Windows.Window]$Window, [switch]$Force)
 
     $queueBorder = $Window.FindName("bdDashTodayQueue")
     if ($null -ne $queueBorder -and $queueBorder.Visibility -ne [System.Windows.Visibility]::Visible) { return }
 
-    $list = $Window.FindName("lstDashTodayQueue")
+    $list   = $Window.FindName("lstDashTodayQueue")
     $status = $Window.FindName("lblDashTodayQueueStatus")
     if ($null -eq $list -or $null -eq $status) { return }
+
     $isListMode = ([string]$script:DashboardTodayQueueViewMode -eq "List")
     $list.MaxHeight = if ($isListMode) { 420 } else { 170 }
 
-    $list.Items.Clear()
-    $status.Text = "Dashboard Queue: Loading..."
-
-    try {
-        $required = @(
-            "Get-TodayQueueTasksFromProject",
-            "Get-TodayQueuePriority",
-            "Select-TodayQueueProjectInEditor",
-            "Invoke-TodayQueueCompleteAsanaTask"
-        )
-        foreach ($name in $required) {
-            if (-not (Get-Command $name -ErrorAction SilentlyContinue)) {
-                $status.Text = "Dashboard Queue: TodayQueue module unavailable."
-                return
-            }
+    foreach ($name in @("Get-TodayQueueTasksFromProject","Get-TodayQueuePriority","Select-TodayQueueProjectInEditor","Invoke-TodayQueueCompleteAsanaTask")) {
+        if (-not (Get-Command $name -ErrorAction SilentlyContinue)) {
+            $status.Text = "Dashboard Queue: TodayQueue module unavailable."
+            return
         }
+    }
 
+    # Force: invalidate cache
+    if ($Force) { $script:TodayQueueCacheTime = [datetime]::MinValue }
+
+    $cacheAge     = ((Get-Date) - $script:TodayQueueCacheTime).TotalSeconds
+    $cacheIsFresh = ($null -ne $script:TodayQueueTaskCache) -and ($cacheAge -lt $script:TodayQueueCacheTTL)
+
+    if ($cacheIsFresh) {
+        Invoke-RenderTodayQueueFromCache -Window $Window -SortedTasks $script:TodayQueueTaskCache
+        return
+    }
+
+    # Cache stale or missing: synchronous fetch then cache
+    try {
         $projects = if ($null -ne $script:ProjectInfoCache) { $script:ProjectInfoCache } else { @(Get-ProjectInfoList -SkipTokens) }
         $allTasks = @()
         foreach ($p in $projects) {
             $allTasks += @(Get-TodayQueueTasksFromProject -ProjectInfo $p)
         }
 
-        if ($allTasks.Count -eq 0) {
-            $status.Text = "Dashboard Queue: No in-progress tasks."
-            Update-UnsnoozeButton -Window $Window -Count 0
-            return
-        }
-
         foreach ($t in $allTasks) {
-            $prio = Get-TodayQueuePriority -Task $t
+            $prio            = Get-TodayQueuePriority -Task $t
             $t["SortBucket"] = $prio.Bucket
-            $t["SortRank"] = $prio.Rank
-            $t["DueText"] = $prio.Label
+            $t["SortRank"]   = $prio.Rank
+            $t["DueText"]    = $prio.Label
         }
 
         $sorted = @($allTasks | Sort-Object `
-                @{ Expression = { $_.SortBucket } }, `
-                @{ Expression = { $_.SortRank } }, `
-                @{ Expression = { $_.ProjectDisplayName } }, `
-                @{ Expression = { $_.Title } })
+            @{ Expression = { $_.SortBucket } }, `
+            @{ Expression = { $_.SortRank } }, `
+            @{ Expression = { $_.ProjectDisplayName } }, `
+            @{ Expression = { $_.Title } })
 
-        # Filter snoozed tasks
-        $visibleTasks = @($sorted | Where-Object { -not (Test-TodayQueueSnoozed -Key (Get-TodayQueueSnoozeKey -Task $_)) })
-        $totalVisible = $visibleTasks.Count
-        $snoozeCount  = $sorted.Count - $totalVisible
+        $script:TodayQueueTaskCache = $sorted
+        $script:TodayQueueCacheTime = Get-Date
 
-        if ($totalVisible -eq 0) {
-            $msg = if ($snoozeCount -gt 0) { "Dashboard Queue: All tasks snoozed ($snoozeCount)." } else { "Dashboard Queue: No in-progress tasks." }
-            $status.Text = $msg
-            Update-UnsnoozeButton -Window $Window -Count $snoozeCount
-            return
-        }
-
-        if ($isListMode) {
-            $listMax = [int]$script:DashboardTodayQueueListMaxItems
-            if ($listMax -lt 1) { $listMax = 300 }
-            $showCount = [Math]::Min($listMax, $totalVisible)
-            for ($i = 0; $i -lt $showCount; $i++) {
-                [void]$list.Items.Add((New-DashboardTodayQueueCompactListItem -Task $visibleTasks[$i]))
-            }
-            $statusMsg = "Dashboard Queue (List): $totalVisible tasks (showing $showCount)"
-            if ($snoozeCount -gt 0) { $statusMsg += ", $snoozeCount snoozed" }
-            $status.Text = $statusMsg
-        }
-        else {
-            $queueLimit = [int]$script:AppState.DashboardTodayQueueLimit
-            $showCount = [Math]::Min($queueLimit, $totalVisible)
-            $lastBucketGroup = -1
-
-            for ($i = 0; $i -lt $showCount; $i++) {
-                $t = $visibleTasks[$i]
-                $bucket = [int]$t.SortBucket
-                $bucketGroup = if ($bucket -le 1) { $bucket } elseif ($bucket -le 3) { 2 } elseif ($bucket -eq 4) { 3 } else { 4 }
-                if ($bucketGroup -ne $lastBucketGroup) {
-                    $sectionLabel = switch ($bucketGroup) {
-                        0 { "Overdue" }
-                        1 { "Today" }
-                        2 { "This Week" }
-                        3 { "Later" }
-                        default { "No Due" }
-                    }
-                    [void]$list.Items.Add((New-DashboardQueueSectionHeader -Label $sectionLabel))
-                    $lastBucketGroup = $bucketGroup
-                }
-                [void]$list.Items.Add((New-DashboardTodayQueueListItem -Task $t -Window $Window))
-            }
-
-            $remaining = $totalVisible - $showCount
-            if ($remaining -gt 0) {
-                [void]$list.Items.Add((New-DashboardQueueShowMoreItem -Window $Window -Tasks @($visibleTasks[$showCount..($totalVisible - 1)]) -LastBucketGroup $lastBucketGroup -TotalVisible $totalVisible -SnoozeCount $snoozeCount))
-            }
-
-            $statusMsg = "Dashboard Queue: $totalVisible tasks (showing $showCount)"
-            if ($snoozeCount -gt 0) { $statusMsg += ", $snoozeCount snoozed" }
-            $status.Text = $statusMsg
-        }
-
-        Update-UnsnoozeButton -Window $Window -Count $snoozeCount
+        Invoke-RenderTodayQueueFromCache -Window $Window -SortedTasks $sorted
     }
     catch {
         $status.Text = "Dashboard Queue: Failed to load."
@@ -1813,7 +1841,7 @@ function Initialize-TabDashboard {
                 $showHidden = [bool]($win.FindName("chkShowHidden").IsChecked)
                 try {
                     Update-Dashboard -Window $win -FilterText $filter -ShowHidden $showHidden -Force -ScriptDir $ScriptDir
-                    Update-DashboardTodayQueueWidget -Window $win
+                    Update-DashboardTodayQueueWidget -Window $win -Force
                 }
                 finally {
                     if ($null -ne $btn) {
@@ -1841,7 +1869,7 @@ function Initialize-TabDashboard {
     $btnDashQueueRefresh = $Window.FindName("btnDashTodayQueueRefresh")
     if ($null -ne $btnDashQueueRefresh) {
         $btnDashQueueRefresh.Add_Click({
-                Update-DashboardTodayQueueWidget -Window $Window
+                Update-DashboardTodayQueueWidget -Window $Window -Force
             }.GetNewClosure())
     }
 
