@@ -1609,7 +1609,7 @@ function Update-DashboardTodayQueueWidget {
             }
         }
 
-        $projects = Get-ProjectInfoList -SkipTokens
+        $projects = if ($null -ne $script:ProjectInfoCache) { $script:ProjectInfoCache } else { @(Get-ProjectInfoList -SkipTokens) }
         $allTasks = @()
         foreach ($p in $projects) {
             $allTasks += @(Get-TodayQueueTasksFromProject -ProjectInfo $p)
